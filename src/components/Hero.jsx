@@ -14,14 +14,6 @@ export default function Hero() {
     }
   };
 
-  const getQrUrl = () => {
-    const origin = window.location.origin;
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return 'https://forms-registration-sand.vercel.app/form/student-registration-form';
-    }
-    return `${origin}/form/student-registration-form`;
-  };
-
   return (
     <section className="hero" id="home">
       {/* Background blobs */}
@@ -81,70 +73,6 @@ export default function Hero() {
               <span className="hero-stat-number">50+</span>
               <span className="hero-stat-label">Templates</span>
             </div>
-          </div>
-
-          {/* QR Registration Section */}
-          <div className="hero-qr-section" style={{
-            marginTop: '56px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            gap: '14px',
-            width: '100%',
-            maxWidth: '560px',
-            marginInline: 'auto'
-          }}>
-            <h3 style={{
-              fontSize: '22px',
-              fontWeight: '800',
-              color: '#7B1C1C',
-              margin: 0,
-              letterSpacing: '-0.3px'
-            }}>
-              MCC MRFIP Registration
-            </h3>
-            <p style={{
-              fontSize: '14.5px',
-              color: '#64748b',
-              lineHeight: '1.6',
-              margin: 0,
-              maxWidth: '440px'
-            }}>
-              Scan this QR code with your phone's camera to open the MCC MRFIP Registration Form.
-            </p>
-            
-            {/* White Rounded Card with QR Code */}
-            <div style={{
-              background: 'white',
-              padding: '20px',
-              borderRadius: '20px',
-              boxShadow: '0 12px 30px rgba(123, 28, 28, 0.08), 0 4px 12px rgba(0,0,0,0.02)',
-              border: '1px solid rgba(123, 28, 28, 0.08)',
-              display: 'inline-flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginTop: '10px',
-              transition: 'transform 0.2s',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            onClick={() => window.open(getQrUrl(), '_blank')}
-            >
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(getQrUrl())}&color=7B1C1C`} 
-                alt="MCC MRFIP Registration Form QR Link"
-                style={{
-                  width: '180px',
-                  height: '180px',
-                  display: 'block'
-                }}
-              />
-            </div>
-            <span style={{ fontSize: '11.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: '4px' }}>
-              Note: Resolving to production domain ({getQrUrl().split('/form')[0]}) for global scanning.
-            </span>
           </div>
         </div>
 

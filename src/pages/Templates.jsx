@@ -5,6 +5,7 @@ import './Templates.css';
 
 export default function Templates() {
   const [search, setSearch] = useState('');
+  const [selectedTmplQr, setSelectedTmplQr] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -105,17 +106,57 @@ export default function Templates() {
                       <div className="mini-form-field full" />
                       <div className="mini-form-btn" style={{ background: theme.accent }} />
                     </div>
-                    <div className="template-overlay" style={{ background: `${theme.accent}cc` }}>
-                      <button className="template-use-btn" style={{ color: theme.accent }}>Use This Template →</button>
+                    <div className="template-overlay" style={{ background: `${theme.accent}cc`, display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                      <button className="template-use-btn" style={{ color: theme.accent, width: '80%' }} onClick={() => handleUseTemplate(tmpl)}>
+                        Use Template →
+                      </button>
+                      <button 
+                        className="template-use-btn" 
+                        style={{ 
+                          color: '#fff', 
+                          background: 'rgba(255,255,255,0.2)', 
+                          border: '1.5px solid #fff',
+                          width: '80%',
+                          marginTop: '4px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTmplQr(tmpl);
+                        }}
+                      >
+                        Scan QR Code 📱
+                      </button>
                     </div>
                   </div>
 
                   <div className="template-card-body">
                     <div className="template-card-name">{tmpl.name}</div>
                     <div className="template-card-desc">{tmpl.desc}</div>
-                    <div className="template-card-footer">
-                      <span className="template-tag" style={{ color: theme.accent, background: `${theme.accent}15` }}>{tmpl.tag}</span>
-                      <span className="template-fields">{tmpl.fields}</span>
+                    <div className="template-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span className="template-tag" style={{ color: theme.accent, background: `${theme.accent}15` }}>{tmpl.tag}</span>
+                        <span className="template-fields" style={{ marginLeft: '8px' }}>{tmpl.fields}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTmplQr(tmpl);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: theme.accent
+                        }}
+                        title="Scan QR Code"
+                      >
+                        📱
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -124,6 +165,104 @@ export default function Templates() {
           </div>
         </div>
       </div>
+
+      {/* QR Code Scanner Modal */}
+      {selectedTmplQr && (
+        <div style={{ display: 'flex', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, justifyContent: 'center', alignItems: 'center' }} onClick={() => setSelectedTmplQr(null)}>
+          <div style={{ background: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxWidth: '440px', width: '90%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+              {selectedTmplQr.name}
+            </h3>
+            <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '20px', lineHeight: '1.5', fontFamily: 'Inter, sans-serif' }}>
+              Scan this QR code with your phone's camera to open the live form directly.
+            </p>
+
+            <div style={{
+              background: 'white',
+              padding: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+              border: '1px solid #f1f5f9',
+              display: 'inline-flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  window.location.origin.includes('localhost')
+                    ? `https://forms-registration-sand.vercel.app/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                    : `${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                )}&color=${TEMPLATE_THEMES[selectedTmplQr.bg].accent.replace('#', '')}`}
+                alt="Registration QR Code"
+                style={{ width: '180px', height: '180px', display: 'block' }}
+              />
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '24px', textAlign: 'left' }}>
+              <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', fontFamily: 'Inter, sans-serif' }}>Shareable Form Link</div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={window.location.origin.includes('localhost')
+                    ? `https://forms-registration-sand.vercel.app/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                    : `${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                  }
+                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                />
+                <button 
+                  onClick={() => {
+                    const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    const link = window.location.origin.includes('localhost')
+                      ? `https://forms-registration-sand.vercel.app/form/${slug}`
+                      : `${window.location.origin}/form/${slug}`;
+                    navigator.clipboard.writeText(link);
+                    alert('Link copied to clipboard!');
+                  }}
+                  style={{ background: TEMPLATE_THEMES[selectedTmplQr.bg].accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                >
+                  Copy Link
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setSelectedTmplQr(null)}
+                style={{ flex: 1, padding: '10px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              >
+                Close View
+              </button>
+              <a 
+                href={window.location.origin.includes('localhost')
+                  ? `https://forms-registration-sand.vercel.app/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                  : `/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: TEMPLATE_THEMES[selectedTmplQr.bg].accent,
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
+                👁️ View Live
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

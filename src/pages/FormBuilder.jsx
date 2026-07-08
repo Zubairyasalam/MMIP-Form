@@ -2186,7 +2186,7 @@ export default function FormBuilder() {
             </p>
             
             {/* Shareable Link Block */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '24px', textAlign: 'left' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input 
@@ -2211,6 +2211,33 @@ export default function FormBuilder() {
                   Copy Link
                 </button>
               </div>
+            </div>
+
+            {/* QR Code Scanner Card */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px', gap: '8px' }}>
+              <div style={{
+                background: 'white',
+                padding: '16px',
+                borderRadius: '16px',
+                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.04)',
+                border: '1px solid #f1f5f9',
+                display: 'inline-flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    window.location.origin.includes('localhost') 
+                      ? `https://forms-registration-sand.vercel.app/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}` 
+                      : `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                  )}&color=${accent.replace('#', '')}`}
+                  alt="Form QR Code"
+                  style={{ width: '150px', height: '150px', display: 'block' }}
+                />
+              </div>
+              <span style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', fontWeight: '500', fontFamily: 'Inter, sans-serif' }}>
+                Scan to preview or screenshot to share QR scanner.
+              </span>
             </div>
 
             {/* Divider */}

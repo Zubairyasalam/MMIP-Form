@@ -7,7 +7,6 @@ export default function Footer() {
         <div className="footer-grid">
           {/* Brand */}
           <div className="footer-brand">
-            <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="footer-logo" />
             <p className="footer-brand-desc">
               MCC-MRF Innovation Park — Empowering research, innovation and entrepreneurship at Madras Christian College.
             </p>

@@ -43,19 +43,7 @@ export default function Auth() {
       <div className="auth-container">
         {/* Left Side Panel - Branding */}
         <div className="auth-brand-panel">
-          <div style={{
-            background: 'white',
-            padding: '10px 16px',
-            borderRadius: '12px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
-            width: 'fit-content',
-            marginBottom: '24px'
-          }}>
-            <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" style={{ height: '44px', display: 'block', objectFit: 'contain' }} />
-          </div>
+          <img src="/mcc-mrf-logo-white.png?v=2" alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
           <div className="auth-welcome-text">
             <h2>Empowering Innovation at MCC</h2>
             <p>

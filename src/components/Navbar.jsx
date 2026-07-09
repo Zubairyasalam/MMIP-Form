@@ -20,7 +20,7 @@ export default function Navbar() {
     <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
       <div className="navbar-inner">
         <a href="#" className="navbar-logo">
-          <img src="/mcc-mrf-logo.png" alt="MCC-MRF Innovation Park" />
+          <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF Innovation Park" />
         </a>
 
         <ul className="navbar-links">

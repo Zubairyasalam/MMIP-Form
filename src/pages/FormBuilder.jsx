@@ -1652,7 +1652,7 @@ export default function FormBuilder() {
       <div className="fb-topbar">
         <div className="fb-topbar-inner">
           <Link to="/templates">
-            <img src="/mcc-mrf-logo.png" alt="MCC-MRF" className="fb-logo" />
+            <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="fb-logo" />
           </Link>
 
           <div className="fb-title-area">

@@ -35,7 +35,7 @@ export default function Templates() {
       {/* Top bar */}
       <div className="templates-topbar">
         <Link to="/">
-          <img src="/mcc-mrf-logo.png" alt="MCC-MRF" className="templates-topbar-logo" />
+          <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="templates-topbar-logo" />
         </Link>
 
         <div className="templates-search-wrap">

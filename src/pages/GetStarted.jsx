@@ -46,7 +46,7 @@ export default function GetStarted() {
     <div className="getstarted-page">
       {/* Top bar */}
       <div className="getstarted-topbar">
-        <img src="/mcc-mrf-logo.png" alt="MCC-MRF Innovation Park" />
+        <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF Innovation Park" />
         <Link to="/" className="getstarted-back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="19" y1="12" x2="5" y2="12"/>

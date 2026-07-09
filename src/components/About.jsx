@@ -8,7 +8,7 @@ export default function About() {
           {/* Visual */}
           <div className="about-visual">
             <div className="about-image-card">
-              <img src="/mcc-mrf-logo.png" alt="MCC-MRF Innovation Park" className="about-logo-display" />
+              <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="about-logo-display" />
               <div className="about-card-text">
                 <h3>Madras Christian College</h3>
                 <p>MCC-MRF Innovation Park — Empowering student and faculty innovation since 2018</p>

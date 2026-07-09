@@ -2161,17 +2161,13 @@ export default function FormBuilder() {
                 <input 
                   type="text" 
                   readOnly 
-                  value={window.location.origin.includes('localhost') 
-                    ? `https://forms-registration-sand.vercel.app/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}` 
-                    : `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  value={`${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', color: '#0f172a', fontWeight: '600', outline: 'none' }}
                 />
                 <button 
                   onClick={() => {
                     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                    const link = window.location.origin.includes('localhost')
-                      ? `https://forms-registration-sand.vercel.app/form/${slug}`
-                      : `${window.location.origin}/form/${slug}`;
+                    const link = `${window.location.origin}/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
@@ -2196,9 +2192,7 @@ export default function FormBuilder() {
               }}>
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    window.location.origin.includes('localhost') 
-                      ? `https://forms-registration-sand.vercel.app/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}` 
-                      : `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                    `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=${accent.replace('#', '')}`}
                   alt="Form QR Code"
                   style={{ width: '150px', height: '150px', display: 'block' }}
@@ -2214,9 +2208,7 @@ export default function FormBuilder() {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href={window.location.origin.includes('localhost')
-                  ? `https://forms-registration-sand.vercel.app/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
-                  : `/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                href={`/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{

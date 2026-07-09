@@ -1679,7 +1679,6 @@ export default function FormBuilder() {
           </div>
 
           <div className="fb-topbar-actions">
-            <button className="fb-icon-btn" title="Preview" id="fb-preview-btn">👁</button>
             <button className="fb-icon-btn" title="Undo" id="fb-undo-btn">↩</button>
             <button className="fb-icon-btn" title="More options" id="fb-more-btn">⋮</button>
             <button
@@ -2193,7 +2192,7 @@ export default function FormBuilder() {
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                     `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
-                  )}&color=${accent.replace('#', '')}`}
+                  )}&color=000000`}
                   alt="Form QR Code"
                   style={{ width: '150px', height: '150px', display: 'block' }}
                 />

@@ -191,7 +191,7 @@ export default function Templates() {
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                   `${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
-                )}&color=${TEMPLATE_THEMES[selectedTmplQr.bg].accent.replace('#', '')}`}
+                )}&color=000000`}
                 alt="Registration QR Code"
                 style={{ width: '180px', height: '180px', display: 'block' }}
               />

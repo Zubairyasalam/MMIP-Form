@@ -154,26 +154,17 @@ function AnswerArea({
   aiTexts, setAiTexts, voiceInputs, setVoiceInputs, videoUploads, setVideoUploads,
   locationInputs, setLocationInputs
 }) {
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  
   const addOption = () => onChange({ ...q, options: [...q.options, `Option ${q.options.length + 1}`] });
   const updateOption = (i, val) => { const opts = [...q.options]; opts[i] = val; onChange({ ...q, options: opts }); };
   const deleteOption = (i) => onChange({ ...q, options: q.options.filter((_, idx) => idx !== i) });
-  const rtbRef = useRef(null);
-
-  const applyFormat = (cmd) => {
-    if (cmd === 'link') {
-      const url = prompt('Enter URL:');
-      if (url) document.execCommand('createLink', false, url);
-    } else {
-      document.execCommand(cmd, false, null);
-    }
-    rtbRef.current?.focus();
-  };
 
   if (q.type === 'short') {
     return (
       <div className="fb-answer-area">
         <div
-          ref={rtbRef}
           contentEditable
           suppressContentEditableWarning
           data-placeholder="Short answer text..."
@@ -197,7 +188,6 @@ function AnswerArea({
     return (
       <div className="fb-answer-area">
         <div
-          ref={rtbRef}
           contentEditable
           suppressContentEditableWarning
           data-placeholder="Long answer text..."
@@ -218,8 +208,6 @@ function AnswerArea({
       </div>
     );
   }
-  const [selectedIdx, setSelectedIdx] = useState(null);
-  const [selectedIndices, setSelectedIndices] = useState([]);
 
   if (['multiple', 'checkbox', 'dropdown'].includes(q.type)) {
     const isCb = q.type === 'checkbox';
@@ -757,7 +745,7 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
     };
     
     words.forEach(w => {
-      const clean = w.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+      const clean = w.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g,"");
       if (TYPOS[clean]) {
         found.push({ original: clean, correction: TYPOS[clean] });
       }
@@ -769,25 +757,6 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
 
   const fixTypos = () => {
     let fixedText = textVal;
-    const TYPOS = {
-      'heo': 'hello',
-      'teh': 'the',
-      'worng': 'wrong',
-      'reaserch': 'research',
-      'colg': 'college',
-      'univ': 'university',
-      'recived': 'received',
-      'studen': 'student',
-      'proposel': 'proposal',
-      'devlop': 'develop',
-      'sofware': 'software',
-      'fild': 'field',
-      'abt': 'about',
-      'plz': 'please',
-      'thks': 'thanks',
-      'u': 'you',
-      'r': 'are'
-    };
     
     detectedTypos.forEach(item => {
       const regex = new RegExp(`\\b${item.original}\\b`, 'gi');

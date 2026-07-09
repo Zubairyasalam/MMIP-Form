@@ -410,7 +410,6 @@ export default function AdminDashboard() {
         {/* Left Sidebar */}
         <aside className="db-sidebar" style={{ width: '280px', background: 'white', borderRight: '1px solid #e2e8f0', padding: '24px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
           <div className="db-sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-            <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
             <div>
               <div style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>MCC-MRF Portal</div>
               <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>Database Explorer</div>
@@ -680,7 +679,6 @@ export default function AdminDashboard() {
       {/* ── Sidebar ── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header">
-          <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="admin-logo" />
           <div className="admin-logo-text">Admin Portal</div>
         </div>
 

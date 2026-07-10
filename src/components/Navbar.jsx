@@ -6,13 +6,13 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
     setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
-    setIsAdmin(localStorage.getItem('userEmail') === 'admin@mcc.edu.in');
+    setUserRole(localStorage.getItem('userRole') || '');
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -32,12 +32,13 @@ export default function Navbar() {
         <div className="navbar-cta">
           {isLoggedIn ? (
             <>
-              {isAdmin && (
-                <Link to="/admin" className="nav-sign-in" style={{ fontWeight: '600', color: '#475569', marginRight: '16px' }}>Admin Portal</Link>
-              )}
               <button
                 onClick={() => {
                   localStorage.removeItem('isLoggedIn');
+                  localStorage.removeItem('userRole');
+                  localStorage.removeItem('userEmail');
+                  localStorage.removeItem('userName');
+                  localStorage.removeItem('userId');
                   setIsLoggedIn(false);
                   window.location.reload();
                 }}
@@ -54,13 +55,13 @@ export default function Navbar() {
                   fontFamily: 'Inter, sans-serif'
                 }}
               >
-                Sign Out
+                <span>Sign Out</span>
               </button>
             </>
           ) : (
             <>
-              <Link to="/auth?mode=login" className="nav-sign-in">Sign In</Link>
-              <Link to="/auth?mode=signup" className="btn-primary">
+              <Link to="/auth" className="nav-sign-in">Sign In</Link>
+              <Link to="/auth" className="btn-primary">
                 <span>Get Started</span>
               </Link>
             </>
@@ -69,9 +70,9 @@ export default function Navbar() {
 
         <button className="mobile-menu-btn" aria-label="Toggle menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
       </div>

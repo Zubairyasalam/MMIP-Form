@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Hero.css';
 
 export default function Hero() {
@@ -10,7 +10,17 @@ export default function Hero() {
     if (loggedIn) {
       navigate('/form/innovation-grant');
     } else {
-      navigate('/auth?mode=signup');
+      navigate('/templates');
+    }
+  };
+
+  const handleStartBuilding = (e) => {
+    e.preventDefault();
+    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (loggedIn) {
+      navigate('/templates');
+    } else {
+      navigate('/auth');
     }
   };
 
@@ -40,14 +50,14 @@ export default function Hero() {
           </p>
 
           <div className="hero-actions">
-            <Link to="/auth?mode=signup" className="btn-primary" id="hero-start-btn">
+            <button onClick={handleStartBuilding} className="btn-primary" id="hero-start-btn" style={{ border: 'none', cursor: 'pointer' }}>
               <span>Start Building Free</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
               </svg>
-            </Link>
-            <button onClick={handleDemoClick} className="btn-secondary" id="hero-demo-btn" style={{ outline: 'none' }}>
+            </button>
+            <button onClick={handleDemoClick} className="btn-secondary" id="hero-demo-btn">
               View Demo
             </button>
           </div>

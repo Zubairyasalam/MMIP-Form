@@ -1562,7 +1562,8 @@ export default function FormBuilder() {
         required: q.required || false
       })),
       created: new Date().toLocaleDateString(),
-      creator: 'Super Admin'
+      creator: localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'Administrator',
+      creator_id: localStorage.getItem('userId') || 'guest'
     };
 
     const existing = JSON.parse(localStorage.getItem('customForms') || '[]');
@@ -1679,20 +1680,6 @@ export default function FormBuilder() {
           </div>
 
           <div className="fb-topbar-actions">
-            <button className="fb-icon-btn" title="Undo" id="fb-undo-btn">↩</button>
-            <button className="fb-icon-btn" title="More options" id="fb-more-btn">⋮</button>
-            <button
-              className="fb-send-btn"
-              style={{ background: accent }}
-              onClick={handlePublish}
-              id="fb-send-btn"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-              Send
-            </button>
           </div>
         </div>
       </div>
@@ -2147,7 +2134,7 @@ export default function FormBuilder() {
             </div>
 
             <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-              🎉 Form Successfully Published!
+              Form Successfully Published!
             </h2>
             <p style={{ fontSize: '14px', color: '#555', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
               Your form <strong>"{formTitle}"</strong> is now live and ready to collect submissions.
@@ -2211,24 +2198,24 @@ export default function FormBuilder() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  padding: '10px 20px', borderRadius: '8px', border: `2px solid ${accent}`,
-                  background: 'white', color: accent, fontSize: '13px', fontWeight: '700',
-                  cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s', textDecoration: 'none'
-                }}
-              >
-                👁️ View Form
-              </a>
-              <button
-                onClick={() => { setShowSuccess(false); navigate('/admin'); }}
-                style={{
                   padding: '10px 20px', borderRadius: '8px', border: 'none',
                   background: `linear-gradient(135deg, ${accent}, ${accent}cc)`, color: 'white',
                   fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                  fontFamily: 'Inter, sans-serif', transition: 'all 0.2s',
+                  fontFamily: 'Inter, sans-serif', transition: 'all 0.2s', textDecoration: 'none',
                   boxShadow: `0 4px 12px ${accent}44`
                 }}
               >
-                📊 Go to Admin Dashboard
+                View Form
+              </a>
+              <button
+                onClick={() => navigate('/templates')}
+                style={{
+                  padding: '10px 20px', borderRadius: '8px', border: `2px solid ${accent}`,
+                  background: 'white', color: accent, fontSize: '13px', fontWeight: '700',
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s'
+                }}
+              >
+                Go to Templates
               </button>
             </div>
           </div>

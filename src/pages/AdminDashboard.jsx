@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
 
 const getColumnHeaders = (formTitle) => {
@@ -32,7 +33,7 @@ const getRowCells = (row, formTitle) => {
 
   const titleLower = (formTitle || '').toLowerCase();
 
-  if (row.id && (row.id.toString().startsWith('MIL-00') || row.name === 'Zubairya Salam khan')) {
+  if (row.id && (row.id.toString().startsWith('MMIP-00') || row.name === 'Zubairya Salam khan')) {
     return {
       col1: row.id,
       col2: row.name || 'Anonymous',
@@ -59,7 +60,7 @@ const getRowCells = (row, formTitle) => {
     const domain = getAns(['domain', 'sector'], 'Grant Application');
     const budget = getAns(['amount', 'budget'], '—');
     const start = getAns(['start date'], '—');
-    
+
     return {
       col1: row.id || '—',
       col2: name,
@@ -71,7 +72,7 @@ const getRowCells = (row, formTitle) => {
       col8: email
     };
   }
-  
+
   if (titleLower.includes('proposal') || titleLower.includes('research')) {
     const applicant = getAns(['researcher', 'applicant', 'name'], row.name || 'Anonymous');
     const dept = getAns(['department'], '—');
@@ -79,7 +80,7 @@ const getRowCells = (row, formTitle) => {
     const type = getAns(['type'], 'Mixed Methods');
     const duration = getAns(['duration'], '12 Months');
     const guide = getAns(['guide', 'supervisor'], '—');
-    
+
     return {
       col1: row.id || '—',
       col2: applicant,
@@ -100,7 +101,7 @@ const getRowCells = (row, formTitle) => {
     const cgpa = getAns(['cgpa'], '—');
     const availability = getAns(['availability'], 'Full-time');
     const start = getAns(['start', 'date'], '—');
-    
+
     return {
       col1: row.id || '—',
       col2: name,
@@ -119,7 +120,7 @@ const getRowCells = (row, formTitle) => {
     const labName = getAns(['lab name', 'lab'], 'Computer Lab A');
     const date = getAns(['date', 'booking'], '—');
     const slot = getAns(['slot', 'time'], '—');
-    
+
     return {
       col1: row.id || '—',
       col2: name,
@@ -140,7 +141,7 @@ const getRowCells = (row, formTitle) => {
     const content = getAns(['content'], '5');
     const completed = getAns(['completed', 'syllabus'], 'Yes');
     const suggestions = getAns(['suggestions', 'remarks'], '—');
-    
+
     return {
       col1: row.id || '—',
       col2: faculty,
@@ -177,6 +178,10 @@ export default function AdminDashboard() {
   const [sortBy, setSortBy] = useState('latest');
   const [dbSearchQuery, setDbSearchQuery] = useState('');
   const [editingSubmission, setEditingSubmission] = useState(null);
+  const [profileData, setProfileData] = useState({
+    name: 'Administrator',
+    role: 'Admin'
+  });
 
   // Mock data for forms managed by admin
   const [forms, setForms] = useState([
@@ -192,7 +197,7 @@ export default function AdminDashboard() {
     const local = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
     const defaultSubs = [
       {
-        id: 'MIL-101', name: 'Arun Kumar', form: 'Innovation Grant Application', time: '10 mins ago', status: 'Pending Review', email: 'arun.k@mcc.edu.in', date: '2026-07-08 15:42',
+        id: 'MMIP-101', name: 'Arun Kumar', form: 'Innovation Grant Application', time: '10 mins ago', status: 'Pending Review', email: 'arun.k@mcc.edu.in', date: '2026-07-08 15:42',
         answers: [
           { q: 'Principal Investigator Name', a: 'Arun Kumar' },
           { q: 'Department / Institution', a: 'Computer Science' },
@@ -205,7 +210,7 @@ export default function AdminDashboard() {
         ]
       },
       {
-        id: 'MIL-102', name: 'Priya Sharma', form: 'Student Course Feedback', time: '24 mins ago', status: 'Completed', email: 'priya.s@mcc.edu.in', date: '2026-07-08 15:28',
+        id: 'MMIP-102', name: 'Priya Sharma', form: 'Student Course Feedback', time: '24 mins ago', status: 'Completed', email: 'priya.s@mcc.edu.in', date: '2026-07-08 15:28',
         answers: [
           { q: 'Student Name', a: 'Priya Sharma' },
           { q: 'Course Title', a: 'Advanced Data Structures & Algorithms' },
@@ -215,7 +220,7 @@ export default function AdminDashboard() {
         ]
       },
       {
-        id: 'MIL-103', name: 'Devadas K.', form: 'Faculty Research Proposal', time: '1 hour ago', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', date: '2026-07-08 14:15',
+        id: 'MMIP-103', name: 'Devadas K.', form: 'Faculty Research Proposal', time: '1 hour ago', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', date: '2026-07-08 14:15',
         answers: [
           { q: 'Faculty Member Name', a: 'Prof. Devadas K.' },
           { q: 'Department', a: 'Physics' },
@@ -225,7 +230,7 @@ export default function AdminDashboard() {
         ]
       },
       {
-        id: 'MIL-104', name: 'Mercy George', form: 'Innovation Grant Application', time: '3 hours ago', status: 'Approved', email: 'mercy.g@mcc.edu.in', date: '2026-07-08 12:30',
+        id: 'MMIP-104', name: 'Mercy George', form: 'Innovation Grant Application', time: '3 hours ago', status: 'Approved', email: 'mercy.g@mcc.edu.in', date: '2026-07-08 12:30',
         answers: [
           { q: 'Principal Investigator Name', a: 'Mercy George' },
           { q: 'Department / Institution', a: 'Biotechnology' },
@@ -238,7 +243,7 @@ export default function AdminDashboard() {
         ]
       },
       {
-        id: 'MIL-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', time: '5 hours ago', status: 'Completed', email: 'sanjay.d@mcc.edu.in', date: '2026-07-08 10:45',
+        id: 'MMIP-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', time: '5 hours ago', status: 'Completed', email: 'sanjay.d@mcc.edu.in', date: '2026-07-08 10:45',
         answers: [
           { q: 'Student Name', a: 'Sanjay Dutt' },
           { q: 'Course Title', a: 'Organic Chemistry II' },
@@ -266,7 +271,7 @@ export default function AdminDashboard() {
     const custom = JSON.parse(localStorage.getItem('customForms') || '[]');
     const mappedCustom = custom.map(cf => ({
       id: cf.id,
-      title: cf.name,
+      title: cf.name || cf.title || 'Untitled Form',
       status: 'Active',
       responses: 0,
       created: cf.created || new Date().toLocaleDateString(),
@@ -287,43 +292,54 @@ export default function AdminDashboard() {
     // Compute dynamic response counts
     const allSubs = [...localMapped, ...defaultSubs];
     const updatedForms = combinedForms.map(f => {
-      const subCount = allSubs.filter(s => s.form && s.form.trim().toLowerCase() === f.title.trim().toLowerCase()).length;
+      const subCount = allSubs.filter(s => s.form && f.title && s.form.trim().toLowerCase() === f.title.trim().toLowerCase()).length;
       let baseCount = 0;
       if (f.title === 'Innovation Grant Application') baseCount = 40;
       else if (f.title === 'Student Course Feedback') baseCount = 126;
       else if (f.title === 'Workshop Registration Form') baseCount = 89;
       else if (f.title === 'Faculty Research Proposal') baseCount = 14;
-      
+
       return { ...f, responses: baseCount + subCount };
     });
 
     setForms(updatedForms);
+
+    // Load profile
+    let nameVal = localStorage.getItem('userName') || 'Administrator';
+    if (nameVal === 'Department Admin') {
+      nameVal = 'Admin';
+      localStorage.setItem('userName', 'Admin');
+    }
+
+    // Clean up appUsers array if it contains 'Department Admin'
+    try {
+      const savedUsers = localStorage.getItem('appUsers');
+      if (savedUsers && savedUsers.includes('Department Admin')) {
+        const users = JSON.parse(savedUsers);
+        const updated = users.map(u => u.name === 'Department Admin' ? { ...u, name: 'Admin' } : u);
+        localStorage.setItem('appUsers', JSON.stringify(updated));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    const roleVal = localStorage.getItem('userRole') || 'admin';
+    setProfileData({
+      name: nameVal,
+      role: roleVal === 'superadmin' ? 'Super Admin' : 'Admin'
+    });
   }, [selectedFormDb, activeMenu]);
 
 
 
-  const handleToggleStatus = (id) => {
-    setForms(prev => prev.map(f => {
-      if (f.id === id) {
-        const nextStatus = f.status === 'Active' ? 'Inactive' : 'Active';
-        return { ...f, status: nextStatus };
-      }
-      return f;
-    }));
-  };
 
-  const handleDeleteForm = (id) => {
-    if (window.confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
-      setForms(prev => prev.filter(f => f.id !== id));
-    }
-  };
 
   const handleDeleteSubmission = (id) => {
     if (window.confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
       const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
       const updated = existing.filter(s => String(s.id) !== String(id));
       localStorage.setItem('formSubmissions', JSON.stringify(updated));
-      
+
       setSubmissions(prev => prev.filter(s => String(s.id) !== String(id)));
       alert('Submission deleted successfully.');
     }
@@ -344,7 +360,7 @@ export default function AdminDashboard() {
       return s;
     });
     localStorage.setItem('formSubmissions', JSON.stringify(updated));
-    
+
     setSubmissions(prev => prev.map(s => {
       if (String(s.id) === String(editingSubmission.id)) {
         return {
@@ -357,7 +373,7 @@ export default function AdminDashboard() {
       }
       return s;
     }));
-    
+
     setEditingSubmission(null);
     alert('Submission updated successfully.');
   };
@@ -370,18 +386,18 @@ export default function AdminDashboard() {
 
   if (selectedFormDb) {
     const formSubmissions = submissions.filter(s => s.form && s.form.trim().toLowerCase() === selectedFormDb.title.trim().toLowerCase());
-    
+
     let filteredSubs = formSubmissions;
     if (dbSearchQuery) {
       const q = dbSearchQuery.toLowerCase();
-      filteredSubs = filteredSubs.filter(sub => 
+      filteredSubs = filteredSubs.filter(sub =>
         sub.id.toLowerCase().includes(q) ||
         sub.name.toLowerCase().includes(q) ||
         sub.email.toLowerCase().includes(q) ||
         sub.answers.some(ans => ans.a.toLowerCase().includes(q))
       );
     }
-    
+
     if (dateFilter !== 'all') {
       const today = new Date();
       filteredSubs = filteredSubs.filter(sub => {
@@ -417,11 +433,15 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => setSelectedFormDb(null)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#f1f5f9', border: 'none', borderRadius: '8px', color: '#475569', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginBottom: '24px', transition: 'all 0.2s', width: '100%' }}
+            className="db-back-btn"
           >
-            ← Back to Overview
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="back-arrow-icon">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Overview
           </button>
 
           <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Other Form Databases</div>
@@ -465,9 +485,9 @@ export default function AdminDashboard() {
               <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>{selectedFormDb.title} Submissions</h2>
               <p style={{ fontSize: '13.5px', color: '#64748b', marginTop: '4px' }}>Managing {filteredSubs.length} response records dynamically</p>
             </div>
-            
+
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => {
                   if (filteredSubs.length === 0) {
                     alert('No submissions available to export.');
@@ -500,7 +520,7 @@ export default function AdminDashboard() {
               >
                 📥 Export CSV
               </button>
-              <a 
+              <a
                 href={`/form/${selectedFormDb.id}`}
                 target="_blank"
                 rel="noreferrer"
@@ -515,20 +535,20 @@ export default function AdminDashboard() {
           <div className="db-controls-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
               <span style={{ color: '#94a3b8' }}>🔍</span>
-              <input 
-                type="text" 
-                placeholder="Search submission records by name, email, details..." 
+              <input
+                type="text"
+                placeholder="Search submission records by name, email, details..."
                 value={dbSearchQuery}
                 onChange={e => setDbSearchQuery(e.target.value)}
                 style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', fontSize: '13.5px', color: '#1e293b' }}
               />
             </div>
-            
+
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Date:</span>
-                <select 
-                  value={dateFilter} 
+                <select
+                  value={dateFilter}
                   onChange={e => setDateFilter(e.target.value)}
                   style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: '#334155', background: 'white', outline: 'none', cursor: 'pointer' }}
                 >
@@ -537,11 +557,11 @@ export default function AdminDashboard() {
                   <option value="yesterday">Yesterday</option>
                 </select>
               </div>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Sort:</span>
-                <select 
-                  value={sortBy} 
+                <select
+                  value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
                   style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: '#334155', background: 'white', outline: 'none', cursor: 'pointer' }}
                 >
@@ -567,7 +587,7 @@ export default function AdminDashboard() {
               {filteredSubs.map((row, idx) => {
                 const cells = getRowCells(row, selectedFormDb.title);
                 return (
-                  <div 
+                  <div
                     key={idx}
                     onClick={() => setSelectedSubmission(row)}
                     style={{
@@ -600,28 +620,28 @@ export default function AdminDashboard() {
                         {cells.col1}
                       </span>
                     </div>
-                    
+
                     <div style={{ fontWeight: '700', color: '#0f172a' }}>
                       {cells.col2}
                     </div>
-                    
+
                     <div style={{ fontWeight: '500' }}>{cells.col3}</div>
-                    
+
                     <div style={{ fontWeight: '500' }}>{cells.col4}</div>
-                    
+
                     <div>
                       <span style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
                         {cells.col5}
                       </span>
                     </div>
-                    
+
                     <div style={{ fontWeight: '500' }}>{cells.col6}</div>
-                    
+
                     <div>
                       <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '13px' }}>{cells.col7.title}</div>
                       <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>{cells.col7.sub}</div>
                     </div>
-                    
+
                     <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                       {cells.col8 && cells.col8 !== '—' ? (
                         <span style={{ color: '#2563eb', fontWeight: '600' }}>{cells.col8}</span>
@@ -632,25 +652,25 @@ export default function AdminDashboard() {
 
                     {/* Actions Column */}
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingSubmission(row);
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', padding: '4px' }}
+                        className="db-action-btn edit"
                         title="Edit Record"
                       >
-                        ✏️
+                        Edit
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteSubmission(row.id);
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', padding: '4px' }}
+                        className="db-action-btn delete"
                         title="Delete Record"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -670,10 +690,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const filteredForms = forms.filter(f =>
-    f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.creator.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+
 
   return (
     <div className="admin-layout">
@@ -681,7 +698,6 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header">
           <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="admin-logo" />
-          <div className="admin-logo-text">Admin Portal</div>
         </div>
 
         <nav className="admin-nav-links">
@@ -689,32 +705,53 @@ export default function AdminDashboard() {
             className={`admin-nav-item${activeMenu === 'overview' ? ' active' : ''}`}
             onClick={() => setActiveMenu('overview')}
           >
-            📊 Dashboard Overview
+            Dashboard Overview
           </button>
           <button
             className={`admin-nav-item${activeMenu === 'forms' ? ' active' : ''}`}
             onClick={() => setActiveMenu('forms')}
           >
-            📋 Manage Forms
+            Manage Forms
+          </button>
+          <button
+            className={`admin-nav-item${activeMenu === 'users' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('users')}
+          >
+            Users & Usage logs
           </button>
           <button
             className={`admin-nav-item${activeMenu === 'responses' ? ' active' : ''}`}
             onClick={() => setActiveMenu('responses')}
           >
-            📥 Submissions Feed
+            Submissions Feed
           </button>
           <button
             className={`admin-nav-item${activeMenu === 'settings' ? ' active' : ''}`}
             onClick={() => setActiveMenu('settings')}
           >
-            ⚙️ System Settings
+            System Settings
           </button>
         </nav>
 
-        <div className="admin-sidebar-footer">
+        <div className="admin-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <Link to="/" className="admin-back-btn">
-            🏠 Back to Home
+            Back to Home
           </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem('isLoggedIn');
+              localStorage.removeItem('userRole');
+              localStorage.removeItem('userEmail');
+              localStorage.removeItem('userName');
+              localStorage.removeItem('userId');
+              navigate('/auth');
+              window.location.reload();
+            }}
+            className="admin-back-btn"
+            style={{ background: '#fdf2f2', color: '#dc2626', border: '1.5px solid #fca5a5', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}
+          >
+            Sign Out Session
+          </button>
         </div>
       </aside>
 
@@ -727,10 +764,10 @@ export default function AdminDashboard() {
             <p>Control center for Madras Christian College form management</p>
           </div>
           <div className="admin-profile-badge">
-            <span className="profile-avatar">🛡️</span>
+            <span className="profile-avatar">👤</span>
             <div>
-              <div className="profile-name">Administrator</div>
-              <div className="profile-role">Super Admin</div>
+              <div className="profile-name">{profileData.name}</div>
+              <div className="profile-role">{profileData.role}</div>
             </div>
           </div>
         </header>
@@ -741,28 +778,36 @@ export default function AdminDashboard() {
             {/* Quick Stats Grid */}
             <div className="admin-stats-grid">
               <div className="stat-card">
-                <div className="stat-icon forms-icon">📋</div>
+                <div className="stat-icon forms-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                </div>
                 <div className="stat-details">
                   <span className="stat-label">Total Templates</span>
                   <span className="stat-value">{forms.length}</span>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon responses-icon">📥</div>
+                <div className="stat-icon responses-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+                </div>
                 <div className="stat-details">
                   <span className="stat-label">Total Submissions</span>
                   <span className="stat-value">{submissions.length}</span>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon rate-icon">📈</div>
+                <div className="stat-icon rate-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                </div>
                 <div className="stat-details">
                   <span className="stat-label">Today's Submissions</span>
                   <span className="stat-value">{todaySubs}</span>
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon active-icon">⚡</div>
+                <div className="stat-icon active-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                </div>
                 <div className="stat-details">
                   <span className="stat-label">Active Forms</span>
                   <span className="stat-value">{forms.filter(f => f.status === 'Active').length}</span>
@@ -778,8 +823,8 @@ export default function AdminDashboard() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' }}>
                 {forms.map(form => (
-                  <div 
-                    key={form.id} 
+                  <div
+                    key={form.id}
                     className="db-form-card"
                     style={{
                       background: 'white',
@@ -807,7 +852,7 @@ export default function AdminDashboard() {
                   >
                     {/* Top Status Border Accent */}
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: form.status === 'Active' ? '#7B1C1C' : '#94a3b8' }} />
-                    
+
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                         <span style={{ fontSize: '24px' }}>📋</span>
@@ -815,7 +860,7 @@ export default function AdminDashboard() {
                           {form.status}
                         </span>
                       </div>
-                      
+
                       <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '6px', lineHeight: '1.4' }}>
                         {form.title}
                       </h4>
@@ -823,7 +868,7 @@ export default function AdminDashboard() {
                         Created by {form.creator} on {form.created}
                       </p>
                     </div>
-                    
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '12px' }}>
                       <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>
                         📊 {form.responses} Submissions
@@ -870,7 +915,7 @@ export default function AdminDashboard() {
                   <h3>Quick Admin Tasks</h3>
                 </div>
                 <div className="quick-tasks-list">
-                  <button className="task-btn" onClick={() => navigate('/templates')}>
+                  <button className="task-btn" onClick={() => navigate('/form-builder')}>
                     ➕ Create New Form Template
                   </button>
                   <button className="task-btn outline" onClick={() => setActiveMenu('settings')}>
@@ -888,92 +933,134 @@ export default function AdminDashboard() {
         {/* ── FORMS TAB ── */}
         {activeMenu === 'forms' && (
           <div className="admin-tab-content anim-fade-in">
-            <div className="admin-content-card">
-              <div className="card-header forms-header-row">
-                <h3>All Managed Forms</h3>
-                <div className="forms-search-box">
-                  🔍
-                  <input
-                    type="text"
-                    placeholder="Search forms by name or department..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                  />
-                </div>
+            <div className="admin-content-card" style={{ padding: '24px' }}>
+              <div className="card-header" style={{ marginBottom: '16px' }}>
+                <h3>Institutional Form Templates Manager</h3>
               </div>
+              <AdminFormManagement onLogAction={() => {}} />
+            </div>
+          </div>
+        )}
 
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Form Title</th>
-                    <th>Created By</th>
-                    <th>Date Created</th>
-                    <th>Total Responses</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredForms.map(f => (
-                    <tr key={f.id}>
-                      <td className="table-form-title">
-                        <strong>{f.title}</strong>
-                      </td>
-                      <td>{f.creator}</td>
-                      <td>{f.created}</td>
-                      <td>
-                        <button
-                          onClick={() => setSelectedFormDb(f)}
-                          style={{
-                            background: '#f1f5f9',
-                            border: 'none',
-                            color: '#7B1C1C',
-                            fontWeight: 'bold',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#e2e8f0'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; }}
-                        >
-                          👁️ {f.responses} responses
-                        </button>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${f.status.toLowerCase()}`}>
-                          {f.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="action-buttons-wrap">
-                          <button
-                            className="table-action-btn toggle"
-                            onClick={() => handleToggleStatus(f.id)}
-                            title={f.status === 'Active' ? 'Deactivate Form' : 'Activate Form'}
-                          >
-                            {f.status === 'Active' ? '⏸️ Pause' : '▶️ Resume'}
-                          </button>
-                          <button
-                            className="table-action-btn delete"
-                            onClick={() => handleDeleteForm(f.id)}
-                            title="Delete Form"
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredForms.length === 0 && (
+        {/* ── USERS & USAGE TAB ── */}
+        {activeMenu === 'users' && (
+          <div className="admin-tab-content anim-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Users Directory Card */}
+            <div className="admin-content-card">
+              <div className="card-header">
+                <h3>Registered Users Directory</h3>
+              </div>
+              <div style={{ overflowX: 'auto', marginTop: '8px' }}>
+                <table className="super-data-table" style={{ width: '100%' }}>
+                  <thead>
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: '36px 0', color: '#999' }}>
-                        No forms found matching your search.
-                      </td>
+                      <th style={{ textAlign: 'left' }}>Name / Role</th>
+                      <th style={{ textAlign: 'left' }}>Email Address</th>
+                      <th style={{ textAlign: 'left' }}>Last Active</th>
+                      <th style={{ textAlign: 'left' }}>Status</th>
+                      <th style={{ textAlign: 'center' }}>Forms</th>
+                      <th style={{ textAlign: 'center' }}>Templates</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const usersList = JSON.parse(localStorage.getItem('appUsers') || '[]');
+                      const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+                      const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+
+                      const formatName = (str) => {
+                        if (!str) return '—';
+                        return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                      };
+
+                      const formatLastActive = (dateStr) => {
+                        if (!dateStr) return '—';
+                        try {
+                          const d = new Date(dateStr);
+                          if (isNaN(d.getTime())) return dateStr;
+                          return d.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          }).replace(',', ' •');
+                        } catch (e) {
+                          return dateStr;
+                        }
+                      };
+
+                      return usersList.map(user => {
+                        const isOnline = localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userEmail') === user.email;
+                        const userForms = customForms.filter(f => f.creator_id === user.id || f.creator === user.email || f.creator === user.name).length;
+                        const userTemplates = formUsage.filter(u => u.user_id === user.id || u.user_email === user.email).length;
+                        
+                        return (
+                          <tr key={user.id}>
+                            <td>
+                              <div className="user-info-cell">
+                                <strong className="user-name">{formatName(user.name)}</strong>
+                                <span className="user-role-label">{user.role}</span>
+                              </div>
+                            </td>
+                            <td>{user.email}</td>
+                            <td className="last-active-cell">{formatLastActive(user.last_login_at)}</td>
+                            <td>
+                              <span className={`status-badge-modern ${isOnline ? 'online' : 'offline'}`}>
+                                <span className="status-dot"></span>
+                                {isOnline ? 'Online' : 'Offline'}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'center' }} className="stats-count">{userForms}</td>
+                            <td style={{ textAlign: 'center' }} className="stats-count">{userTemplates}</td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Template Usage Rankings Card */}
+            <div className="admin-content-card">
+              <div className="card-header">
+                <h3>Popular Templates</h3>
+              </div>
+              <div className="popular-templates-grid">
+                {(() => {
+                  const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+                  const rankingMap = {};
+                  formUsage.forEach(u => {
+                    const name = u.template_name || 'Unnamed Template';
+                    rankingMap[name] = (rankingMap[name] || 0) + 1;
+                  });
+                  const ranked = Object.entries(rankingMap)
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count);
+
+                  return ranked.slice(0, 5).map((item, idx) => (
+                    <div key={idx} className="popular-template-item">
+                      <div className="popular-template-left">
+                        <span className={`template-rank rank-${idx + 1}`}>{idx + 1}</span>
+                        <span className="template-name-text" title={item.name}>
+                          {item.name}
+                        </span>
+                      </div>
+                      <span className="template-uses-badge">
+                        {item.count} {item.count === 1 ? 'use' : 'uses'}
+                      </span>
+                    </div>
+                  ));
+                })()}
+                {(() => {
+                  const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+                  return formUsage.length === 0 && (
+                    <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px' }}>No template activities recorded.</p>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         )}
@@ -999,7 +1086,7 @@ export default function AdminDashboard() {
               </div>
               <div className="submissions-list full-list">
                 {submissions
-                  .filter(sub => 
+                  .filter(sub =>
                     sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     sub.form.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     sub.id.toString().toLowerCase().includes(searchQuery.toLowerCase())
@@ -1018,7 +1105,11 @@ export default function AdminDashboard() {
                           {sub.status}
                         </span>
                         <button className="sub-detail-btn" onClick={() => setSelectedSubmission(sub)}>
-                          View Details →
+                          View Details
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="detail-arrow-icon">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -1137,7 +1228,7 @@ export default function AdminDashboard() {
               </div>
               <button className="admin-modal-close" onClick={() => setEditingSubmission(null)}>✕</button>
             </div>
-            
+
             <form onSubmit={(e) => {
               e.preventDefault();
               handleSaveSubmissionEdit();
@@ -1147,8 +1238,8 @@ export default function AdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Submitter Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className="pf-input"
                       style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
                       required
@@ -1158,8 +1249,8 @@ export default function AdminDashboard() {
                   </div>
                   <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Submitter Email</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       className="pf-input"
                       style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
                       required
@@ -1168,11 +1259,11 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Submission Status */}
                 <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Review Status</label>
-                  <select 
+                  <select
                     className="pf-select"
                     style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: 'white' }}
                     value={editingSubmission.status || 'Pending Review'}
@@ -1192,8 +1283,8 @@ export default function AdminDashboard() {
                     {(editingSubmission.answers || []).map((ans, idx) => (
                       <div key={idx} className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>{ans.q}</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           className="pf-input"
                           style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
                           value={ans.a || ''}
@@ -1208,7 +1299,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="admin-modal-footer">
                 <button type="button" className="admin-btn-secondary" onClick={() => setEditingSubmission(null)}>Cancel</button>
                 <button type="submit" className="admin-btn-primary">Save Changes ✓</button>

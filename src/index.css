@@ -80,6 +80,7 @@ body {
   box-shadow: 0 4px 14px rgba(123, 28, 28, 0.3);
   position: relative;
   overflow: hidden;
+  outline: none;
 }
 
 .btn-primary::before {
@@ -112,6 +113,7 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
+  outline: none;
 }
 
 .btn-secondary:hover {

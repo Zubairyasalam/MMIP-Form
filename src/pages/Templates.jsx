@@ -7,25 +7,82 @@ export default function Templates() {
   const [search, setSearch] = useState('');
   const [selectedTmplQr, setSelectedTmplQr] = useState(null);
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('');
+  const [allTemplates, setAllTemplates] = useState([]);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
       navigate('/auth?mode=login');
+    } else {
+      setUserRole(localStorage.getItem('userRole') || 'user');
     }
+
+    const loadTemplates = () => {
+      if (!localStorage.getItem('customForms')) {
+        const initial = TEMPLATES.map((t, idx) => ({
+          id: `default-${idx + 1}`,
+          name: t.name,
+          desc: t.desc || '',
+          tag: t.tag || 'Custom',
+          fields: `${t.questions?.length || 0} fields`,
+          bg: t.bg || 'maroon-bg',
+          questions: t.questions || [],
+          button_text: 'Use Template',
+          status: 'Active',
+          created_at: '2026-06-12',
+          creator: 'System'
+        }));
+        localStorage.setItem('customForms', JSON.stringify(initial));
+      }
+
+      const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+      const mapped = customForms.map(cf => ({
+        id: cf.id,
+        name: cf.name || cf.title,
+        desc: cf.desc || 'No description provided.',
+        tag: cf.tag || 'Custom',
+        fields: cf.fields || `${cf.questions?.length || 0} fields`,
+        bg: cf.bg || 'maroon-bg',
+        questions: cf.questions || [],
+        status: cf.status || 'Active'
+      }));
+
+      // Only display Active templates to users in the listing page
+      setAllTemplates(mapped.filter(t => t.status === 'Active'));
+    };
+
+    loadTemplates();
+
+    window.addEventListener('storage', loadTemplates);
+    return () => {
+      window.removeEventListener('storage', loadTemplates);
+    };
   }, [navigate]);
 
   const handleUseTemplate = (tmpl) => {
+    const currentUserId = localStorage.getItem('userId') || 'guest';
+    const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+    const newUsage = {
+      id: `use-${Date.now()}`,
+      user_id: currentUserId,
+      user_email: localStorage.getItem('userEmail') || 'unknown@mcc.edu.in',
+      template_id: tmpl.id,
+      template_name: tmpl.name,
+      used_at: new Date().toLocaleString()
+    };
+    localStorage.setItem('formUsage', JSON.stringify([newUsage, ...formUsage]));
+
     navigate('/form-builder', {
       state: {
         templateName: tmpl.name,
         questions: tmpl.questions,
-        theme: TEMPLATE_THEMES[tmpl.bg],
+        theme: TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'],
       }
     });
   };
 
-  const filtered = TEMPLATES.filter(t => {
+  const filtered = allTemplates.filter(t => {
     return t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.tag.toLowerCase().includes(search.toLowerCase());
   });
@@ -51,15 +108,20 @@ export default function Templates() {
           />
         </div>
 
-        <div className="templates-topbar-right">
-          <Link to="/" style={{ padding: '9px 20px', fontSize: '13px', borderRadius: '999px', border: '1.5px solid #7B1C1C', color: '#7B1C1C', textDecoration: 'none', fontWeight: '600', fontFamily: 'Inter, sans-serif', transition: 'all 0.25s' }}>
-            ← Back
+        <div className="templates-topbar-right" style={{ display: 'flex', alignItems: 'center' }}>
+          <Link to="/" style={{ padding: '9px 20px', fontSize: '13px', borderRadius: '999px', border: '1.5px solid #cbd5e1', color: '#475569', textDecoration: 'none', fontWeight: '600', fontFamily: 'Inter, sans-serif', marginRight: '8px' }}>
+            ← Home
           </Link>
           <button
             className="templates-signout-btn"
             onClick={() => {
               localStorage.removeItem('isLoggedIn');
+              localStorage.removeItem('userRole');
+              localStorage.removeItem('userEmail');
+              localStorage.removeItem('userName');
+              localStorage.removeItem('userId');
               navigate('/');
+              window.location.reload();
             }}
           >
             Sign Out
@@ -110,11 +172,11 @@ export default function Templates() {
                       <button className="template-use-btn" style={{ color: theme.accent, width: '80%' }} onClick={() => handleUseTemplate(tmpl)}>
                         Use Template →
                       </button>
-                      <button 
-                        className="template-use-btn" 
-                        style={{ 
-                          color: '#fff', 
-                          background: 'rgba(255,255,255,0.2)', 
+                      <button
+                        className="template-use-btn"
+                        style={{
+                          color: '#fff',
+                          background: 'rgba(255,255,255,0.2)',
                           border: '1.5px solid #fff',
                           width: '80%',
                           marginTop: '4px'
@@ -124,7 +186,7 @@ export default function Templates() {
                           setSelectedTmplQr(tmpl);
                         }}
                       >
-                        Scan QR Code 📱
+                        Scan QR Code
                       </button>
                     </div>
                   </div>
@@ -137,26 +199,6 @@ export default function Templates() {
                         <span className="template-tag" style={{ color: theme.accent, background: `${theme.accent}15` }}>{tmpl.tag}</span>
                         <span className="template-fields" style={{ marginLeft: '8px' }}>{tmpl.fields}</span>
                       </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTmplQr(tmpl);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          padding: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: theme.accent
-                        }}
-                        title="Scan QR Code"
-                      >
-                        📱
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -188,7 +230,7 @@ export default function Templates() {
               alignItems: 'center',
               marginBottom: '20px'
             }}>
-              <img 
+              <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                   `${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
                 )}&color=000000`}
@@ -200,13 +242,13 @@ export default function Templates() {
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '24px', textAlign: 'left' }}>
               <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', fontFamily: 'Inter, sans-serif' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input 
-                  type="text" 
-                  readOnly 
+                <input
+                  type="text"
+                  readOnly
                   value={`${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif' }}
                 />
-                <button 
+                <button
                   onClick={() => {
                     const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                     const link = `${window.location.origin}/form/${slug}`;
@@ -221,13 +263,13 @@ export default function Templates() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button 
+              <button
                 onClick={() => setSelectedTmplQr(null)}
                 style={{ flex: 1, padding: '10px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
               >
                 Close View
               </button>
-              <a 
+              <a
                 href={`/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
@@ -247,7 +289,7 @@ export default function Templates() {
                   fontFamily: 'Inter, sans-serif'
                 }}
               >
-                👁️ View Live
+                View Live
               </a>
             </div>
           </div>

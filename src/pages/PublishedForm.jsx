@@ -101,7 +101,7 @@ export default function PublishedForm() {
     }));
 
     // Create a unique submission ID
-    const genId = `MIL-${String(Date.now()).slice(-4)}`;
+    const genId = `MMIP-${String(Date.now()).slice(-4)}`;
     setSubmissionId(genId);
 
     const newSubmission = {
@@ -139,7 +139,7 @@ export default function PublishedForm() {
           {!submitted ? (
             <form onSubmit={handleSubmit}>
               <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }}>
-                <span>📋</span> {formConfig.name}
+                {formConfig.name}
               </div>
 
               {formConfig.desc && (

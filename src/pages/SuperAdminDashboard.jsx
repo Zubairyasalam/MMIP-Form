@@ -1,0 +1,1732 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import AdminFormManagement from './AdminFormManagement';
+import './SuperAdminDashboard.css';
+
+const DEFAULT_PERMISSIONS = [
+  {
+    role: 'Superadmin',
+    color: '#7B1C1C',
+    manageUsers: 'Allowed',
+    manageForms: 'Allowed',
+    moderateSubmissions: 'Allowed',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Allowed'
+  },
+  {
+    role: 'Department Head',
+    manageUsers: 'Denied',
+    manageForms: 'Allowed (Dept Only)',
+    moderateSubmissions: 'Allowed',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
+  },
+  {
+    role: 'Faculty',
+    manageUsers: 'Denied',
+    manageForms: 'Allowed (Dept Only)',
+    moderateSubmissions: 'Allowed (Own Forms)',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
+  },
+  {
+    role: 'Student',
+    manageUsers: 'Denied',
+    manageForms: 'Denied',
+    moderateSubmissions: 'Denied',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
+  }
+];
+
+export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
+
+  const formatName = (str) => {
+    if (!str) return '—';
+    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  const formatLastActive = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).replace(',', ' •');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+  
+  // Navigation Tabs
+  const [activeMenu, setActiveMenu] = useState('overview'); // overview, users, roles, departments, forms, submissions, reports, announcements, notifications, logs, settings, profile
+  const [userDropdownOpen, setUserDropdownOpen] = useState(true); // Collapsible sub-menu for User Management
+
+  // Permissions Matrix State
+  const [permissions, setPermissions] = useState(() => {
+    const saved = localStorage.getItem('portalPermissions');
+    return saved ? JSON.parse(saved) : DEFAULT_PERMISSIONS;
+  });
+
+  const handlePermissionChange = (roleIndex, field, value) => {
+    const updated = [...permissions];
+    updated[roleIndex] = { ...updated[roleIndex], [field]: value };
+    setPermissions(updated);
+    localStorage.setItem('portalPermissions', JSON.stringify(updated));
+    logAction('System', `Updated ${field} permission for ${updated[roleIndex].role} to: ${value}`);
+  };
+  
+  // Data States (loaded from localStorage or initialized with defaults)
+  const [admins, setAdmins] = useState([]); // Dynamic list of admins/users
+  const [users, setUsers] = useState([]); // Dynamic list of all users
+  const [departments, setDepartments] = useState([]);
+  const [forms, setForms] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [settings, setSettings] = useState({
+    maintenanceMode: false,
+    emailNotifications: true,
+    requireApproval: false,
+    analyticsInterval: 'Daily',
+  });
+
+  // Profile State
+  const [profileData, setProfileData] = useState({
+    name: 'MCC Administrator',
+    email: 'superadmin@mcc.edu.in',
+    role: 'Superadmin',
+    avatar: '👤',
+    joined: '2025-01-10'
+  });
+  const [originalEmail, setOriginalEmail] = useState('');
+
+  // Modal States
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+
+  // Submission Modal States
+  const [editingSub, setEditingSub] = useState(null);
+  const [subEditData, setSubEditData] = useState({ name: '', email: '', status: '' });
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    role: 'Student',
+    dept: 'Computer Science',
+    status: 'Active'
+  });
+
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [deptFormData, setDeptFormData] = useState({
+    name: '',
+    hod: '',
+    formsCount: 0,
+    membersCount: 0
+  });
+
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementFormData, setAnnouncementFormData] = useState({
+    title: '',
+    content: '',
+    target: 'All'
+  });
+
+  // Submission Detail View
+  const [selectedSub, setSelectedSub] = useState(null);
+
+  // Stats
+  const [stats, setStats] = useState({
+    totalSubmissions: 0,
+    totalForms: 0,
+    activeAdminsCount: 0,
+    totalUsersCount: 0,
+    activeAnnouncements: 0
+  });
+
+  // Profile details loader from session
+  useEffect(() => {
+    const email = localStorage.getItem('userEmail') || 'superadmin@mcc.edu.in';
+    const role = localStorage.getItem('userRole') || 'superadmin';
+    const name = localStorage.getItem('userName') || 'MCC Administrator';
+    const joined = localStorage.getItem('userJoined') || '2025-01-10';
+    
+    setOriginalEmail(email);
+    setProfileData(prev => ({
+      ...prev,
+      email: email,
+      name: name,
+      joined: joined,
+      role: role === 'superadmin' ? 'Superadmin' : 'Admin'
+    }));
+  }, []);
+
+  // Initial Data Setup
+  useEffect(() => {
+    // 1. Load All Users (students, faculty, admins)
+    const savedUsers = localStorage.getItem('appUsers');
+    let userList = [];
+    if (savedUsers) {
+      userList = JSON.parse(savedUsers);
+      let needsSave = false;
+      userList = userList.map(u => {
+        if (u.name === 'Department Admin') {
+          needsSave = true;
+          return { ...u, name: 'Admin' };
+        }
+        return u;
+      });
+      if (needsSave) {
+        localStorage.setItem('appUsers', JSON.stringify(userList));
+      }
+    } else {
+      userList = [
+        { id: 1, name: 'Dr. Jane Cooper', email: 'cooper.jane@mcc.edu.in', role: 'admin', dept: 'Computer Science', status: 'Active' },
+        { id: 2, name: 'Prof. John Smith', email: 'smith.john@mcc.edu.in', role: 'admin', dept: 'Chemistry', status: 'Active' },
+        { id: 3, name: 'Dr. Sarah Connor', email: 'connor.sarah@mcc.edu.in', role: 'admin', dept: 'Biotechnology', status: 'Active' },
+        { id: 4, name: 'Arun Kumar', email: 'arun.k@mcc.edu.in', role: 'user', dept: 'Computer Science', status: 'Active' },
+        { id: 5, name: 'Priya Sharma', email: 'priya.s@mcc.edu.in', role: 'user', dept: 'Computer Science', status: 'Active' },
+        { id: 6, name: 'Devadas K.', email: 'devadas.k@mcc.edu.in', role: 'admin', dept: 'Physics', status: 'Active' },
+        { id: 7, name: 'Mercy George', email: 'mercy.g@mcc.edu.in', role: 'admin', dept: 'Biotechnology', status: 'Active' },
+        { id: 8, name: 'Sanjay Dutt', email: 'sanjay.d@mcc.edu.in', role: 'user', dept: 'Chemistry', status: 'Suspended' }
+      ];
+      localStorage.setItem('appUsers', JSON.stringify(userList));
+    }
+    setUsers(userList);
+
+    // Sync appAdmins for Auth.jsx fallback checks
+    const adminList = userList.filter(u => u.role === 'admin');
+    localStorage.setItem('appAdmins', JSON.stringify(adminList));
+    setAdmins(adminList);
+
+    // 2. Load Departments
+    const savedDepts = localStorage.getItem('appDepartments');
+    let deptList = [];
+    if (savedDepts) {
+      deptList = JSON.parse(savedDepts);
+    } else {
+      deptList = [
+        { id: 1, name: 'Computer Science', hod: 'Dr. Jane Cooper', formsCount: 4, membersCount: 154 },
+        { id: 2, name: 'Chemistry', hod: 'Prof. John Smith', formsCount: 2, membersCount: 98 },
+        { id: 3, name: 'Biotechnology', hod: 'Dr. Sarah Connor', formsCount: 3, membersCount: 82 },
+        { id: 4, name: 'Physics', hod: 'Dr. Devadas K.', formsCount: 2, membersCount: 110 }
+      ];
+      localStorage.setItem('appDepartments', JSON.stringify(deptList));
+    }
+    setDepartments(deptList);
+
+    // 3. Load Forms
+    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+    const mappedCustom = customForms.map(cf => ({
+      id: cf.id,
+      title: cf.name || cf.title || 'Untitled Form',
+      status: 'Active',
+      created: cf.created || new Date().toLocaleDateString(),
+      creator: cf.creator || 'Super Admin'
+    }));
+
+    const defaultForms = [
+      { id: '1', title: 'Innovation Grant Application', status: 'Active', created: '2026-06-12', creator: 'Dr. Jane Cooper' },
+      { id: '2', title: 'Student Course Feedback', status: 'Active', created: '2026-06-18', creator: 'Prof. John Smith' },
+      { id: '3', title: 'MCC Alumni Survey 2026', status: 'Draft', created: '2026-07-01', creator: 'Admin Team' },
+      { id: '4', title: 'Workshop Registration Form', status: 'Inactive', created: '2026-05-24', creator: 'Dept of Chemistry' },
+      { id: '5', title: 'Faculty Research Proposal', status: 'Active', created: '2026-06-29', creator: 'Dr. Sarah Connor' }
+    ];
+
+    const uniqueCustom = mappedCustom.filter(cf => !defaultForms.some(df => df.id === cf.id));
+    const combinedForms = [...defaultForms, ...uniqueCustom];
+    setForms(combinedForms);
+
+    // 4. Load Submissions
+    const localSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+    const defaultSubs = [
+      { id: 'MMIP-101', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
+      { id: 'MMIP-102', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
+      { id: 'MMIP-103', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
+      { id: 'MMIP-104', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
+      { id: 'MMIP-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
+    ];
+    const combinedSubmissions = [...localSubs, ...defaultSubs];
+    setSubmissions(combinedSubmissions);
+
+    // 5. Load Announcements
+    const savedAnnouncements = localStorage.getItem('appAnnouncements');
+    let announcementList = [];
+    if (savedAnnouncements) {
+      announcementList = JSON.parse(savedAnnouncements);
+    } else {
+      announcementList = [
+        { id: 1, title: 'Innovation Grants 2026 Extended', content: 'The final submission window for innovation research grants is extended until July 25th, 2026. Submit through the Portal.', target: 'All', date: '2026-07-08' },
+        { id: 2, title: 'Annual Course Assessment Feedbacks', content: 'Faculty members are requested to publish their respective course feedback forms for current semester students.', target: 'Faculty', date: '2026-07-05' }
+      ];
+      localStorage.setItem('appAnnouncements', JSON.stringify(announcementList));
+    }
+    setAnnouncements(announcementList);
+
+    // 6. Load Notifications
+    const savedNotifications = localStorage.getItem('appNotifications');
+    let notificationList = [];
+    if (savedNotifications) {
+      notificationList = JSON.parse(savedNotifications);
+    } else {
+      notificationList = [
+        { id: 1, text: 'New student registration: Arun Kumar', time: '10 mins ago', type: 'Registration' },
+        { id: 2, text: 'Submission flagged: MMIP-105 has incomplete fields', time: '1 hour ago', type: 'System' },
+        { id: 3, text: 'New custom template submitted for moderation: Alumni Survey', time: '1 day ago', type: 'Form' }
+      ];
+      localStorage.setItem('appNotifications', JSON.stringify(notificationList));
+    }
+    setNotifications(notificationList);
+
+    // 7. Load Audit Logs
+    const savedLogs = localStorage.getItem('systemLogs');
+    let logList = [];
+    if (savedLogs) {
+      logList = JSON.parse(savedLogs);
+    } else {
+      logList = [
+        { time: '2026-07-09 15:42:15', type: 'System', text: 'Super Admin session initiated.' },
+        { time: '2026-07-09 14:15:22', type: 'Form', text: 'Form Submission received for Innovation Grant Application.' },
+        { time: '2026-07-09 10:45:00', type: 'Admin', text: 'Admin account Dr. Jane Cooper verified.' },
+        { time: '2026-07-09 09:30:10', type: 'Setting', text: 'System settings synced with cloud storage.' }
+      ];
+      localStorage.setItem('systemLogs', JSON.stringify(logList));
+    }
+
+    const loginActivity = JSON.parse(localStorage.getItem('loginActivity') || '[]');
+    const loginLogs = loginActivity.map(act => ({
+      time: act.login_time,
+      type: 'Auth',
+      text: `${act.name} (${act.email}) signed in successfully.`
+    }));
+
+    const combinedLogs = [...logList, ...loginLogs].sort((a, b) => new Date(b.time) - new Date(a.time));
+    setLogs(combinedLogs);
+
+    // Compute Stats
+    setStats({
+      totalSubmissions: combinedSubmissions.length,
+      totalForms: combinedForms.length,
+      activeAdminsCount: userList.filter(u => (u.status === 'Active' || u.account_status === 'Active') && u.role === 'admin').length,
+      totalUsersCount: userList.length,
+      activeAnnouncements: announcementList.length
+    });
+
+    // Load Settings
+    const savedSettings = localStorage.getItem('globalSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  // Helper to log actions
+  const logAction = (type, text) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const newLog = { time: timestamp, type, text };
+    const updatedLogs = [newLog, ...logs];
+    setLogs(updatedLogs);
+    localStorage.setItem('systemLogs', JSON.stringify(updatedLogs));
+  };
+
+  // CRUD User Management
+  const openAddUserModal = () => {
+    setEditingUser(null);
+    setUserFormData({ name: '', email: '', role: 'Student', dept: 'Computer Science', status: 'Active' });
+    setShowUserModal(true);
+  };
+
+  const openEditUserModal = (user) => {
+    setEditingUser(user);
+    setUserFormData({ name: user.name, email: user.email, role: user.role, dept: user.dept, status: user.status });
+    setShowUserModal(true);
+  };
+
+  const handleUserFormSubmit = (e) => {
+    e.preventDefault();
+    let updatedUsers = [];
+    if (editingUser) {
+      updatedUsers = users.map(u => u.id === editingUser.id ? { ...u, ...userFormData } : u);
+      logAction('Admin', `Updated user profile for ${userFormData.name} (${userFormData.email}).`);
+    } else {
+      const newUser = { id: Date.now(), ...userFormData };
+      updatedUsers = [...users, newUser];
+      logAction('Admin', `Registered new user: ${userFormData.name} (${userFormData.role}) under ${userFormData.dept}.`);
+    }
+    setUsers(updatedUsers);
+    localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
+    
+    // Sync admins list
+    const adminList = updatedUsers.filter(u => u.role === 'admin');
+    localStorage.setItem('appAdmins', JSON.stringify(adminList));
+    setAdmins(adminList);
+
+    setStats(prev => ({
+      ...prev,
+      totalUsersCount: updatedUsers.length,
+      activeAdminsCount: adminList.filter(a => a.status === 'Active' || a.account_status === 'Active').length
+    }));
+    setShowUserModal(false);
+  };
+
+  const handleDeleteUser = (id, name) => {
+    if (window.confirm(`Are you sure you want to permanently delete user: ${name}?`)) {
+      const updatedUsers = users.filter(u => u.id !== id);
+      setUsers(updatedUsers);
+      localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
+
+      const adminList = updatedUsers.filter(u => u.role === 'admin');
+      localStorage.setItem('appAdmins', JSON.stringify(adminList));
+      setAdmins(adminList);
+
+      setStats(prev => ({
+        ...prev,
+        totalUsersCount: updatedUsers.length,
+        activeAdminsCount: adminList.filter(a => a.status === 'Active' || a.account_status === 'Active').length
+      }));
+      logAction('Admin', `Deleted user account: ${name}.`);
+    }
+  };
+
+  // CRUD Submission Management
+  const handleDeleteSubmission = (id, name) => {
+    if (window.confirm(`Are you sure you want to delete submission ${id} from ${name}?`)) {
+      const updated = submissions.filter(s => s.id !== id);
+      setSubmissions(updated);
+      localStorage.setItem('formSubmissions', JSON.stringify(updated));
+      logAction('Form', `Deleted form submission: ${id} by ${name}.`);
+    }
+  };
+
+  const openEditSubModal = (sub) => {
+    setEditingSub(sub);
+    setSubEditData({ name: sub.name, email: sub.email, status: sub.status });
+  };
+
+  const handleSubEditSubmit = (e) => {
+    e.preventDefault();
+    const updated = submissions.map(s => s.id === editingSub.id ? { ...s, ...subEditData } : s);
+    setSubmissions(updated);
+    localStorage.setItem('formSubmissions', JSON.stringify(updated));
+    logAction('Form', `Updated details & status for submission ${editingSub.id}.`);
+    setEditingSub(null);
+  };
+
+  // CRUD Department Management
+  const openAddDeptModal = () => {
+    setDeptFormData({ name: '', hod: '', formsCount: 0, membersCount: 0 });
+    setShowDeptModal(true);
+  };
+
+  const handleDeptFormSubmit = (e) => {
+    e.preventDefault();
+    const newDept = { id: Date.now(), ...deptFormData };
+    const updatedDepts = [...departments, newDept];
+    setDepartments(updatedDepts);
+    localStorage.setItem('appDepartments', JSON.stringify(updatedDepts));
+    logAction('System', `Added new department registry: ${deptFormData.name} (HOD: ${deptFormData.hod}).`);
+    setShowDeptModal(false);
+  };
+
+
+
+  // Announcements CRUD
+  const openAddAnnouncementModal = () => {
+    setAnnouncementFormData({ title: '', content: '', target: 'All' });
+    setShowAnnouncementModal(true);
+  };
+
+  const handleAnnouncementSubmit = (e) => {
+    e.preventDefault();
+    const newAnn = { id: Date.now(), ...announcementFormData, date: new Date().toLocaleDateString() };
+    const updatedAnn = [newAnn, ...announcements];
+    setAnnouncements(updatedAnn);
+    localStorage.setItem('appAnnouncements', JSON.stringify(updatedAnn));
+    logAction('System', `Published announcement: "${announcementFormData.title}".`);
+    setStats(prev => ({ ...prev, activeAnnouncements: updatedAnn.length }));
+    setShowAnnouncementModal(false);
+  };
+
+  const handleDeleteAnnouncement = (id, title) => {
+    if (window.confirm(`Delete announcement: "${title}"?`)) {
+      const updatedAnn = announcements.filter(a => a.id !== id);
+      setAnnouncements(updatedAnn);
+      localStorage.setItem('appAnnouncements', JSON.stringify(updatedAnn));
+      logAction('System', `Deleted announcement: "${title}".`);
+      setStats(prev => ({ ...prev, activeAnnouncements: updatedAnn.length }));
+    }
+  };
+
+  // System Settings updates
+  const handleSettingChange = (key, value) => {
+    const updatedSettings = { ...settings, [key]: value };
+    setSettings(updatedSettings);
+    localStorage.setItem('globalSettings', JSON.stringify(updatedSettings));
+    logAction('Setting', `Changed configuration '${key}' to: ${value.toString()}`);
+  };
+
+  const handleSaveProfile = () => {
+    if (!profileData.name.trim()) {
+      alert('Profile name cannot be empty!');
+      return;
+    }
+    if (!profileData.email.trim()) {
+      alert('Email address cannot be empty!');
+      return;
+    }
+    localStorage.setItem('userName', profileData.name);
+    localStorage.setItem('userEmail', profileData.email);
+    localStorage.setItem('userJoined', profileData.joined);
+    
+    // Propagate change to appUsers
+    const savedUsers = localStorage.getItem('appUsers');
+    if (savedUsers) {
+      const users = JSON.parse(savedUsers);
+      const updated = users.map(u => u.email === originalEmail ? { ...u, name: profileData.name, email: profileData.email, created_at: profileData.joined } : u);
+      localStorage.setItem('appUsers', JSON.stringify(updated));
+    }
+    
+    setOriginalEmail(profileData.email);
+    logAction('System', `Administrator profile updated. Name: ${profileData.name}, Email: ${profileData.email}, Joined: ${profileData.joined}`);
+    alert('Profile updated successfully!');
+  };
+
+  const getTemplatesRanking = () => {
+    const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+    const rankingMap = {};
+    formUsage.forEach(u => {
+      const name = u.template_name || 'Unnamed Template';
+      rankingMap[name] = (rankingMap[name] || 0) + 1;
+    });
+    return Object.entries(rankingMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  const getTemplatesUsageLogs = () => {
+    return JSON.parse(localStorage.getItem('formUsage') || '[]');
+  };
+
+  // Notifications management
+  const handleClearNotifications = () => {
+    setNotifications([]);
+    localStorage.setItem('appNotifications', JSON.stringify([]));
+    logAction('System', 'Notifications list cleared.');
+  };
+
+  return (
+    <div className="superadmin-layout">
+      {/* Sidebar Panel */}
+      <aside className="superadmin-sidebar">
+        <div className="superadmin-sidebar-header">
+          <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="superadmin-logo" />
+        </div>
+
+        <nav className="superadmin-nav-links">
+          {/* Dashboard Overview */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'overview' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('overview')}
+          >
+            Dashboard
+          </button>
+
+          {/* User Management Collapsible Dropdown */}
+          <div className="superadmin-menu-dropdown-wrapper">
+            <button
+              className="superadmin-nav-item dropdown-toggle"
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+            >
+              User Management <span className="dropdown-arrow">{userDropdownOpen ? '▼' : '▶'}</span>
+            </button>
+            {userDropdownOpen && (
+              <div className="superadmin-dropdown-submenu">
+                <button
+                  className={`submenu-item${activeMenu === 'users' ? ' active' : ''}`}
+                  onClick={() => setActiveMenu('users')}
+                >
+                  • All Users
+                </button>
+                <button
+                  className={`submenu-item${activeMenu === 'roles' ? ' active' : ''}`}
+                  onClick={() => setActiveMenu('roles')}
+                >
+                  • Roles & Permissions
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Department Management */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'departments' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('departments')}
+          >
+            Department Management
+          </button>
+
+          {/* Form Management */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'forms' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('forms')}
+          >
+            Form Management
+          </button>
+
+          {/* All Submissions */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'submissions' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('submissions')}
+          >
+            All Submissions
+          </button>
+
+          {/* Reports & Analytics */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'reports' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('reports')}
+          >
+            Reports & Analytics
+          </button>
+
+          {/* Announcements */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'announcements' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('announcements')}
+          >
+            Announcements
+          </button>
+
+          {/* Notifications */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'notifications' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('notifications')}
+          >
+            Notifications
+          </button>
+
+          {/* Audit Logs */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'logs' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('logs')}
+          >
+            Audit Logs
+          </button>
+
+          {/* System Settings */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'settings' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('settings')}
+          >
+            System Settings
+          </button>
+
+          {/* Profile */}
+          <button
+            className={`superadmin-nav-item${activeMenu === 'profile' ? ' active' : ''}`}
+            onClick={() => setActiveMenu('profile')}
+          >
+            Profile
+          </button>
+        </nav>
+
+        <div className="superadmin-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link to="/" className="superadmin-back-btn">
+            Exit to Landing Page
+          </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem('isLoggedIn');
+              localStorage.removeItem('userRole');
+              localStorage.removeItem('userEmail');
+              localStorage.removeItem('userName');
+              localStorage.removeItem('userId');
+              navigate('/auth');
+              window.location.reload();
+            }}
+            className="superadmin-back-btn"
+            style={{ background: '#fdf2f2', color: '#dc2626', border: '1.5px solid #fca5a5', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '700' }}
+          >
+            Sign Out Session
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Panel Content */}
+      <main className="superadmin-main">
+        {/* Top Header */}
+        <header className="superadmin-header">
+          <div className="superadmin-header-title-wrap">
+            <h2>Super Admin Dashboard</h2>
+            <p>Madras Christian College Innovation Park System Center</p>
+          </div>
+          <div className="superadmin-profile-badge">
+            <span className="profile-avatar">{profileData.avatar}</span>
+            <div>
+              <div className="profile-name">{profileData.name}</div>
+              <div className="profile-role">{profileData.role}</div>
+            </div>
+          </div>
+        </header>
+
+        {/* ── 1. DASHBOARD OVERVIEW ── */}
+        {activeMenu === 'overview' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            {/* KPI Stats */}
+            <div className="superadmin-stats-grid">
+              <div className="super-stat-card">
+                <div className="stat-icon-wrapper submissions">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">Total Submissions</span>
+                  <span className="stat-value">{stats.totalSubmissions}</span>
+                </div>
+              </div>
+              <div className="super-stat-card">
+                <div className="stat-icon-wrapper forms">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">Total Forms</span>
+                  <span className="stat-value">{stats.totalForms}</span>
+                </div>
+              </div>
+              <div className="super-stat-card">
+                <div className="stat-icon-wrapper admins">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">Registered Users</span>
+                  <span className="stat-value">{stats.totalUsersCount}</span>
+                </div>
+              </div>
+              <div className="super-stat-card">
+                <div className="stat-icon-wrapper state">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="heartbeat-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">Health & Tunnels</span>
+                  <span className="stat-value">Online (HMR)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Status Info & Latest Logs */}
+            <div className="super-overview-panels">
+              <div className="overview-panel quick-controls">
+                <h3>Quick Controls</h3>
+                <div className="controls-grid">
+                  <div className="control-item">
+                    <label>Maintenance Mode</label>
+                    <button
+                      className={`toggle-btn ${settings.maintenanceMode ? 'on' : 'off'}`}
+                      onClick={() => handleSettingChange('maintenanceMode', !settings.maintenanceMode)}
+                    >
+                      {settings.maintenanceMode ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                  <div className="control-item">
+                    <label>New Account Creation</label>
+                    <button className="control-action-btn" onClick={openAddUserModal}>
+                      + Add New User
+                    </button>
+                  </div>
+                  <div className="control-item">
+                    <label>Data Backup Simulation</label>
+                    <button
+                      className="control-action-btn secondary"
+                      onClick={() => {
+                        logAction('System', 'Database snapshot backup successfully triggered.');
+                        alert('System database backup simulated successfully!');
+                      }}
+                    >
+                      Backup Database
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overview-panel recent-logs">
+                <div className="panel-header">
+                  <h3>Recent Audit Trail</h3>
+                  <button className="text-btn" onClick={() => setActiveMenu('logs')}>View All Logs</button>
+                </div>
+                <div className="logs-feed-compact">
+                  {logs.slice(0, 5).map((log, index) => (
+                    <div key={index} className="log-row-compact">
+                      <span className="log-time">{log.time.split(' ')[1]}</span>
+                      <span className={`log-tag tag-${log.type.toLowerCase()}`}>{log.type}</span>
+                      <span className="log-text">{log.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. ALL USERS ── */}
+        {activeMenu === 'users' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Registered Portal Users Directory</h3>
+              <button className="super-btn-primary" onClick={openAddUserModal}>
+                + Register User
+              </button>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>Name / Role</th>
+                    <th>Email Address</th>
+                    <th>Department</th>
+                    <th>Created</th>
+                    <th>Last Active</th>
+                    <th>Session Status</th>
+                    <th>Forms Count</th>
+                    <th>Templates Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => {
+                    const isOnline = localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userEmail') === user.email;
+                    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+                    const userForms = customForms.filter(f => f.creator_id === user.id || f.creator === user.email || f.creator === user.name).length;
+                    const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+                    const userTemplates = formUsage.filter(u => u.user_id === user.id || u.user_email === user.email).length;
+                    
+                    return (
+                      <tr key={user.id}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ color: '#1e293b' }}>{formatName(user.name)}</strong>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>{user.role}</span>
+                          </div>
+                        </td>
+                        <td>{user.email}</td>
+                        <td>{user.dept || 'Administration'}</td>
+                        <td>{user.created_at || '2026-06-12'}</td>
+                        <td>{formatLastActive(user.last_login_at)}</td>
+                        <td>
+                          <span className={`status-badge-modern ${isOnline ? 'online' : 'offline'}`}>
+                            <span className="status-dot"></span>
+                            {isOnline ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+                        <td className="font-semibold" style={{ textAlign: 'center' }}>{userForms}</td>
+                        <td className="font-semibold" style={{ textAlign: 'center' }}>{userTemplates}</td>
+                        <td>
+                          <div className="table-actions">
+                            <button className="action-btn edit" onClick={() => openEditUserModal(user)}>
+                              Edit
+                            </button>
+                            <button className="action-btn delete" onClick={() => handleDeleteUser(user.id, user.name)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 3. ROLES & PERMISSIONS ── */}
+        {activeMenu === 'roles' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Portal Roles & Permissions Matrix</h3>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>User Role</th>
+                    <th>Manage Users</th>
+                    <th>Manage Forms</th>
+                    <th>Moderate Submissions</th>
+                    <th>Submit Submissions</th>
+                    <th>System Settings Access</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {permissions.map((p, pIdx) => (
+                    <tr key={pIdx}>
+                      <td className="font-semibold" style={p.color ? { color: p.color } : {}}>{p.role}</td>
+                      <td>
+                        <select
+                          value={p.manageUsers}
+                          onChange={(e) => handlePermissionChange(pIdx, 'manageUsers', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.manageForms}
+                          onChange={(e) => handlePermissionChange(pIdx, 'manageForms', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Allowed (Dept Only)">✅ Allowed (Dept Only)</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.moderateSubmissions}
+                          onChange={(e) => handlePermissionChange(pIdx, 'moderateSubmissions', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Allowed (Own Forms)">✅ Allowed (Own Forms)</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.submitSubmissions}
+                          onChange={(e) => handlePermissionChange(pIdx, 'submitSubmissions', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.settingsAccess}
+                          onChange={(e) => handlePermissionChange(pIdx, 'settingsAccess', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 4. DEPARTMENT MANAGEMENT ── */}
+        {activeMenu === 'departments' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Madras Christian College Departments</h3>
+              <button className="super-btn-primary" onClick={openAddDeptModal}>
+                + Add Department
+              </button>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>Department Name</th>
+                    <th>Department Head (HOD)</th>
+                    <th>Forms Registered</th>
+                    <th>Members Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departments.map(dept => (
+                    <tr key={dept.id}>
+                      <td className="font-semibold">{dept.name}</td>
+                      <td>{dept.hod}</td>
+                      <td>{dept.formsCount} Forms</td>
+                      <td>{dept.membersCount} Members</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. FORM MANAGEMENT ── */}
+        {activeMenu === 'forms' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Institutional Form Templates Manager</h3>
+            </div>
+            <AdminFormManagement onLogAction={logAction} />
+          </div>
+        )}
+
+        {/* ── 6. ALL SUBMISSIONS ── */}
+        {activeMenu === 'submissions' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Global Submissions Feed</h3>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Form Title</th>
+                    <th>Submitter</th>
+                    <th>Submitted Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map(sub => (
+                    <tr key={sub.id}>
+                      <td className="font-semibold">{sub.id}</td>
+                      <td>{sub.form}</td>
+                      <td>{sub.name}</td>
+                      <td>{sub.date || '2026-07-09'}</td>
+                      <td>
+                        <span className={`status-badge ${sub.status.replace(' ', '-').toLowerCase()}`}>
+                          {sub.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            className="action-btn view"
+                            onClick={() => setSelectedSub(sub)}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            className="action-btn edit"
+                            onClick={() => openEditSubModal(sub)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="action-btn delete"
+                            onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {selectedSub && (
+              <div className="super-modal-overlay">
+                <div className="super-modal" style={{ maxWidth: '600px' }}>
+                  <div className="modal-header">
+                    <h4>Submission Details - {selectedSub.id}</h4>
+                    <button className="modal-close" onClick={() => setSelectedSub(null)}>×</button>
+                  </div>
+                  <div className="modal-body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div>
+                        <strong>Submitter Name:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.name}</p>
+                      </div>
+                      <div>
+                        <strong>Email Address:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.email}</p>
+                      </div>
+                      <div>
+                        <strong>Form Name:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.form}</p>
+                      </div>
+                      <div>
+                        <strong>Date Submitted:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.date || '2026-07-09'}</p>
+                      </div>
+                    </div>
+                    <hr style={{ borderColor: '#e2e8f0', margin: '16px 0' }} />
+                    <h5>Field Answers</h5>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                      {(selectedSub.answers || []).map((ans, idx) => (
+                        <div key={idx}>
+                          <strong style={{ color: '#475569', fontSize: '13px' }}>{ans.q}</strong>
+                          <p style={{ margin: '4px 0 0 0', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>{ans.a || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="super-btn-secondary" onClick={() => setSelectedSub(null)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editingSub && (
+              <div className="super-modal-overlay">
+                <form onSubmit={handleSubEditSubmit} className="super-modal" style={{ maxWidth: '500px' }}>
+                  <div className="modal-header">
+                    <h4>Edit Submission - {editingSub.id}</h4>
+                    <button type="button" className="modal-close" onClick={() => setEditingSub(null)}>×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Submitter Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={subEditData.name}
+                          onChange={e => setSubEditData(prev => ({ ...prev, name: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          value={subEditData.email}
+                          onChange={e => setSubEditData(prev => ({ ...prev, email: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Status</label>
+                        <select
+                          value={subEditData.status}
+                          onChange={e => setSubEditData(prev => ({ ...prev, status: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                        >
+                          <option value="Pending Review">Pending Review</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="super-btn-secondary" onClick={() => setEditingSub(null)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="super-btn-primary">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── 7. REPORTS & ANALYTICS ── */}
+        {activeMenu === 'reports' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Portal Reports & Analytics</h3>
+              <button
+                className="super-btn-primary"
+                onClick={() => alert('Simulating PDF/CSV Export of system analytics...')}
+              >
+                📥 Export Analytics Report
+              </button>
+            </div>
+
+            <div className="super-overview-panels" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="overview-panel">
+                <h3>Submissions by Department</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Computer Science</span>
+                      <span>154 (53%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '53%', height: '100%', background: '#7B1C1C' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Chemistry</span>
+                      <span>98 (34%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '34%', height: '100%', background: '#475569' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Biotechnology</span>
+                      <span>82 (28%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '28%', height: '100%', background: '#166534' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overview-panel">
+                <h3>Monthly Response Rate</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>July 2026 (Active)</span>
+                      <span>282 Submissions</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '90%', height: '100%', background: '#b45309' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>June 2026</span>
+                      <span>194 Submissions</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '70%', height: '100%', background: '#0f172a' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="super-overview-panels" style={{ gridTemplateColumns: '1fr', marginTop: '24px' }}>
+              <div className="overview-panel">
+                <h3>Form Templates Usage Analytics</h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '16px' }}>
+                  {/* Left Column: Usage Frequency List */}
+                  <div>
+                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>Popular Templates Ranking</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {getTemplatesRanking().map((item, idx) => (
+                        <div key={idx} style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <strong style={{ fontSize: '13px', color: '#1e293b' }}>{item.name}</strong>
+                          </div>
+                          <span style={{ background: '#7B1C1C', color: 'white', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', fontSize: '11px' }}>
+                            {item.count} uses
+                          </span>
+                        </div>
+                      ))}
+                      {getTemplatesRanking().length === 0 && (
+                        <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px' }}>No template activity logged yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Detailed Usage Log Map */}
+                  <div>
+                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>User Template Selections Audit Map</h4>
+                    <div className="super-table-container" style={{ margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
+                      <table className="super-data-table" style={{ fontSize: '12px' }}>
+                        <thead>
+                          <tr>
+                            <th>User Email</th>
+                            <th>Template Used</th>
+                            <th>Used Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getTemplatesUsageLogs().map((log, idx) => (
+                            <tr key={idx}>
+                              <td><strong>{log.user_email}</strong></td>
+                              <td>{log.template_name}</td>
+                              <td>{log.used_at}</td>
+                            </tr>
+                          ))}
+                          {getTemplatesUsageLogs().length === 0 && (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: 'center', padding: '16px 0', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No selections logged.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ── 8. ANNOUNCEMENTS ── */}
+        {activeMenu === 'announcements' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Announcements Feed</h3>
+              <button className="super-btn-primary" onClick={openAddAnnouncementModal}>
+                + Publish Announcement
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {announcements.map(ann => (
+                <div key={ann.id} className="overview-panel" style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                    className="ann-del-btn"
+                    title="Delete Announcement"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+                    <span className="log-tag tag-system" style={{ background: '#fdf2f2', color: '#7B1C1C' }}>
+                      Target: {ann.target}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                      Published on {ann.date}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+                    {ann.title}
+                  </h4>
+                  <p style={{ margin: 0, color: '#475569', fontSize: '14px', lineHeight: '1.6' }}>
+                    {ann.content}
+                  </p>
+                </div>
+              ))}
+              {announcements.length === 0 && (
+                <div className="text-center" style={{ padding: '64px', color: '#94a3b8' }}>
+                  No active announcements published.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 9. NOTIFICATIONS ── */}
+        {activeMenu === 'notifications' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Alerts & Notifications</h3>
+              <button className="super-btn-secondary" onClick={handleClearNotifications}>
+                Clear All Notifications
+              </button>
+            </div>
+
+            <div className="overview-panel" style={{ padding: '0 28px' }}>
+              {notifications.map(n => (
+                <div
+                  key={n.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '20px 0',
+                    borderBottom: '1px solid #e2e8f0'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '20px' }}>🔔</span>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '14px' }}>{n.text}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                        Type: {n.type} • {n.time}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {notifications.length === 0 && (
+                <div className="text-center" style={{ padding: '64px', color: '#94a3b8' }}>
+                  No active notifications/alerts.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 10. AUDIT LOGS ── */}
+        {activeMenu === 'logs' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Event Log Feed</h3>
+              <button
+                className="super-btn-danger"
+                onClick={() => {
+                  if (window.confirm('Clear all audit logs?')) {
+                    setLogs([]);
+                    localStorage.setItem('systemLogs', JSON.stringify([]));
+                  }
+                }}
+              >
+                Clear System Logs
+              </button>
+            </div>
+
+            <div className="logs-panel-full">
+              <div className="logs-table-header">
+                <span>Timestamp</span>
+                <span>Category</span>
+                <span>Details / Event Log Description</span>
+              </div>
+              <div className="logs-list-scrollable">
+                {logs.map((log, index) => (
+                  <div key={index} className="log-row-full">
+                    <span className="log-full-time">{log.time}</span>
+                    <span className={`log-tag tag-${log.type.toLowerCase()}`}>{log.type}</span>
+                    <span className="log-full-desc">{log.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 11. SYSTEM SETTINGS ── */}
+        {activeMenu === 'settings' && (
+          <div className="superadmin-tab-content anim-fade-in">
+            <div className="super-settings-card">
+              <h3>Global Portal Settings</h3>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Maintenance Mode</div>
+                  <div className="setting-desc">Direct all student / faculty users to a temporary maintenance page.</div>
+                </div>
+                <div className="setting-input-block">
+                  <input
+                    type="checkbox"
+                    checked={settings.maintenanceMode}
+                    onChange={(e) => handleSettingChange('maintenanceMode', e.target.checked)}
+                    className="checkbox-toggle"
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Admin Email Notifications</div>
+                  <div className="setting-desc">Send automated email summaries of submissions to department heads.</div>
+                </div>
+                <div className="setting-input-block">
+                  <input
+                    type="checkbox"
+                    checked={settings.emailNotifications}
+                    onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                    className="checkbox-toggle"
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Form Creation Moderation</div>
+                  <div className="setting-desc">Require explicit Super Admin approval before newly built templates are set Active.</div>
+                </div>
+                <div className="setting-input-block">
+                  <input
+                    type="checkbox"
+                    checked={settings.requireApproval}
+                    onChange={(e) => handleSettingChange('requireApproval', e.target.checked)}
+                    className="checkbox-toggle"
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Analytics Interval</div>
+                  <div className="setting-desc">Refresh rate for background statistical updates on the dashboard.</div>
+                </div>
+                <div className="setting-input-block">
+                  <select
+                    value={settings.analyticsInterval}
+                    onChange={(e) => handleSettingChange('analyticsInterval', e.target.value)}
+                    className="super-select"
+                  >
+                    <option value="Realtime">Realtime (5s)</option>
+                    <option value="Hourly">Hourly</option>
+                    <option value="Daily">Daily (24h)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 12. PROFILE ── */}
+        {activeMenu === 'profile' && (
+          <div className="superadmin-tab-content anim-fade-in" style={{ maxWidth: '600px' }}>
+            <div className="super-settings-card">
+              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                <span style={{ fontSize: '64px', display: 'block', marginBottom: '12px' }}>
+                  {profileData.avatar}
+                </span>
+                <h3 style={{ margin: '0 0 6px 0' }}>{profileData.name}</h3>
+                <span className="status-badge active">{profileData.role}</span>
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Administrator Profile Name</h5>
+                <input
+                  type="text"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Email Address</h5>
+                <input
+                  type="email"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Joined System</h5>
+                <input
+                  type="text"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.joined}
+                  onChange={(e) => setProfileData({ ...profileData, joined: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button 
+                  className="super-btn-primary" 
+                  onClick={handleSaveProfile}
+                  style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px' }}
+                >
+                  Update Profile
+                </button>
+                <button 
+                  className="action-btn view" 
+                  onClick={() => {
+                    const originalName = localStorage.getItem('userName') || 'MCC Administrator';
+                    const origEmail = localStorage.getItem('userEmail') || 'superadmin@mcc.edu.in';
+                    const origJoined = localStorage.getItem('userJoined') || '2025-01-10';
+                    setProfileData(prev => ({ ...prev, name: originalName, email: origEmail, joined: origJoined }));
+                  }}
+                  style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px', border: '1px solid #cbd5e1', height: 'auto', background: '#f8fafc' }}
+                >
+                  Reset Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Admin/User Add/Edit Modal */}
+      {showUserModal && (
+        <div className="super-modal-overlay">
+          <div className="super-modal">
+            <div className="modal-header">
+              <h4>{editingUser ? 'Edit User Details' : 'Register Portal User'}</h4>
+              <button className="modal-close" onClick={() => setShowUserModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleUserFormSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={userFormData.name}
+                    onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                    placeholder="e.g. Dr. Robert"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={userFormData.email}
+                    onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                    placeholder="e.g. robert@mcc.edu.in"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Role</label>
+                  <select
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                  >
+                    <option value="user">Normal User</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Department / Institution role</label>
+                  <select
+                    value={userFormData.dept}
+                    onChange={(e) => setUserFormData({ ...userFormData, dept: e.target.value })}
+                  >
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biotechnology">Biotechnology</option>
+                    <option value="Physics">Physics</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Account Status</label>
+                  <select
+                    value={userFormData.status}
+                    onChange={(e) => setUserFormData({ ...userFormData, status: e.target.value })}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="super-btn-secondary" onClick={() => setShowUserModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="super-btn-primary">
+                  {editingUser ? 'Save Changes' : 'Register User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Department Add Modal */}
+      {showDeptModal && (
+        <div className="super-modal-overlay">
+          <div className="super-modal">
+            <div className="modal-header">
+              <h4>Add Department Registry</h4>
+              <button className="modal-close" onClick={() => setShowDeptModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleDeptFormSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Department Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={deptFormData.name}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
+                    placeholder="e.g. Mathematics"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Department Head (HOD) Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={deptFormData.hod}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, hod: e.target.value })}
+                    placeholder="e.g. Dr. Robert"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Initial Members Count</label>
+                  <input
+                    type="number"
+                    required
+                    value={deptFormData.membersCount}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, membersCount: parseInt(e.target.value) })}
+                    placeholder="100"
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="super-btn-secondary" onClick={() => setShowDeptModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="super-btn-primary">
+                  Add Department
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Announcement Add Modal */}
+      {showAnnouncementModal && (
+        <div className="super-modal-overlay">
+          <div className="super-modal">
+            <div className="modal-header">
+              <h4>Publish New Announcement</h4>
+              <button className="modal-close" onClick={() => setShowAnnouncementModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleAnnouncementSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Announcement Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={announcementFormData.title}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, title: e.target.value })}
+                    placeholder="e.g. System Maintenance Window"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Announcement Content</label>
+                  <textarea
+                    required
+                    style={{ padding: '10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', height: '100px', fontFamily: 'inherit', outline: 'none' }}
+                    value={announcementFormData.content}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, content: e.target.value })}
+                    placeholder="Enter the detailed announcement announcement content..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Target Audience</label>
+                  <select
+                    value={announcementFormData.target}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, target: e.target.value })}
+                  >
+                    <option value="All">All Users (Students & Faculty)</option>
+                    <option value="Faculty">Faculty & Admins Only</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="super-btn-secondary" onClick={() => setShowAnnouncementModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="super-btn-primary">
+                  Publish Announcement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

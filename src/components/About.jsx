@@ -43,21 +43,18 @@ export default function About() {
 
             <div className="about-pillars">
               <div className="about-pillar">
-                <div className="about-pillar-icon">🚀</div>
                 <div>
                   <div className="about-pillar-title">Innovation First</div>
                   <div className="about-pillar-desc">Supporting cutting-edge research and startup ideas from conception to launch.</div>
                 </div>
               </div>
               <div className="about-pillar">
-                <div className="about-pillar-icon">🤝</div>
                 <div>
                   <div className="about-pillar-title">Community Driven</div>
                   <div className="about-pillar-desc">Building a collaborative ecosystem for students, faculty, and industry partners.</div>
                 </div>
               </div>
               <div className="about-pillar">
-                <div className="about-pillar-icon">📚</div>
                 <div>
                   <div className="about-pillar-title">Research Excellence</div>
                   <div className="about-pillar-desc">Fostering academic research with industry-standard tools and infrastructure.</div>

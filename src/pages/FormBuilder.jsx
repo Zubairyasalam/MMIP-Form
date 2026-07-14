@@ -4,25 +4,25 @@ import { TEMPLATES } from '../data/templates';
 import './FormBuilder.css';
 
 const TYPES = [
-  { value: 'short',     label: '📝 Short answer' },
+  { value: 'short', label: '📝 Short answer' },
   { value: 'paragraph', label: '📄 Paragraph' },
-  { value: 'multiple',  label: '🔘 Multiple choice' },
-  { value: 'checkbox',  label: '☑ Checkboxes' },
-  { value: 'dropdown',  label: '🔽 Dropdown' },
-  { value: 'date',      label: '📅 Date' },
-  { value: 'time',      label: '🕐 Time' },
-  { value: 'scale',     label: '📊 Linear scale' },
-  { value: 'file',      label: '📁 File upload (PDF/Proposals)' },
-  { value: 'roll',      label: '🆔 MCC Roll No / Staff Code' },
+  { value: 'multiple', label: '🔘 Multiple choice' },
+  { value: 'checkbox', label: '☑ Checkboxes' },
+  { value: 'dropdown', label: '🔽 Dropdown' },
+  { value: 'date', label: '📅 Date' },
+  { value: 'time', label: '🕐 Time' },
+  { value: 'scale', label: '📊 Linear scale' },
+  { value: 'file', label: '📁 File upload (PDF/Proposals)' },
+  { value: 'roll', label: '🆔 MCC Roll No / Staff Code' },
   { value: 'signature', label: '✍️ Digital Signature Pad' },
-  { value: 'budget',    label: '💰 Budget Breakdown Table' },
-  { value: 'team',      label: '👥 Team Members' },
-  { value: 'color',     label: '🎨 Color Picker' },
-  { value: 'deadline',  label: '⏰ Deadline Reminder' },
+  { value: 'budget', label: '💰 Budget Breakdown Table' },
+  { value: 'team', label: '👥 Team Members' },
+  { value: 'color', label: '🎨 Color Picker' },
+  { value: 'deadline', label: '⏰ Deadline Reminder' },
   { value: 'ai_assist', label: '🤖 AI Assistant' },
-  { value: 'voice',     label: '🎙️ Voice Input' },
-  { value: 'video',     label: '🎥 Video Upload' },
-  { value: 'location',  label: '📍 Location Picker' },
+  { value: 'voice', label: '🎙️ Voice Input' },
+  { value: 'video', label: '🎥 Video Upload' },
+  { value: 'location', label: '📍 Location Picker' },
 ];
 
 let nextId = 100;
@@ -33,11 +33,11 @@ function makeQ(q) {
 
 function RichTextToolbar({ onFormat }) {
   const tools = [
-    { cmd: 'bold',          icon: <strong style={{ fontSize: '13px', fontFamily: 'Georgia, serif' }}>B</strong>,      title: 'Bold' },
-    { cmd: 'italic',        icon: <em style={{ fontSize: '13px', fontFamily: 'Georgia, serif' }}>I</em>,              title: 'Italic' },
-    { cmd: 'underline',     icon: <span style={{ textDecoration: 'underline', fontSize: '13px' }}>U</span>,          title: 'Underline' },
-    { cmd: 'link',          icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>, title: 'Link' },
-    { cmd: 'strikethrough', icon: <span style={{ textDecoration: 'line-through', fontSize: '13px' }}>S</span>,        title: 'Strikethrough' },
+    { cmd: 'bold', icon: <strong style={{ fontSize: '13px', fontFamily: 'Georgia, serif' }}>B</strong>, title: 'Bold' },
+    { cmd: 'italic', icon: <em style={{ fontSize: '13px', fontFamily: 'Georgia, serif' }}>I</em>, title: 'Italic' },
+    { cmd: 'underline', icon: <span style={{ textDecoration: 'underline', fontSize: '13px' }}>U</span>, title: 'Underline' },
+    { cmd: 'link', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>, title: 'Link' },
+    { cmd: 'strikethrough', icon: <span style={{ textDecoration: 'line-through', fontSize: '13px' }}>S</span>, title: 'Strikethrough' },
   ];
 
   return (
@@ -84,11 +84,11 @@ function SignaturePad({ accent }) {
     ctx.strokeStyle = accent || '#7B1C1C';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
-    
+
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-    
+
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -99,14 +99,14 @@ function SignaturePad({ accent }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    
+
     const clientX = e.clientX || (e.touches && e.touches[0].clientX);
     const clientY = e.clientY || (e.touches && e.touches[0].clientY);
     if (!clientX || !clientY) return;
 
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    
+
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -137,9 +137,9 @@ function SignaturePad({ accent }) {
         onTouchMove={draw}
         onTouchEnd={stopDrawing}
       />
-      <button 
+      <button
         type="button"
-        onClick={clearCanvas} 
+        onClick={clearCanvas}
         style={{ position: 'absolute', right: '12px', top: '10px', background: 'rgba(0,0,0,0.06)', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', color: '#555' }}
       >
         Clear
@@ -156,7 +156,7 @@ function AnswerArea({
 }) {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [selectedIndices, setSelectedIndices] = useState([]);
-  
+
   const addOption = () => onChange({ ...q, options: [...q.options, `Option ${q.options.length + 1}`] });
   const updateOption = (i, val) => { const opts = [...q.options]; opts[i] = val; onChange({ ...q, options: opts }); };
   const deleteOption = (i) => onChange({ ...q, options: q.options.filter((_, idx) => idx !== i) });
@@ -315,7 +315,7 @@ function AnswerArea({
   if (q.type === 'scale') return (
     <div className="fb-answer-area">
       <div className="fb-scale-row">
-        {[1,2,3,4,5].map(n => (
+        {[1, 2, 3, 4, 5].map(n => (
           <div className="fb-scale-item" key={n}>
             <div className="fb-scale-radio" style={{ borderColor: accent }} />
             <span>{n}</span>
@@ -328,10 +328,10 @@ function AnswerArea({
     const fileName = uploadedFiles?.[q.id];
     return (
       <div className="fb-answer-area">
-        <input 
-          type="file" 
-          id={`file-input-${q.id}`} 
-          style={{ display: 'none' }} 
+        <input
+          type="file"
+          id={`file-input-${q.id}`}
+          style={{ display: 'none' }}
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
               setUploadedFiles(prev => ({ ...prev, [q.id]: e.target.files[0].name }));
@@ -343,7 +343,7 @@ function AnswerArea({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#1e7e34', fontSize: '13.5px', fontWeight: '600' }}>
               <span>📄</span> {fileName}
             </div>
-            <button 
+            <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -359,8 +359,8 @@ function AnswerArea({
             </button>
           </div>
         ) : (
-          <div 
-            className="fb-file-upload-preview" 
+          <div
+            className="fb-file-upload-preview"
             onClick={() => document.getElementById(`file-input-${q.id}`).click()}
             style={{ padding: '16px', border: '1.5px dashed rgba(123, 28, 28, 0.25)', borderRadius: '8px', background: 'rgba(123, 28, 28, 0.02)', textAlign: 'center', color: '#666', fontSize: '13.5px', cursor: 'pointer' }}
           >
@@ -386,14 +386,14 @@ function AnswerArea({
             onChange={(e) => setRollInputs(prev => ({ ...prev, [q.id]: e.target.value }))}
           />
           {val && (
-            <div style={{ 
-              alignSelf: 'center', 
-              background: isValid ? '#e8f8ec' : '#ffebeb', 
-              color: isValid ? '#27c93f' : '#ff3b30', 
-              padding: '8px 12px', 
-              borderRadius: '6px', 
-              fontSize: '11px', 
-              fontWeight: '700' 
+            <div style={{
+              alignSelf: 'center',
+              background: isValid ? '#e8f8ec' : '#ffebeb',
+              color: isValid ? '#27c93f' : '#ff3b30',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: '700'
             }}>
               {isValid ? '✓ Verified ID' : '✗ Invalid Format'}
             </div>
@@ -670,12 +670,12 @@ function DeadlineReminderEditor({ q, accent, deadlines, setDeadlines }) {
         />
         <div style={{ border: '1px solid #e0e0e0', borderRadius: '10px', background: '#fafafa', padding: '12px 14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => updateDeadline('reminderEnabled', !val.reminderEnabled)}>
-            <div style={{ 
-              width: '18px', 
-              height: '18px', 
-              borderRadius: '4px', 
-              border: '1.5px solid', 
-              borderColor: val.reminderEnabled ? accent : '#a0a0a0', 
+            <div style={{
+              width: '18px',
+              height: '18px',
+              borderRadius: '4px',
+              border: '1.5px solid',
+              borderColor: val.reminderEnabled ? accent : '#a0a0a0',
               background: val.reminderEnabled ? accent : 'transparent',
               display: 'flex',
               alignItems: 'center',
@@ -743,9 +743,9 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
       'u': 'you',
       'r': 'are'
     };
-    
+
     words.forEach(w => {
-      const clean = w.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g,"");
+      const clean = w.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g, "");
       if (TYPOS[clean]) {
         found.push({ original: clean, correction: TYPOS[clean] });
       }
@@ -757,12 +757,12 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
 
   const fixTypos = () => {
     let fixedText = textVal;
-    
+
     detectedTypos.forEach(item => {
       const regex = new RegExp(`\\b${item.original}\\b`, 'gi');
       fixedText = fixedText.replace(regex, item.correction);
     });
-    
+
     setAiTexts(prev => ({
       ...prev,
       [q.id]: fixedText
@@ -774,10 +774,10 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
     setSuggestTip(false);
     setTimeout(() => {
       setGenerating(false);
-      
+
       const lower = textVal.toLowerCase();
       let response = "MCC Student Research Portal: A unified, secure digital platform designed to automate student project submissions, department reviews, and visual presentation approvals. The software supports automated PDF report parsing, integrated budget ledger tools, and direct feedback channels between incubation leads and student project leads.";
-      
+
       if (lower.includes('attendance') || lower.includes('fingerprint') || lower.includes('facial')) {
         response = "IoT-Based Student Attendance Guard: A hardware-software solution incorporating low-power biometric fingerprint sensors and high-accuracy facial recognition pipelines. The platform logs real-time student check-ins, updates attendance ledgers automatically, and integrates seamlessly with Madras Christian College's academic portal.";
       } else if (lower.includes('water') || lower.includes('recycling') || lower.includes('hostel')) {
@@ -785,7 +785,7 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
       } else if (lower.includes('solar') || lower.includes('energy') || lower.includes('battery')) {
         response = "Smart Lab Microgrid & Solar Ledger: An automated energy distribution and tracking framework designed for campus lab facilities. Utilizing IoT current sensors and a React-based energy ledger, the project dynamically manages battery discharge cycles and solar energy redirection, providing real-time carbon offsets visualization.";
       }
-      
+
       setAiTexts(prev => ({
         ...prev,
         [q.id]: response
@@ -798,14 +798,14 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
       setIsRecording(false);
     } else {
       setIsRecording(true);
-      
+
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
-        
+
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           setAiTexts(prev => ({
@@ -814,15 +814,15 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
           }));
           setSuggestTip(true);
         };
-        
+
         recognition.onerror = () => {
           simulateSpeechInput();
         };
-        
+
         recognition.onend = () => {
           setIsRecording(false);
         };
-        
+
         recognition.start();
       } else {
         simulateSpeechInput();
@@ -868,7 +868,7 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
             </span>
           )}
         </div>
-        
+
         <textarea
           value={textVal}
           onChange={e => setAiTexts(prev => ({ ...prev, [q.id]: e.target.value }))}
@@ -968,14 +968,14 @@ function VoiceInputEditor({ q, accent, voiceInputs, setVoiceInputs }) {
     } else {
       setRecState(true);
       setVoiceInputs(prev => ({ ...prev, [q.id]: { ...val, isRecording: true } }));
-      
+
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
-        
+
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           setVoiceInputs(prev => ({
@@ -983,15 +983,15 @@ function VoiceInputEditor({ q, accent, voiceInputs, setVoiceInputs }) {
             [q.id]: { text: val.text ? val.text + " " + transcript : transcript, isRecording: false }
           }));
         };
-        
+
         recognition.onerror = () => {
           simulateVoiceTyping();
         };
-        
+
         recognition.onend = () => {
           setRecState(false);
         };
-        
+
         recognition.start();
       } else {
         simulateVoiceTyping();
@@ -1241,7 +1241,7 @@ function QuestionCard({
             onChange({
               ...q,
               type: newType,
-              options: ['multiple','checkbox','dropdown'].includes(newType) && q.options.length === 0
+              options: ['multiple', 'checkbox', 'dropdown'].includes(newType) && q.options.length === 0
                 ? ['Option 1', 'Option 2'] : q.options,
             });
           }}
@@ -1257,14 +1257,14 @@ function QuestionCard({
         </div>
       )}
 
-      <AnswerArea 
-        q={q} 
-        accent={accent} 
-        onChange={onChange} 
-        uploadedFiles={uploadedFiles} 
-        setUploadedFiles={setUploadedFiles} 
-        rollInputs={rollInputs} 
-        setRollInputs={setRollInputs} 
+      <AnswerArea
+        q={q}
+        accent={accent}
+        onChange={onChange}
+        uploadedFiles={uploadedFiles}
+        setUploadedFiles={setUploadedFiles}
+        rollInputs={rollInputs}
+        setRollInputs={setRollInputs}
         budgets={budgets}
         setBudgets={setBudgets}
         teams={teams}
@@ -1465,11 +1465,7 @@ export default function FormBuilder() {
   const [tunnelUrl, setTunnelUrl] = useState('');
 
   const getOrigin = () => {
-    if (tunnelUrl) return tunnelUrl;
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return `http://192.168.1.30:${window.location.port || '5173'}`;
-    }
-    return window.location.origin;
+    return tunnelUrl || window.location.origin;
   };
 
   useEffect(() => {
@@ -1485,7 +1481,7 @@ export default function FormBuilder() {
           setTunnelUrl(data.url);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [navigate]);
 
   const state = location.state || {};
@@ -1498,16 +1494,18 @@ export default function FormBuilder() {
   const initQuestions = (state.questions && state.questions.length > 0)
     ? state.questions.map(makeQ)
     : [
-        { id: nextId++, type: 'short',    question: 'Your full name', options: [], required: false },
-        { id: nextId++, type: 'multiple', question: 'Select your department',
-          options: ['Computer Science', 'Electronics', 'Mechanical', 'Civil'], required: false },
-      ];
+      { id: nextId++, type: 'short', question: 'Your full name', options: [], required: false },
+      {
+        id: nextId++, type: 'multiple', question: 'Select your department',
+        options: ['Computer Science', 'Electronics', 'Mechanical', 'Civil'], required: false
+      },
+    ];
 
-  const [formTitle, setFormTitle]   = useState(state.templateName || 'Untitled form');
-  const [formDesc, setFormDesc]     = useState('Form description');
-  const [questions, setQuestions]   = useState(initQuestions);
-  const [focusedId, setFocusedId]   = useState(initQuestions[0]?.id);
-  const [activeTab, setActiveTab]   = useState('Questions');
+  const [formTitle, setFormTitle] = useState(state.templateName || 'Untitled form');
+  const [formDesc, setFormDesc] = useState('Form description');
+  const [questions, setQuestions] = useState(initQuestions);
+  const [focusedId, setFocusedId] = useState(initQuestions[0]?.id);
+  const [activeTab, setActiveTab] = useState('Questions');
   const [showSuccess, setShowSuccess] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState({});
@@ -1601,7 +1599,7 @@ export default function FormBuilder() {
       cardType: 'question',
       type,
       question: '',
-      options: ['multiple','checkbox','dropdown'].includes(type) ? ['Option 1','Option 2'] : [],
+      options: ['multiple', 'checkbox', 'dropdown'].includes(type) ? ['Option 1', 'Option 2'] : [],
       required: false,
     };
     setQuestions(prev => [...prev, newQ]);
@@ -2157,29 +2155,29 @@ export default function FormBuilder() {
             <p style={{ fontSize: '14px', color: '#555', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
               Your form <strong>"{formTitle}"</strong> is now live and ready to collect submissions.
             </p>
-            
+
             {/* Shareable Link Block */}
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <a 
+                <a
                   href={`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ 
-                    flex: 1, 
-                    fontSize: '13px', 
-                    color: accent, 
-                    fontWeight: '600', 
-                    textDecoration: 'underline', 
-                    wordBreak: 'break-all', 
+                  style={{
+                    flex: 1,
+                    fontSize: '13px',
+                    color: accent,
+                    fontWeight: '600',
+                    textDecoration: 'underline',
+                    wordBreak: 'break-all',
                     lineHeight: '1.4',
                     marginRight: '8px'
                   }}
                 >
                   {`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 </a>
-                <button 
+                <button
                   onClick={() => {
                     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
                     const link = `${getOrigin()}/#/form/${slug}`;
@@ -2205,7 +2203,7 @@ export default function FormBuilder() {
                 justifyContent: 'center',
                 alignItems: 'center'
               }}>
-                <img 
+                <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                     `${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=000000`}

@@ -14,12 +14,7 @@ export default function Templates() {
 
   // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
-    if (customBaseUrl) return customBaseUrl;
-    if (tunnelUrl) return tunnelUrl;
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return `http://192.168.1.30:${window.location.port || '5173'}`;
-    }
-    return window.location.origin;
+    return customBaseUrl || tunnelUrl || window.location.origin;
   };
 
   const isLocalhost = () => {
@@ -46,7 +41,7 @@ export default function Templates() {
           setTunnelUrl(data.url);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     const loadTemplates = () => {
       const defaultForms = TEMPLATES.map((t, idx) => ({

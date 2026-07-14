@@ -279,7 +279,7 @@ export default function Templates() {
             }}>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `${customBaseUrl || getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                  `${getOrigin()}/#/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
                 )}&color=000000`}
                 alt="Registration QR Code"
                 style={{ width: '180px', height: '180px', display: 'block' }}
@@ -292,13 +292,13 @@ export default function Templates() {
                 <input
                   type="text"
                   readOnly
-                  value={`${customBaseUrl || getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                  value={`${getOrigin()}/#/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif' }}
                 />
                 <button
                   onClick={() => {
                     const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    const link = `${customBaseUrl || getOrigin()}/form/${slug}`;
+                    const link = `${getOrigin()}/#/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
@@ -317,7 +317,7 @@ export default function Templates() {
                 Close View
               </button>
               <a
-                href={`/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                href={`/#/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{

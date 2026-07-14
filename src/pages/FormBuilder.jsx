@@ -2159,7 +2159,7 @@ export default function FormBuilder() {
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
                 <a 
-                  href={`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  href={`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ 
@@ -2173,12 +2173,12 @@ export default function FormBuilder() {
                     marginRight: '8px'
                   }}
                 >
-                  {`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  {`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 </a>
                 <button 
                   onClick={() => {
                     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                    const link = `${getOrigin()}/form/${slug}`;
+                    const link = `${getOrigin()}/#/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
@@ -2203,7 +2203,7 @@ export default function FormBuilder() {
               }}>
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    `${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                    `${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=000000`}
                   alt="Form QR Code"
                   style={{ width: '150px', height: '150px', display: 'block' }}
@@ -2219,7 +2219,7 @@ export default function FormBuilder() {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href={`/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                href={`/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{

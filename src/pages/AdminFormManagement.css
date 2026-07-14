@@ -176,13 +176,13 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  border: none;
   transition: all 0.2s;
 }
 
 .card-act-btn.preview {
   background: #f1f5f9;
   color: #475569;
-  border: 1px solid #cbd5e1;
 }
 
 .card-act-btn.preview:hover {
@@ -190,29 +190,26 @@
 }
 
 .card-act-btn.edit {
-  background: #fdf2f2;
-  color: #7B1C1C;
-  border: 1.5px solid #fca5a5;
+  background: #fff1f2;
+  color: #be123c;
 }
 
 .card-act-btn.edit:hover {
-  background: #fde8e8;
+  background: #ffe4e6;
 }
 
 .card-act-btn.clone {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1.5px solid #a7f3d0;
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
 .card-act-btn.clone:hover {
-  background: #d1fae5;
+  background: #dcfce7;
 }
 
 .card-act-btn.delete {
-  background: #fff5f5;
+  background: #fef2f2;
   color: #dc2626;
-  border: 1.5px solid #fecaca;
 }
 
 .card-act-btn.delete:hover {
@@ -613,6 +610,53 @@
 .status-radio-option .status-dot.offline {
   background: #94a3b8;
 }
+
+/* ── MOBILE RESPONSIVE FORM MANAGEMENT OVERRIDES ── */
+@media (max-width: 768px) {
+  .tmpl-mgmt-controls {
+    padding: 16px !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+  }
+
+  .tmpl-search-bar {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .tmpl-filters-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .tmpl-filters-group select {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 14px !important;
+  }
+
+  .tmpl-view-toggles {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .tmpl-view-toggles button {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .add-tmpl-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 14.5px !important;
+    padding: 12px 18px !important;
+  }
+}
+
 
 /* ── ANIMATIONS ── */
 @keyframes fadeIn {

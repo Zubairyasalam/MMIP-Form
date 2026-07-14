@@ -2,18 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
+const hashPassword = (password) => {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    hash = (hash << 5) - hash + password.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return 'hash_' + Math.abs(hash).toString(16);
+};
+
 const DEFAULT_ACCOUNTS = [
-  {
-    id: 'usr-default-superadmin',
-    name: 'System Super Admin',
-    email: 'superadmin@mcc.edu.in',
-    password: 'admin123',
-    role: 'superadmin',
-    created_at: '2026-06-12 10:00:00',
-    last_login_at: '',
-    last_logout_at: '',
-    account_status: 'Active'
-  },
   {
     id: 'usr-default-admin',
     name: 'Admin',
@@ -84,9 +82,7 @@ export default function Auth({ portalType }) {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (isLoggedIn) {
       const userRole = localStorage.getItem('userRole') || 'user';
-      if (userRole === 'superadmin') {
-        navigate('/super-admin/dashboard');
-      } else if (userRole === 'admin') {
+      if (userRole === 'admin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/templates');
@@ -183,7 +179,7 @@ export default function Auth({ portalType }) {
           id: `usr-${Date.now()}`,
           name: fullName,
           email: email.toLowerCase(),
-          password: password,
+          password: hashPassword(password),
           role: 'user',
           created_at: new Date().toLocaleString(),
           last_login_at: new Date().toLocaleString(),
@@ -222,7 +218,10 @@ export default function Auth({ portalType }) {
       setLoading(true);
       setTimeout(() => {
         const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-        const targetUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        const targetUser = users.find(u => 
+          u.email.toLowerCase() === email.toLowerCase() ||
+          u.name.toLowerCase() === email.toLowerCase()
+        );
 
         if (!targetUser) {
           setErrorMsg(
@@ -234,7 +233,10 @@ export default function Auth({ portalType }) {
           return;
         }
 
-        if (targetUser.password !== password) {
+        const enteredHash = password.startsWith('hash_') ? password : hashPassword(password);
+        const storedHash = targetUser.password.startsWith('hash_') ? targetUser.password : hashPassword(targetUser.password);
+
+        if (storedHash !== enteredHash) {
           setErrorMsg('Incorrect email address or password.');
           setLoading(false);
           return;
@@ -266,9 +268,7 @@ export default function Auth({ portalType }) {
           localStorage.removeItem('redirectUrl');
           navigate(redirect);
         } else {
-          if (targetUser.role === 'superadmin') {
-            navigate('/superadmin');
-          } else if (targetUser.role === 'admin') {
+          if (targetUser.role === 'admin') {
             navigate('/admin');
           } else {
             navigate('/templates');
@@ -287,16 +287,14 @@ export default function Auth({ portalType }) {
         <div className="auth-brand-panel">
           <img src="/mcc-mrf-logo-white.png?v=2" alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
           <div className="auth-welcome-text">
-            <h2>{portalType === 'admin' ? 'Admin Portal' : portalType === 'superadmin' ? 'Super Admin Portal' : 'Madras Christian College'}</h2>
+            <h2>{portalType === 'admin' ? 'Admin Portal' : 'Madras Christian College'}</h2>
             <h3 style={{ opacity: 0.9, fontWeight: '600', fontSize: '18px', marginTop: '6px' }}>
-              {portalType === 'admin' || portalType === 'superadmin' ? 'MMIP Management Platform' : 'MRF Innovation Park'}
+              {portalType === 'admin' ? 'MMIP Management Platform' : 'MRF Innovation Park'}
             </h3>
             <p style={{ marginTop: '16px', lineHeight: '1.6' }}>
               {portalType === 'admin'
                 ? 'Access the MCC-MRF Innovation Park Admin Portal to manage form templates, view response sheets, and configure platform settings.'
-                : portalType === 'superadmin'
-                  ? 'Access the MCC-MRF Innovation Park Super Admin control center to manage system settings, administrators, and view global audit logs.'
-                  : 'Create your account to browse form templates, build customized forms, and manage survey responses through the MMIP platform.'}
+                : 'Create your account to browse form templates, build customized forms, and manage survey responses through the MMIP platform.'}
             </p>
           </div>
           <div className="auth-footer-text">
@@ -309,7 +307,7 @@ export default function Auth({ portalType }) {
           <div className="auth-card-body">
             
             {/* Clean Switch Header */}
-            {(!portalType || (portalType !== 'admin' && portalType !== 'superadmin')) ? (
+            {(!portalType || portalType !== 'admin') ? (
               <div className="auth-tabs" style={{ display: 'flex', borderBottom: '2.5px solid #f1f5f9', marginBottom: '24px', gap: '16px' }}>
                 <button 
                   type="button"
@@ -348,7 +346,7 @@ export default function Auth({ portalType }) {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Zubaira"
+                    placeholder="e.g. Name"
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
                     disabled={loading}
@@ -358,11 +356,11 @@ export default function Auth({ portalType }) {
               )}
 
               <div className="auth-input-group">
-                <label>Email Address</label>
+                <label>{authMode === 'signup' ? 'Email Address' : 'Email Address or Username'}</label>
                 <input
-                  type="email"
+                  type={authMode === 'signup' ? 'email' : 'text'}
                   required
-                  placeholder="e.g. user@gmail.com"
+                  placeholder={authMode === 'signup' ? 'e.g. user@gmail.com' : 'e.g. admin@mcc.edu.in or Admin'}
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   disabled={loading}
@@ -394,9 +392,13 @@ export default function Auth({ portalType }) {
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', outline: 'none' }}
                   >
-                    {showPassword ? '👁️' : '🙈'}
+                    {showPassword ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    )}
                   </button>
                 </div>
               </div>

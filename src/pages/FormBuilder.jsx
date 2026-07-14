@@ -1462,12 +1462,26 @@ function VideoCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
 export default function FormBuilder() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [tunnelUrl, setTunnelUrl] = useState('');
+
+  const getOrigin = () => {
+    return tunnelUrl || window.location.origin;
+  };
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
       navigate('/auth?mode=login');
     }
+
+    fetch('/tunnel.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.url) {
+          setTunnelUrl(data.url);
+        }
+      })
+      .catch(() => {});
   }, [navigate]);
 
   const state = location.state || {};
@@ -2143,21 +2157,32 @@ export default function FormBuilder() {
             {/* Shareable Link Block */}
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
-                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '13px', color: '#0f172a', fontWeight: '600', outline: 'none' }}
-                />
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <a 
+                  href={`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ 
+                    flex: 1, 
+                    fontSize: '13px', 
+                    color: accent, 
+                    fontWeight: '600', 
+                    textDecoration: 'underline', 
+                    wordBreak: 'break-all', 
+                    lineHeight: '1.4',
+                    marginRight: '8px'
+                  }}
+                >
+                  {`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                </a>
                 <button 
                   onClick={() => {
                     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                    const link = `${window.location.origin}/form/${slug}`;
+                    const link = `${getOrigin()}/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
-                  style={{ background: accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                  style={{ background: accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}
                 >
                   Copy Link
                 </button>
@@ -2178,7 +2203,7 @@ export default function FormBuilder() {
               }}>
                 <img 
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    `${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                    `${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=000000`}
                   alt="Form QR Code"
                   style={{ width: '150px', height: '150px', display: 'block' }}

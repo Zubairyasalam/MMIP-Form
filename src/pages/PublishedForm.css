@@ -71,8 +71,8 @@
 
 .pf-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px 24px;
+  grid-template-columns: 1fr;
+  gap: 24px;
   margin-bottom: 32px;
 }
 
@@ -83,13 +83,13 @@
 }
 
 .pf-field.full {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 .pf-label {
   font-size: 12px;
   font-weight: 700;
-  color: #7B1C1C;
+  color: #111;
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }

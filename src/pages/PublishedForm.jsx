@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { TEMPLATES } from '../data/templates';
 import './PublishedForm.css';
 
 export default function PublishedForm() {
   const { formId } = useParams();
-  const navigate = useNavigate();
   
   const [formConfig, setFormConfig] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -13,11 +12,6 @@ export default function PublishedForm() {
   const [submissionId, setSubmissionId] = useState('');
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!loggedIn) {
-      navigate('/auth?mode=signup');
-      return;
-    }
 
     // 1. Check custom forms in localStorage
     const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
@@ -49,7 +43,7 @@ export default function PublishedForm() {
       initialAnswers[idx] = q.type === 'checkbox' ? [] : '';
     });
     setAnswers(initialAnswers);
-  }, [formId, navigate]);
+  }, [formId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

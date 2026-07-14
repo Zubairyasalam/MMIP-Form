@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TEMPLATE_THEMES } from '../data/templates';
+import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
 import './AdminFormManagement.css';
 
 export default function AdminFormManagement({ onLogAction }) {
@@ -33,15 +33,43 @@ export default function AdminFormManagement({ onLogAction }) {
     'Healthcare', 'Events', 'Grant Application', 'Custom'
   ];
 
-  // Load from localStorage
+  // Load from localStorage, merging any new built-in templates
   useEffect(() => {
+    const defaultForms = TEMPLATES.map((t, idx) => ({
+      id: `default-${idx + 1}`,
+      name: t.name,
+      desc: t.desc || '',
+      tag: t.tag || 'Custom',
+      fields: `${t.questions?.filter(q => q.type).length || 0} fields`,
+      bg: t.bg || 'maroon-bg',
+      questions: t.questions || [],
+      button_text: 'Use Template',
+      status: 'Active',
+      created_at: '2026-06-12',
+      creator: 'System'
+    }));
+
     const saved = localStorage.getItem('customForms');
-    if (saved) {
-      setForms(JSON.parse(saved));
-    } else {
-      // If no forms exist, initialize empty array
-      setForms([]);
+    let existing = [];
+    try {
+      existing = saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      existing = [];
     }
+
+    let changed = false;
+    defaultForms.forEach(df => {
+      if (!existing.some(e => e.id === df.id)) {
+        existing.push(df);
+        changed = true;
+      }
+    });
+
+    if (changed || !saved) {
+      localStorage.setItem('customForms', JSON.stringify(existing));
+    }
+
+    setForms(existing);
   }, []);
 
   // Save to localStorage

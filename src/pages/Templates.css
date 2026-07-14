@@ -375,6 +375,60 @@
   }
 }
 
+@media (max-width: 768px) {
+  .templates-topbar {
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+  
+  .templates-topbar-logo {
+    height: 40px;
+    width: 90px;
+  }
+  
+  .templates-search-wrap {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    flex: none;
+  }
+  
+  .templates-topbar-right {
+    order: 2;
+    gap: 8px;
+  }
+  
+  .templates-topbar-right a,
+  .templates-signout-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .templates-content {
+    padding: 16px 12px;
+  }
+  
+  .templates-content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .templates-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .templates-sort select {
+    flex: 1;
+    max-width: 200px;
+  }
+}
+
 .templates-signout-btn {
   padding: 9px 18px;
   background: white;

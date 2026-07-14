@@ -1330,3 +1330,144 @@
   border-radius: 50%;
   pointer-events: none;
 }
+
+/* ── RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS ── */
+
+@media (max-width: 768px) {
+  .fb-main {
+    flex-direction: column-reverse;
+    align-items: center;
+    padding: 16px 8px 100px; /* Leave space at bottom for floating toolbar */
+    gap: 16px;
+  }
+
+  .fb-toolbar {
+    flex-direction: row;
+    width: calc(100% - 32px);
+    max-width: 480px;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    height: 48px;
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.16);
+    z-index: 1000;
+    padding: 4px 12px;
+    border: 1px solid #e0e0e0;
+    justify-content: space-around;
+  }
+
+  .fb-tool-divider {
+    display: none;
+  }
+
+  .fb-content {
+    max-width: 100%;
+  }
+
+  .fb-card {
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .fb-topbar-inner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .fb-logo {
+    height: 32px;
+    width: 75px;
+  }
+  
+  .fb-form-title-input {
+    font-size: 15px;
+    width: 100%;
+    max-width: 180px;
+  }
+  
+  .fb-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .fb-title-card {
+    padding: 20px 16px;
+  }
+
+  .fb-question-card {
+    padding: 18px 16px 12px;
+  }
+
+  .fb-question-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .fb-question-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fb-question-type-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Responses Tab Mobile Styling */
+  .fb-resp-header-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .fb-resp-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .fb-sheets-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .fb-resp-toggle-label {
+    justify-content: space-between;
+    width: 100%;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+  }
+
+  .fb-resp-chart-label {
+    width: 100px;
+    font-size: 12px;
+  }
+
+  /* Settings Tab Mobile Styling */
+  .fb-settings-row {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .fb-settings-row-title {
+    font-size: 13px;
+  }
+
+  .fb-settings-row-desc {
+    font-size: 11px;
+  }
+
+  .fb-settings-select {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+

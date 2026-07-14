@@ -9,6 +9,22 @@ export default function Templates() {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
+  const [tunnelUrl, setTunnelUrl] = useState('');
+  const [customBaseUrl, setCustomBaseUrl] = useState('');
+
+  // Auto-detect: if on localhost, try to pre-fill with LAN IP
+  const getOrigin = () => {
+    return customBaseUrl || tunnelUrl || window.location.origin;
+  };
+
+  const isLocalhost = () => {
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1';
+  };
+
+  const openQrModal = (tmpl) => {
+    setSelectedTmplQr(tmpl);
+  };
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -18,26 +34,52 @@ export default function Templates() {
       setUserRole(localStorage.getItem('userRole') || 'user');
     }
 
+    fetch('/tunnel.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.url) {
+          setTunnelUrl(data.url);
+        }
+      })
+      .catch(() => {});
+
     const loadTemplates = () => {
-      if (!localStorage.getItem('customForms')) {
-        const initial = TEMPLATES.map((t, idx) => ({
-          id: `default-${idx + 1}`,
-          name: t.name,
-          desc: t.desc || '',
-          tag: t.tag || 'Custom',
-          fields: `${t.questions?.length || 0} fields`,
-          bg: t.bg || 'maroon-bg',
-          questions: t.questions || [],
-          button_text: 'Use Template',
-          status: 'Active',
-          created_at: '2026-06-12',
-          creator: 'System'
-        }));
-        localStorage.setItem('customForms', JSON.stringify(initial));
+      const defaultForms = TEMPLATES.map((t, idx) => ({
+        id: `default-${idx + 1}`,
+        name: t.name,
+        desc: t.desc || '',
+        tag: t.tag || 'Custom',
+        fields: `${t.questions?.filter(q => q.type).length || 0} fields`,
+        bg: t.bg || 'maroon-bg',
+        questions: t.questions || [],
+        button_text: 'Use Template',
+        status: 'Active',
+        created_at: '2026-06-12',
+        creator: 'System'
+      }));
+
+      const saved = localStorage.getItem('customForms');
+      let existing = [];
+      try {
+        existing = saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        existing = [];
       }
 
-      const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-      const mapped = customForms.map(cf => ({
+      // Merge: add any default template whose id does not already exist
+      let changed = false;
+      defaultForms.forEach(df => {
+        if (!existing.some(e => e.id === df.id)) {
+          existing.push(df);
+          changed = true;
+        }
+      });
+
+      if (changed || !saved) {
+        localStorage.setItem('customForms', JSON.stringify(existing));
+      }
+
+      const mapped = existing.map(cf => ({
         id: cf.id,
         name: cf.name || cf.title,
         desc: cf.desc || 'No description provided.',
@@ -109,23 +151,9 @@ export default function Templates() {
         </div>
 
         <div className="templates-topbar-right" style={{ display: 'flex', alignItems: 'center' }}>
-          <Link to="/" style={{ padding: '9px 20px', fontSize: '13px', borderRadius: '999px', border: '1.5px solid #cbd5e1', color: '#475569', textDecoration: 'none', fontWeight: '600', fontFamily: 'Inter, sans-serif', marginRight: '8px' }}>
+          <Link to="/" style={{ padding: '9px 20px', fontSize: '13px', borderRadius: '999px', border: '1.5px solid #cbd5e1', color: '#475569', textDecoration: 'none', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
             ← Home
           </Link>
-          <button
-            className="templates-signout-btn"
-            onClick={() => {
-              localStorage.removeItem('isLoggedIn');
-              localStorage.removeItem('userRole');
-              localStorage.removeItem('userEmail');
-              localStorage.removeItem('userName');
-              localStorage.removeItem('userId');
-              navigate('/');
-              window.location.reload();
-            }}
-          >
-            Sign Out
-          </button>
         </div>
       </div>
 
@@ -183,7 +211,7 @@ export default function Templates() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedTmplQr(tmpl);
+                          openQrModal(tmpl);
                         }}
                       >
                         Scan QR Code
@@ -210,7 +238,7 @@ export default function Templates() {
 
       {/* QR Code Scanner Modal */}
       {selectedTmplQr && (
-        <div style={{ display: 'flex', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, justifyContent: 'center', alignItems: 'center' }} onClick={() => setSelectedTmplQr(null)}>
+        <div style={{ display: 'flex', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, justifyContent: 'center', alignItems: 'center', overflowY: 'auto', padding: '20px 0' }} onClick={() => { setSelectedTmplQr(null); }}>
           <div style={{ background: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxWidth: '440px', width: '90%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
               {selectedTmplQr.name}
@@ -218,6 +246,25 @@ export default function Templates() {
             <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '20px', lineHeight: '1.5', fontFamily: 'Inter, sans-serif' }}>
               Scan this QR code with your phone's camera to open the live form directly.
             </p>
+
+            {/* Network IP section - shown when on localhost */}
+            {isLocalhost() && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', textAlign: 'left' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#15803d', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>📡 Network Address for Phone Scanning</div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. http://192.168.1.5:5173"
+                    value={customBaseUrl || tunnelUrl}
+                    onChange={e => setCustomBaseUrl(e.target.value.trim().replace(/\/$/, ''))}
+                    style={{ flex: 1, border: '1px solid #86efac', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', color: '#0f172a', fontWeight: '500', outline: 'none', fontFamily: 'Inter, sans-serif', background: 'white' }}
+                  />
+                </div>
+                <div style={{ fontSize: '11px', color: '#15803d', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                  ✅ QR code points to: <strong>{customBaseUrl || tunnelUrl || window.location.origin}</strong>
+                </div>
+              </div>
+            )}
 
             <div style={{
               background: 'white',
@@ -232,7 +279,7 @@ export default function Templates() {
             }}>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                  `${customBaseUrl || getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
                 )}&color=000000`}
                 alt="Registration QR Code"
                 style={{ width: '180px', height: '180px', display: 'block' }}
@@ -245,13 +292,13 @@ export default function Templates() {
                 <input
                   type="text"
                   readOnly
-                  value={`${window.location.origin}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                  value={`${customBaseUrl || getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif' }}
                 />
                 <button
                   onClick={() => {
                     const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    const link = `${window.location.origin}/form/${slug}`;
+                    const link = `${customBaseUrl || getOrigin()}/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}

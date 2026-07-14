@@ -3,739 +3,787 @@ import { Link, useNavigate } from 'react-router-dom';
 import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
 
-const getColumnHeaders = (formTitle) => {
-  const titleLower = (formTitle || '').toLowerCase();
-  if (titleLower.includes('visitor') || titleLower.includes('grant') || titleLower.includes('expo')) {
-    return ['ID', 'Visitor Name', 'Mobile', 'WhatsApp', 'State', 'District', 'Business Details', 'Website'];
+const hashPassword = (password) => {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    hash = (hash << 5) - hash + password.charCodeAt(i);
+    hash = hash & hash;
   }
-  if (titleLower.includes('proposal') || titleLower.includes('research')) {
-    return ['ID', 'Applicant Name', 'Department', 'Research Title', 'Equipment/Domain', 'Duration', 'Grant Amount', 'Start Date'];
-  }
-  if (titleLower.includes('internship')) {
-    return ['ID', 'Student Name', 'Email', 'Phone', 'Domain', 'CGPA', 'Availability', 'Start Date'];
-  }
-  if (titleLower.includes('booking') || titleLower.includes('lab')) {
-    return ['ID', 'Researcher Name', 'Student ID', 'Lab Name', 'Booking Date', 'Time Slot', 'Purpose', 'Status'];
-  }
-  if (titleLower.includes('feedback')) {
-    return ['ID', 'Faculty Name', 'Department', 'Teaching Rating', 'Availability', 'Content Rating', 'Syllabus Complete', 'Suggestions'];
-  }
-  return ['ID', 'Submitter Name', 'Contact Info', 'Field 3', 'Field 4', 'Field 5', 'Field 6', 'Field 7'];
+  return 'hash_' + Math.abs(hash).toString(16);
 };
 
-const getRowCells = (row, formTitle) => {
-  if (!row) {
-    return {
-      col1: '—', col2: '—', col3: '—', col4: '—', col5: '—', col6: '—',
-      col7: { title: '—', sub: '—' }, col8: '—'
-    };
+const DEFAULT_PERMISSIONS = [
+  {
+    role: 'Admin',
+    color: '#7B1C1C',
+    manageUsers: 'Allowed',
+    manageForms: 'Allowed',
+    moderateSubmissions: 'Allowed',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Allowed'
+  },
+  {
+    role: 'Department Head',
+    manageUsers: 'Denied',
+    manageForms: 'Allowed (Dept Only)',
+    moderateSubmissions: 'Allowed',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
+  },
+  {
+    role: 'Faculty',
+    manageUsers: 'Denied',
+    manageForms: 'Allowed (Dept Only)',
+    moderateSubmissions: 'Allowed (Own Forms)',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
+  },
+  {
+    role: 'Student',
+    manageUsers: 'Denied',
+    manageForms: 'Denied',
+    moderateSubmissions: 'Denied',
+    submitSubmissions: 'Allowed',
+    settingsAccess: 'Denied'
   }
-
-  const titleLower = (formTitle || '').toLowerCase();
-
-  if (row.id && (row.id.toString().startsWith('MMIP-00') || row.name === 'Zubairya Salam khan')) {
-    return {
-      col1: row.id,
-      col2: row.name || 'Anonymous',
-      col3: row.mobile || '—',
-      col4: row.whatsapp || '—',
-      col5: row.state || 'Tamil Nadu',
-      col6: row.district || 'Karur',
-      col7: { title: row.bizTitle || 'mrf', sub: row.bizSub || 'Health Care • R&D' },
-      col8: row.website || '—'
-    };
-  }
-
-  const ans = row.answers || [];
-  const getAns = (keywords, fallback = '') => {
-    const match = ans.find(a => a && a.q && keywords.some(k => a.q.toLowerCase().includes(k)));
-    return match ? match.a : fallback;
-  };
-
-  if (titleLower.includes('visitor') || titleLower.includes('grant') || titleLower.includes('expo')) {
-    const name = getAns(['name', 'investigator', 'applicant'], row.name || 'Anonymous');
-    const email = row.email || getAns(['email'], '—');
-    const dept = getAns(['department', 'institution'], '—');
-    const proj = getAns(['project title', 'business'], 'mrf');
-    const domain = getAns(['domain', 'sector'], 'Grant Application');
-    const budget = getAns(['amount', 'budget'], '—');
-    const start = getAns(['start date'], '—');
-
-    return {
-      col1: row.id || '—',
-      col2: name,
-      col3: budget !== '—' ? budget : '09043898231',
-      col4: '09043898231',
-      col5: 'Tamil Nadu',
-      col6: dept !== '—' ? dept : 'Karur',
-      col7: { title: proj, sub: `${domain} • Start: ${start}` },
-      col8: email
-    };
-  }
-
-  if (titleLower.includes('proposal') || titleLower.includes('research')) {
-    const applicant = getAns(['researcher', 'applicant', 'name'], row.name || 'Anonymous');
-    const dept = getAns(['department'], '—');
-    const title = getAns(['title'], 'Research Title');
-    const type = getAns(['type'], 'Mixed Methods');
-    const duration = getAns(['duration'], '12 Months');
-    const guide = getAns(['guide', 'supervisor'], '—');
-
-    return {
-      col1: row.id || '—',
-      col2: applicant,
-      col3: dept,
-      col4: title,
-      col5: 'Active',
-      col6: type,
-      col7: { title: `Guide: ${guide}`, sub: `Duration: ${duration}` },
-      col8: row.email || '—'
-    };
-  }
-
-  if (titleLower.includes('internship')) {
-    const name = getAns(['name'], row.name || 'Anonymous');
-    const email = row.email || getAns(['email'], '—');
-    const phone = getAns(['phone', 'mobile'], '—');
-    const domain = getAns(['domain'], 'Software');
-    const cgpa = getAns(['cgpa'], '—');
-    const availability = getAns(['availability'], 'Full-time');
-    const start = getAns(['start', 'date'], '—');
-
-    return {
-      col1: row.id || '—',
-      col2: name,
-      col3: email,
-      col4: phone,
-      col5: 'Active',
-      col6: domain,
-      col7: { title: `CGPA: ${cgpa}`, sub: `Avail: ${availability}` },
-      col8: start
-    };
-  }
-
-  if (titleLower.includes('booking') || titleLower.includes('lab')) {
-    const name = getAns(['name', 'researcher'], row.name || 'Anonymous');
-    const studentId = getAns(['id', 'roll'], '—');
-    const labName = getAns(['lab name', 'lab'], 'Computer Lab A');
-    const date = getAns(['date', 'booking'], '—');
-    const slot = getAns(['slot', 'time'], '—');
-
-    return {
-      col1: row.id || '—',
-      col2: name,
-      col3: studentId,
-      col4: labName,
-      col5: 'Reserved',
-      col6: date,
-      col7: { title: slot, sub: `Lab Reserve Slot` },
-      col8: '—'
-    };
-  }
-
-  if (titleLower.includes('feedback')) {
-    const faculty = getAns(['faculty', 'name'], 'Dr. Cooper');
-    const dept = getAns(['department'], '—');
-    const clarity = getAns(['clarity', 'teaching'], '5');
-    const avail = getAns(['availability'], '5');
-    const content = getAns(['content'], '5');
-    const completed = getAns(['completed', 'syllabus'], 'Yes');
-    const suggestions = getAns(['suggestions', 'remarks'], '—');
-
-    return {
-      col1: row.id || '—',
-      col2: faculty,
-      col3: dept,
-      col4: `Clarity: ${clarity}/5`,
-      col5: 'Feedback',
-      col6: `Avail: ${avail}/5`,
-      col7: { title: `Content: ${content}/5`, sub: `Syllabus Complete: ${completed}` },
-      col8: suggestions.slice(0, 20) + (suggestions.length > 20 ? '...' : '')
-    };
-  }
-
-  return {
-    col1: row.id || '—',
-    col2: row.name || 'Anonymous',
-    col3: row.email || 'Contact',
-    col4: ans[0] ? ans[0].a : '—',
-    col5: 'Submitted',
-    col6: ans[1] ? ans[1].a : '—',
-    col7: { title: ans[2] ? ans[2].a : 'Form Submission', sub: ans[3] ? ans[3].a : 'Details' },
-    col8: row.date || '—'
-  };
-};
+];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeMenu, setActiveMenu] = useState('overview'); // overview, forms, responses, settings
+
+  const formatName = (str) => {
+    if (!str) return '—';
+    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  const formatLastActive = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).replace(',', ' •');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+  
+  // Navigation Tabs
+  const [activeMenu, setActiveMenu] = useState('overview'); // overview, users, roles, departments, forms, submissions, reports, announcements, notifications, logs, settings, profile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(true); // Collapsible sub-menu for User Management
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [selectedFormSummary, setSelectedFormSummary] = useState(null);
-  const [submissions, setSubmissions] = useState([]);
-  const [selectedFormDb, setSelectedFormDb] = useState(null);
-  const [dateFilter, setDateFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('latest');
-  const [dbSearchQuery, setDbSearchQuery] = useState('');
-  const [editingSubmission, setEditingSubmission] = useState(null);
-  const [profileData, setProfileData] = useState({
-    name: 'Administrator',
-    role: 'Admin'
+
+  // Permissions Matrix State
+  const [permissions, setPermissions] = useState(() => {
+    const saved = localStorage.getItem('portalPermissions');
+    return saved ? JSON.parse(saved) : DEFAULT_PERMISSIONS;
   });
 
-  // Mock data for forms managed by admin
-  const [forms, setForms] = useState([
-    { id: 1, title: 'Innovation Grant Application', status: 'Active', responses: 42, created: '2026-06-12', creator: 'Dr. Jane Cooper' },
-    { id: 2, title: 'Student Course Feedback', status: 'Active', responses: 128, created: '2026-06-18', creator: 'Prof. John Smith' },
-    { id: 3, title: 'MCC Alumni Survey 2026', status: 'Draft', responses: 0, created: '2026-07-01', creator: 'Admin Team' },
-    { id: 4, title: 'Workshop Registration Form', status: 'Inactive', responses: 89, created: '2026-05-24', creator: 'Dept of Chemistry' },
-    { id: 5, title: 'Faculty Research Proposal', status: 'Active', responses: 15, created: '2026-06-29', creator: 'Dr. Sarah Connor' }
-  ]);
+  const handlePermissionChange = (roleIndex, field, value) => {
+    const updated = [...permissions];
+    updated[roleIndex] = { ...updated[roleIndex], [field]: value };
+    setPermissions(updated);
+    localStorage.setItem('portalPermissions', JSON.stringify(updated));
+    logAction('System', `Updated ${field} permission for ${updated[roleIndex].role} to: ${value}`);
+  };
+  
+  // Data States (loaded from localStorage or initialized with defaults)
+  const [admins, setAdmins] = useState([]); // Dynamic list of admins/users
+  const [users, setUsers] = useState([]); // Dynamic list of all users
+  const [departments, setDepartments] = useState([]);
+  const [forms, setForms] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [settings, setSettings] = useState({
+    maintenanceMode: false,
+    emailNotifications: true,
+    requireApproval: false,
+    analyticsInterval: 'Daily',
+  });
 
-  // Load submissions and forms from localStorage on mount
+  // Profile State
+  const [profileData, setProfileData] = useState({
+    name: 'MCC Administrator',
+    email: 'admin@mcc.edu.in',
+    role: 'Admin',
+    avatar: '👤',
+    joined: '2025-01-10'
+  });
+  const [originalEmail, setOriginalEmail] = useState('');
+
+  // Modal States
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingDept, setEditingDept] = useState(null);
+
+  // Submission Modal States
+  const [editingSub, setEditingSub] = useState(null);
+  const [subEditData, setSubEditData] = useState({ name: '', email: '', status: '' });
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    role: 'Student',
+    dept: 'Computer Science',
+    status: 'Active'
+  });
+
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [deptFormData, setDeptFormData] = useState({
+    name: '',
+    hod: '',
+    formsCount: 0,
+    membersCount: 0
+  });
+
+  const [pwdData, setPwdData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementFormData, setAnnouncementFormData] = useState({
+    title: '',
+    content: '',
+    target: 'All'
+  });
+
+  // Submission Detail View
+  const [selectedSub, setSelectedSub] = useState(null);
+
+  // Toast and Custom Confirm States
+  const [toast, setToast] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+
+  const showToastMessage = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
   useEffect(() => {
-    const local = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-    const defaultSubs = [
-      {
-        id: 'MMIP-101', name: 'Arun Kumar', form: 'Innovation Grant Application', time: '10 mins ago', status: 'Pending Review', email: 'arun.k@mcc.edu.in', date: '2026-07-08 15:42',
-        answers: [
-          { q: 'Principal Investigator Name', a: 'Arun Kumar' },
-          { q: 'Department / Institution', a: 'Computer Science' },
-          { q: 'Project Title', a: 'AI-Powered Agricultural Drone for Precision Spraying' },
-          { q: 'Project Abstract', a: 'This project aims to develop a cost-effective, autonomous drone equipped with multispectral cameras and precision sprayers to optimize fertilizer and pesticide delivery.' },
-          { q: 'Objectives and Expected Outcomes', a: '1. Reduce chemical waste by 30%. 2. Identify crop diseases in real-time. 3. Increase overall yield by 15%.' },
-          { q: 'Research Domain', a: 'Technology & AI' },
-          { q: 'Requested Grant Amount (₹)', a: '₹4,50,000' },
-          { q: 'Proposed Project Start Date', a: '2026-08-01' }
-        ]
-      },
-      {
-        id: 'MMIP-102', name: 'Priya Sharma', form: 'Student Course Feedback', time: '24 mins ago', status: 'Completed', email: 'priya.s@mcc.edu.in', date: '2026-07-08 15:28',
-        answers: [
-          { q: 'Student Name', a: 'Priya Sharma' },
-          { q: 'Course Title', a: 'Advanced Data Structures & Algorithms' },
-          { q: 'Instructor', a: 'Dr. Jane Cooper' },
-          { q: 'Feedback / Remarks', a: 'The course was exceptionally well-structured. The practical lab sessions helped in understanding complex tree and graph algorithms.' },
-          { q: 'Rating (1-5)', a: '5 / 5' }
-        ]
-      },
-      {
-        id: 'MMIP-103', name: 'Devadas K.', form: 'Faculty Research Proposal', time: '1 hour ago', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', date: '2026-07-08 14:15',
-        answers: [
-          { q: 'Faculty Member Name', a: 'Prof. Devadas K.' },
-          { q: 'Department', a: 'Physics' },
-          { q: 'Research Title', a: 'Quantum Dot Solar Cells for Enhanced Efficiency' },
-          { q: 'Estimated Duration', a: '18 Months' },
-          { q: 'Required Equipment', a: 'Spectrophotometer, Thin Film Deposition Chamber' }
-        ]
-      },
-      {
-        id: 'MMIP-104', name: 'Mercy George', form: 'Innovation Grant Application', time: '3 hours ago', status: 'Approved', email: 'mercy.g@mcc.edu.in', date: '2026-07-08 12:30',
-        answers: [
-          { q: 'Principal Investigator Name', a: 'Mercy George' },
-          { q: 'Department / Institution', a: 'Biotechnology' },
-          { q: 'Project Title', a: 'Biodegradable Plastic Alternatives from Marine Algae' },
-          { q: 'Project Abstract', a: 'Synthesizing bioplastics using seaweed extracts to create a completely biodegradable packaging material.' },
-          { q: 'Objectives and Expected Outcomes', a: 'Produce a prototype packaging material that decomposes within 20 days in natural soil.' },
-          { q: 'Research Domain', a: 'Sustainability' },
-          { q: 'Requested Grant Amount (₹)', a: '₹3,80,000' },
-          { q: 'Proposed Project Start Date', a: '2026-09-01' }
-        ]
-      },
-      {
-        id: 'MMIP-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', time: '5 hours ago', status: 'Completed', email: 'sanjay.d@mcc.edu.in', date: '2026-07-08 10:45',
-        answers: [
-          { q: 'Student Name', a: 'Sanjay Dutt' },
-          { q: 'Course Title', a: 'Organic Chemistry II' },
-          { q: 'Instructor', a: 'Prof. John Smith' },
-          { q: 'Feedback / Remarks', a: 'The lecture slides were very helpful, but more laboratory demonstrations would be appreciated.' },
-          { q: 'Rating (1-5)', a: '4 / 5' }
-        ]
-      }
-    ];
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
-    const localMapped = local.map((s, idx) => ({
-      id: s.id || `local-${idx}`,
-      name: s.name,
-      form: s.form,
-      time: s.time || 'Just now',
-      status: s.status,
-      email: s.email,
-      date: s.date,
-      answers: s.answers
+  const triggerConfirm = (message, onConfirm) => {
+    setConfirmModal({ message, onConfirm });
+  };
+
+  // Stats
+  const [stats, setStats] = useState({
+    totalSubmissions: 0,
+    totalForms: 0,
+    activeAdminsCount: 0,
+    totalUsersCount: 0,
+    activeAnnouncements: 0
+  });
+
+  // Profile details loader from session
+  useEffect(() => {
+    const email = localStorage.getItem('userEmail') || 'admin@mcc.edu.in';
+    const role = localStorage.getItem('userRole') || 'admin';
+    const name = localStorage.getItem('userName') || 'MCC Administrator';
+    const joined = localStorage.getItem('userJoined') || '2025-01-10';
+    
+    setOriginalEmail(email);
+    setProfileData(prev => ({
+      ...prev,
+      email: email,
+      name: name,
+      joined: joined,
+      role: 'Admin'
     }));
+  }, []);
 
-    setSubmissions([...localMapped, ...defaultSubs]);
+  // Initial Data Setup
+  useEffect(() => {
+    // 1. Load All Users (students, faculty, admins)
+    const savedUsers = localStorage.getItem('appUsers');
+    let userList = [];
+    if (savedUsers) {
+      userList = JSON.parse(savedUsers);
+      let needsSave = false;
+      userList = userList.map(u => {
+        if (u.name === 'Department Admin') {
+          needsSave = true;
+          return { ...u, name: 'Admin' };
+        }
+        return u;
+      });
+      if (needsSave) {
+        localStorage.setItem('appUsers', JSON.stringify(userList));
+      }
+    } else {
+      userList = [
+        { id: 1, name: 'Dr. Jane Cooper', email: 'cooper.jane@mcc.edu.in', role: 'admin', dept: 'Computer Science', status: 'Active' },
+        { id: 2, name: 'Prof. John Smith', email: 'smith.john@mcc.edu.in', role: 'admin', dept: 'Chemistry', status: 'Active' },
+        { id: 3, name: 'Dr. Sarah Connor', email: 'connor.sarah@mcc.edu.in', role: 'admin', dept: 'Biotechnology', status: 'Active' },
+        { id: 4, name: 'Arun Kumar', email: 'arun.k@mcc.edu.in', role: 'user', dept: 'Computer Science', status: 'Active' },
+        { id: 5, name: 'Priya Sharma', email: 'priya.s@mcc.edu.in', role: 'user', dept: 'Computer Science', status: 'Active' },
+        { id: 6, name: 'Devadas K.', email: 'devadas.k@mcc.edu.in', role: 'admin', dept: 'Physics', status: 'Active' },
+        { id: 7, name: 'Mercy George', email: 'mercy.g@mcc.edu.in', role: 'admin', dept: 'Biotechnology', status: 'Active' },
+        { id: 8, name: 'Sanjay Dutt', email: 'sanjay.d@mcc.edu.in', role: 'user', dept: 'Chemistry', status: 'Suspended' }
+      ];
+      localStorage.setItem('appUsers', JSON.stringify(userList));
+    }
+    setUsers(userList);
 
-    // Load custom forms and combine
-    const custom = JSON.parse(localStorage.getItem('customForms') || '[]');
-    const mappedCustom = custom.map(cf => ({
+    // Sync appAdmins for Auth.jsx fallback checks
+    const adminList = userList.filter(u => u.role === 'admin');
+    localStorage.setItem('appAdmins', JSON.stringify(adminList));
+    setAdmins(adminList);
+
+    // 2. Load Departments
+    const savedDepts = localStorage.getItem('appDepartments');
+    let deptList = [];
+    if (savedDepts) {
+      deptList = JSON.parse(savedDepts);
+    } else {
+      deptList = [
+        { id: 1, name: 'Computer Science', hod: 'Dr. Jane Cooper', formsCount: 4, membersCount: 154 },
+        { id: 2, name: 'Chemistry', hod: 'Prof. John Smith', formsCount: 2, membersCount: 98 },
+        { id: 3, name: 'Biotechnology', hod: 'Dr. Sarah Connor', formsCount: 3, membersCount: 82 },
+        { id: 4, name: 'Physics', hod: 'Dr. Devadas K.', formsCount: 2, membersCount: 110 }
+      ];
+      localStorage.setItem('appDepartments', JSON.stringify(deptList));
+    }
+    setDepartments(deptList);
+
+    // 3. Load Forms
+    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+    const mappedCustom = customForms.map(cf => ({
       id: cf.id,
       title: cf.name || cf.title || 'Untitled Form',
       status: 'Active',
-      responses: 0,
       created: cf.created || new Date().toLocaleDateString(),
-      creator: cf.creator || 'Super Admin'
+      creator: cf.creator || 'Admin'
     }));
 
     const defaultForms = [
-      { id: '1', title: 'Innovation Grant Application', status: 'Active', responses: 42, created: '2026-06-12', creator: 'Dr. Jane Cooper' },
-      { id: '2', title: 'Student Course Feedback', status: 'Active', responses: 128, created: '2026-06-18', creator: 'Prof. John Smith' },
-      { id: '3', title: 'MCC Alumni Survey 2026', status: 'Draft', responses: 0, created: '2026-07-01', creator: 'Admin Team' },
-      { id: '4', title: 'Workshop Registration Form', status: 'Inactive', responses: 89, created: '2026-05-24', creator: 'Dept of Chemistry' },
-      { id: '5', title: 'Faculty Research Proposal', status: 'Active', responses: 15, created: '2026-06-29', creator: 'Dr. Sarah Connor' }
+      { id: '1', title: 'Innovation Grant Application', status: 'Active', created: '2026-06-12', creator: 'Dr. Jane Cooper' },
+      { id: '2', title: 'Student Course Feedback', status: 'Active', created: '2026-06-18', creator: 'Prof. John Smith' },
+      { id: '3', title: 'MCC Alumni Survey 2026', status: 'Draft', created: '2026-07-01', creator: 'Admin Team' },
+      { id: '4', title: 'Workshop Registration Form', status: 'Inactive', created: '2026-05-24', creator: 'Dept of Chemistry' },
+      { id: '5', title: 'Faculty Research Proposal', status: 'Active', created: '2026-06-29', creator: 'Dr. Sarah Connor' }
     ];
 
     const uniqueCustom = mappedCustom.filter(cf => !defaultForms.some(df => df.id === cf.id));
     const combinedForms = [...defaultForms, ...uniqueCustom];
+    setForms(combinedForms);
 
-    // Compute dynamic response counts
-    const allSubs = [...localMapped, ...defaultSubs];
-    const updatedForms = combinedForms.map(f => {
-      const subCount = allSubs.filter(s => s.form && f.title && s.form.trim().toLowerCase() === f.title.trim().toLowerCase()).length;
-      let baseCount = 0;
-      if (f.title === 'Innovation Grant Application') baseCount = 40;
-      else if (f.title === 'Student Course Feedback') baseCount = 126;
-      else if (f.title === 'Workshop Registration Form') baseCount = 89;
-      else if (f.title === 'Faculty Research Proposal') baseCount = 14;
+    // 4. Load Submissions
+    const localSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+    const defaultSubs = [
+      { id: 'MMIP-101', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
+      { id: 'MMIP-102', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
+      { id: 'MMIP-103', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
+      { id: 'MMIP-104', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
+      { id: 'MMIP-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
+    ];
+    const combinedSubmissions = [...localSubs, ...defaultSubs];
+    setSubmissions(combinedSubmissions);
 
-      return { ...f, responses: baseCount + subCount };
-    });
+    // 5. Load Announcements
+    const savedAnnouncements = localStorage.getItem('appAnnouncements');
+    let announcementList = [];
+    if (savedAnnouncements) {
+      announcementList = JSON.parse(savedAnnouncements);
+    } else {
+      announcementList = [
+        { id: 1, title: 'Innovation Grants 2026 Extended', content: 'The final submission window for innovation research grants is extended until July 25th, 2026. Submit through the Portal.', target: 'All', date: '2026-07-08' },
+        { id: 2, title: 'Annual Course Assessment Feedbacks', content: 'Faculty members are requested to publish their respective course feedback forms for current semester students.', target: 'Faculty', date: '2026-07-05' }
+      ];
+      localStorage.setItem('appAnnouncements', JSON.stringify(announcementList));
+    }
+    setAnnouncements(announcementList);
 
-    setForms(updatedForms);
+    // 6. Load Notifications
+    const savedNotifications = localStorage.getItem('appNotifications');
+    let notificationList = [];
+    if (savedNotifications) {
+      notificationList = JSON.parse(savedNotifications);
+    } else {
+      notificationList = [
+        { id: 1, text: 'New student registration: Arun Kumar', time: '10 mins ago', type: 'Registration' },
+        { id: 2, text: 'Submission flagged: MMIP-105 has incomplete fields', time: '1 hour ago', type: 'System' },
+        { id: 3, text: 'New custom template submitted for moderation: Alumni Survey', time: '1 day ago', type: 'Form' }
+      ];
+      localStorage.setItem('appNotifications', JSON.stringify(notificationList));
+    }
+    setNotifications(notificationList);
 
-    // Load profile
-    let nameVal = localStorage.getItem('userName') || 'Administrator';
-    if (nameVal === 'Department Admin') {
-      nameVal = 'Admin';
-      localStorage.setItem('userName', 'Admin');
+    // 7. Load Audit Logs
+    const savedLogs = localStorage.getItem('systemLogs');
+    let logList = [];
+    if (savedLogs) {
+      logList = JSON.parse(savedLogs);
+    } else {
+      logList = [
+        { time: '2026-07-09 15:42:15', type: 'System', text: 'Admin session initiated.' },
+        { time: '2026-07-09 14:15:22', type: 'Form', text: 'Form Submission received for Innovation Grant Application.' },
+        { time: '2026-07-09 10:45:00', type: 'Admin', text: 'Admin account Dr. Jane Cooper verified.' },
+        { time: '2026-07-09 09:30:10', type: 'Setting', text: 'System settings synced with cloud storage.' }
+      ];
+      localStorage.setItem('systemLogs', JSON.stringify(logList));
     }
 
-    // Clean up appUsers array if it contains 'Department Admin'
-    try {
-      const savedUsers = localStorage.getItem('appUsers');
-      if (savedUsers && savedUsers.includes('Department Admin')) {
-        const users = JSON.parse(savedUsers);
-        const updated = users.map(u => u.name === 'Department Admin' ? { ...u, name: 'Admin' } : u);
-        localStorage.setItem('appUsers', JSON.stringify(updated));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    const roleVal = localStorage.getItem('userRole') || 'admin';
-    setProfileData({
-      name: nameVal,
-      role: roleVal === 'superadmin' ? 'Super Admin' : 'Admin'
-    });
-  }, [selectedFormDb, activeMenu]);
-
-
-
-
-
-  const handleDeleteSubmission = (id) => {
-    if (window.confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
-      const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-      const updated = existing.filter(s => String(s.id) !== String(id));
-      localStorage.setItem('formSubmissions', JSON.stringify(updated));
-
-      setSubmissions(prev => prev.filter(s => String(s.id) !== String(id)));
-      alert('Submission deleted successfully.');
-    }
-  };
-
-  const handleSaveSubmissionEdit = () => {
-    const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-    const updated = existing.map(s => {
-      if (String(s.id) === String(editingSubmission.id)) {
-        return {
-          ...s,
-          name: editingSubmission.name,
-          email: editingSubmission.email,
-          status: editingSubmission.status,
-          answers: editingSubmission.answers
-        };
-      }
-      return s;
-    });
-    localStorage.setItem('formSubmissions', JSON.stringify(updated));
-
-    setSubmissions(prev => prev.map(s => {
-      if (String(s.id) === String(editingSubmission.id)) {
-        return {
-          ...s,
-          name: editingSubmission.name,
-          email: editingSubmission.email,
-          status: editingSubmission.status,
-          answers: editingSubmission.answers
-        };
-      }
-      return s;
+    const loginActivity = JSON.parse(localStorage.getItem('loginActivity') || '[]');
+    const loginLogs = loginActivity.map(act => ({
+      time: act.login_time,
+      type: 'Auth',
+      text: `${act.name} (${act.email}) signed in successfully.`
     }));
 
-    setEditingSubmission(null);
-    alert('Submission updated successfully.');
+    const combinedLogs = [...logList, ...loginLogs].sort((a, b) => new Date(b.time) - new Date(a.time));
+    setLogs(combinedLogs);
+
+    // Compute Stats
+    setStats({
+      totalSubmissions: combinedSubmissions.length,
+      totalForms: combinedForms.length,
+      activeAdminsCount: userList.filter(u => (u.status === 'Active' || u.account_status === 'Active') && u.role === 'admin').length,
+      totalUsersCount: userList.length,
+      activeAnnouncements: announcementList.length
+    });
+
+    // Load Settings
+    const savedSettings = localStorage.getItem('globalSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  // Helper to log actions
+  const logAction = (type, text) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const newLog = { time: timestamp, type, text };
+    const updatedLogs = [newLog, ...logs];
+    setLogs(updatedLogs);
+    localStorage.setItem('systemLogs', JSON.stringify(updatedLogs));
   };
 
-  const todayStr = new Date().toLocaleDateString();
-  const todaySubs = submissions.filter(s => {
-    if (!s.date) return false;
-    return s.date.includes(todayStr) || s.date.includes('Today') || s.time?.includes('ago') || s.time?.includes('mins');
-  }).length;
+  // CRUD User Management
+  const openAddUserModal = () => {
+    setEditingUser(null);
+    setUserFormData({ name: '', email: '', role: 'Student', dept: 'Computer Science', status: 'Active' });
+    setShowUserModal(true);
+  };
 
-  if (selectedFormDb) {
-    const formSubmissions = submissions.filter(s => s.form && s.form.trim().toLowerCase() === selectedFormDb.title.trim().toLowerCase());
+  const openEditUserModal = (user) => {
+    setEditingUser(user);
+    setUserFormData({ name: user.name, email: user.email, role: user.role, dept: user.dept, status: user.status });
+    setShowUserModal(true);
+  };
 
-    let filteredSubs = formSubmissions;
-    if (dbSearchQuery) {
-      const q = dbSearchQuery.toLowerCase();
-      filteredSubs = filteredSubs.filter(sub =>
-        sub.id.toLowerCase().includes(q) ||
-        sub.name.toLowerCase().includes(q) ||
-        sub.email.toLowerCase().includes(q) ||
-        sub.answers.some(ans => ans.a.toLowerCase().includes(q))
-      );
+  const handleUserFormSubmit = (e) => {
+    e.preventDefault();
+    let updatedUsers = [];
+    if (editingUser) {
+      updatedUsers = users.map(u => u.id === editingUser.id ? { ...u, ...userFormData } : u);
+      logAction('Admin', `Updated user profile for ${userFormData.name} (${userFormData.email}).`);
+      showToastMessage(`User profile for "${userFormData.name}" updated.`);
+    } else {
+      const newUser = { id: Date.now(), ...userFormData };
+      updatedUsers = [...users, newUser];
+      logAction('Admin', `Registered new user: ${userFormData.name} (${userFormData.role}) under ${userFormData.dept}.`);
+      showToastMessage(`Registered new user "${userFormData.name}".`);
+    }
+    setUsers(updatedUsers);
+    localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
+    
+    // Sync admins list
+    const adminList = updatedUsers.filter(u => u.role === 'admin');
+    localStorage.setItem('appAdmins', JSON.stringify(adminList));
+    setAdmins(adminList);
+
+    setStats(prev => ({
+      ...prev,
+      totalUsersCount: updatedUsers.length,
+      activeAdminsCount: adminList.filter(a => a.status === 'Active' || a.account_status === 'Active').length
+    }));
+    setShowUserModal(false);
+  };
+
+  const handleDeleteUser = (id, name) => {
+    triggerConfirm(`Are you sure you want to permanently delete user: ${name}?`, () => {
+      const updatedUsers = users.filter(u => u.id !== id);
+      setUsers(updatedUsers);
+      localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
+
+      const adminList = updatedUsers.filter(u => u.role === 'admin');
+      localStorage.setItem('appAdmins', JSON.stringify(adminList));
+      setAdmins(adminList);
+
+      setStats(prev => ({
+        ...prev,
+        totalUsersCount: updatedUsers.length,
+        activeAdminsCount: adminList.filter(a => a.status === 'Active' || a.account_status === 'Active').length
+      }));
+      logAction('Admin', `Deleted user account: ${name}.`);
+      showToastMessage(`User account "${name}" deleted.`);
+    });
+  };
+
+  // CRUD Submission Management
+  const handleDeleteSubmission = (id, name) => {
+    triggerConfirm(`Are you sure you want to delete submission ${id} from ${name}?`, () => {
+      const updated = submissions.filter(s => s.id !== id);
+      setSubmissions(updated);
+      localStorage.setItem('formSubmissions', JSON.stringify(updated));
+      logAction('Form', `Deleted form submission: ${id} by ${name}.`);
+      showToastMessage(`Deleted submission ${id} by ${name}.`);
+    });
+  };
+
+  const openEditSubModal = (sub) => {
+    setEditingSub(sub);
+    setSubEditData({ name: sub.name, email: sub.email, status: sub.status });
+  };
+
+  const handleSubEditSubmit = (e) => {
+    e.preventDefault();
+    const updated = submissions.map(s => s.id === editingSub.id ? { ...s, ...subEditData } : s);
+    setSubmissions(updated);
+    localStorage.setItem('formSubmissions', JSON.stringify(updated));
+    logAction('Form', `Updated details & status for submission ${editingSub.id}.`);
+    showToastMessage(`Updated submission ${editingSub.id}.`);
+    setEditingSub(null);
+  };
+
+  // CRUD Department Management
+  const openAddDeptModal = () => {
+    setEditingDept(null);
+    setDeptFormData({ name: '', hod: '', formsCount: 0, membersCount: 0 });
+    setShowDeptModal(true);
+  };
+
+  const openEditDeptModal = (dept) => {
+    setEditingDept(dept);
+    setDeptFormData({
+      name: dept.name,
+      hod: dept.hod,
+      formsCount: dept.formsCount,
+      membersCount: dept.membersCount
+    });
+    setShowDeptModal(true);
+  };
+
+  const handleDeptFormSubmit = (e) => {
+    e.preventDefault();
+    let updatedDepts;
+    if (editingDept) {
+      updatedDepts = departments.map(d => d.id === editingDept.id ? { ...d, ...deptFormData } : d);
+      logAction('System', `Updated department registry: ${deptFormData.name} (HOD: ${deptFormData.hod}).`);
+      showToastMessage(`Updated department "${deptFormData.name}".`);
+    } else {
+      const newDept = { id: Date.now(), ...deptFormData };
+      updatedDepts = [...departments, newDept];
+      logAction('System', `Added new department registry: ${deptFormData.name} (HOD: ${deptFormData.hod}).`);
+      showToastMessage(`Added department "${deptFormData.name}".`);
+    }
+    setDepartments(updatedDepts);
+    localStorage.setItem('appDepartments', JSON.stringify(updatedDepts));
+    setShowDeptModal(false);
+    setEditingDept(null);
+  };
+
+  const handleDeleteDept = (id, name) => {
+    triggerConfirm(`Are you sure you want to permanently delete department: ${name}?`, () => {
+      const updatedDepts = departments.filter(d => d.id !== id);
+      setDepartments(updatedDepts);
+      localStorage.setItem('appDepartments', JSON.stringify(updatedDepts));
+      logAction('System', `Deleted department registry: "${name}".`);
+      showToastMessage(`Deleted department "${name}".`);
+    });
+  };
+
+  // Announcements CRUD
+  const openAddAnnouncementModal = () => {
+    setAnnouncementFormData({ title: '', content: '', target: 'All' });
+    setShowAnnouncementModal(true);
+  };
+
+  const handleAnnouncementSubmit = (e) => {
+    e.preventDefault();
+    const newAnn = { id: Date.now(), ...announcementFormData, date: new Date().toLocaleDateString() };
+    const updatedAnn = [newAnn, ...announcements];
+    setAnnouncements(updatedAnn);
+    localStorage.setItem('appAnnouncements', JSON.stringify(updatedAnn));
+    logAction('System', `Published announcement: "${announcementFormData.title}".`);
+    setStats(prev => ({ ...prev, activeAnnouncements: updatedAnn.length }));
+    showToastMessage('Announcement published successfully!');
+    setShowAnnouncementModal(false);
+  };
+
+  const handleDeleteAnnouncement = (id, title) => {
+    triggerConfirm(`Delete announcement: "${title}"?`, () => {
+      const updatedAnn = announcements.filter(a => a.id !== id);
+      setAnnouncements(updatedAnn);
+      localStorage.setItem('appAnnouncements', JSON.stringify(updatedAnn));
+      logAction('System', `Deleted announcement: "${title}".`);
+      setStats(prev => ({ ...prev, activeAnnouncements: updatedAnn.length }));
+      showToastMessage('Announcement deleted.');
+    });
+  };
+
+  // System Settings updates
+  const handleSettingChange = (key, value) => {
+    const updatedSettings = { ...settings, [key]: value };
+    setSettings(updatedSettings);
+    localStorage.setItem('globalSettings', JSON.stringify(updatedSettings));
+    logAction('Setting', `Changed configuration '${key}' to: ${value.toString()}`);
+    showToastMessage(`Setting '${key}' updated to ${value.toString()}`);
+  };
+
+  const handleSaveProfile = () => {
+    if (!profileData.name.trim()) {
+      showToastMessage('Profile name cannot be empty!', 'error');
+      return;
+    }
+    if (!profileData.email.trim()) {
+      showToastMessage('Email address cannot be empty!', 'error');
+      return;
+    }
+    localStorage.setItem('userName', profileData.name);
+    localStorage.setItem('userEmail', profileData.email);
+    localStorage.setItem('userJoined', profileData.joined);
+    
+    // Propagate change to appUsers
+    const savedUsers = localStorage.getItem('appUsers');
+    if (savedUsers) {
+      const users = JSON.parse(savedUsers);
+      const updated = users.map(u => u.email === originalEmail ? { ...u, name: profileData.name, email: profileData.email, created_at: profileData.joined } : u);
+      localStorage.setItem('appUsers', JSON.stringify(updated));
+    }
+    
+    setOriginalEmail(profileData.email);
+    logAction('System', `Administrator profile updated. Name: ${profileData.name}, Email: ${profileData.email}, Joined: ${profileData.joined}`);
+    showToastMessage('Profile updated successfully!');
+  };
+
+  const handleChangePassword = () => {
+    const { currentPassword, newPassword, confirmPassword } = pwdData;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToastMessage('All password fields are required!', 'error');
+      return;
     }
 
-    if (dateFilter !== 'all') {
-      const today = new Date();
-      filteredSubs = filteredSubs.filter(sub => {
-        if (dateFilter === 'today') {
-          return sub.date && (sub.date.includes(today.toLocaleDateString()) || sub.date.includes('Today') || sub.time?.includes('ago') || sub.time?.includes('mins'));
-        }
-        if (dateFilter === 'yesterday') {
-          return sub.date && (sub.date.includes(new Date(today - 86400000).toLocaleDateString()) || sub.date.includes('Yesterday'));
-        }
-        return true;
-      });
+    if (newPassword.length < 6) {
+      showToastMessage('New password must be at least 6 characters long!', 'error');
+      return;
     }
 
-    if (sortBy === 'latest') {
-      filteredSubs.sort((a, b) => String(b.id || '').localeCompare(String(a.id || '')));
-    } else if (sortBy === 'oldest') {
-      filteredSubs.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
-    } else if (sortBy === 'name') {
-      filteredSubs.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    if (newPassword !== confirmPassword) {
+      showToastMessage('New passwords do not match!', 'error');
+      return;
     }
 
-    const headers = [...getColumnHeaders(selectedFormDb.title), 'Actions'];
+    // Load current admin account from local storage users database
+    const savedUsers = localStorage.getItem('appUsers');
+    if (!savedUsers) {
+      showToastMessage('No users found in database!', 'error');
+      return;
+    }
 
-    return (
-      <div className="admin-db-layout anim-fade-in" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-        {/* Left Sidebar */}
-        <aside className="db-sidebar" style={{ width: '280px', background: 'white', borderRight: '1px solid #e2e8f0', padding: '24px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-          <div className="db-sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-            <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
-            <div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>MCC-MRF Portal</div>
-              <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b' }}>Database Explorer</div>
-            </div>
-          </div>
+    const usersList = JSON.parse(savedUsers);
+    const currentEmail = localStorage.getItem('userEmail') || 'admin@mcc.edu.in';
+    const targetIndex = usersList.findIndex(u => u.email.toLowerCase() === currentEmail.toLowerCase());
 
-          <button
-            onClick={() => setSelectedFormDb(null)}
-            className="db-back-btn"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="back-arrow-icon">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            Back to Overview
-          </button>
+    if (targetIndex === -1) {
+      showToastMessage('Logged-in user not found in database!', 'error');
+      return;
+    }
 
-          <div style={{ fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Other Form Databases</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>
-            {forms.map(f => (
-              <button
-                key={f.id}
-                onClick={() => {
-                  setSelectedFormDb(f);
-                  setDbSearchQuery('');
-                }}
-                style={{
-                  textAlign: 'left',
-                  padding: '10px 14px',
-                  background: f.id === selectedFormDb.id ? '#7B1C1C' : 'transparent',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: f.id === selectedFormDb.id ? 'white' : '#475569',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.2s',
-                  width: '100%'
-                }}
-              >
-                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', marginRight: '8px' }}>{f.title}</span>
-                <span style={{ fontSize: '11px', padding: '2px 6px', background: f.id === selectedFormDb.id ? 'rgba(255,255,255,0.2)' : '#e2e8f0', borderRadius: '10px', color: f.id === selectedFormDb.id ? 'white' : '#64748b' }}>{f.responses}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
+    const targetUser = usersList[targetIndex];
 
-        {/* Main Content Area */}
-        <main style={{ flex: 1, padding: '32px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <div>
-              <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>{selectedFormDb.title} Submissions</h2>
-              <p style={{ fontSize: '13.5px', color: '#64748b', marginTop: '4px' }}>Managing {filteredSubs.length} response records dynamically</p>
-            </div>
+    // Validate current password
+    const storedHash = targetUser.password.startsWith('hash_') ? targetUser.password : hashPassword(targetUser.password);
+    const currentHash = hashPassword(currentPassword);
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={() => {
-                  if (filteredSubs.length === 0) {
-                    alert('No submissions available to export.');
-                    return;
-                  }
-                  const csvHeaders = headers.join(',');
-                  const csvRows = filteredSubs.map(row => {
-                    const cells = getRowCells(row, selectedFormDb.title);
-                    return [
-                      cells.col1,
-                      `"${cells.col2}"`,
-                      cells.col3,
-                      cells.col4,
-                      `"${cells.col5}"`,
-                      `"${cells.col6}"`,
-                      `"${cells.col7.title} - ${cells.col7.sub}"`,
-                      cells.col8
-                    ].join(',');
-                  });
-                  const csvContent = "data:text/csv;charset=utf-8," + [csvHeaders, ...csvRows].join("\n");
-                  const encodedUri = encodeURI(csvContent);
-                  const link = document.createElement("a");
-                  link.setAttribute("href", encodedUri);
-                  link.setAttribute("download", `${selectedFormDb.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_submissions.csv`);
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', color: '#334155', fontSize: '13.5px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s' }}
-              >
-                📥 Export CSV
-              </button>
-              <a
-                href={`/form/${selectedFormDb.id}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#7B1C1C', border: 'none', borderRadius: '10px', color: 'white', fontSize: '13.5px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s' }}
-              >
-                ➕ Register Form
-              </a>
-            </div>
-          </div>
+    if (storedHash !== currentHash) {
+      showToastMessage('Incorrect current password!', 'error');
+      return;
+    }
 
-          {/* Controls Bar: Search, Date Filter, Sort */}
-          <div className="db-controls-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
-              <span style={{ color: '#94a3b8' }}>🔍</span>
-              <input
-                type="text"
-                placeholder="Search submission records by name, email, details..."
-                value={dbSearchQuery}
-                onChange={e => setDbSearchQuery(e.target.value)}
-                style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', fontSize: '13.5px', color: '#1e293b' }}
-              />
-            </div>
+    // Success: Hash and update new password
+    const newHash = hashPassword(newPassword);
+    usersList[targetIndex] = { ...targetUser, password: newHash };
+    localStorage.setItem('appUsers', JSON.stringify(usersList));
 
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Date:</span>
-                <select
-                  value={dateFilter}
-                  onChange={e => setDateFilter(e.target.value)}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: '#334155', background: 'white', outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value="all">All Dates</option>
-                  <option value="today">Today</option>
-                  <option value="yesterday">Yesterday</option>
-                </select>
-              </div>
+    // Log action
+    logAction('System', `Administrator changed account password successfully.`);
+    showToastMessage('Password changed successfully!');
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Sort:</span>
-                <select
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', color: '#334155', background: 'white', outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value="latest">Latest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="name">Name A-Z</option>
-                </select>
-              </div>
-            </div>
-          </div>
+    // Reset fields
+    setPwdData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
 
-          {/* Database Card-Table Strip Layout */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Table Header Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '80px 1.2fr 1fr 1fr 90px 90px 2fr 1.2fr 100px', gap: '16px', padding: '12px 20px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '10px', fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {headers.map((h, idx) => (
-                <div key={idx} style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: h === 'Actions' ? 'center' : 'left' }}>{h}</div>
-              ))}
-            </div>
+  const getTemplatesRanking = () => {
+    const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+    const rankingMap = {};
+    formUsage.forEach(u => {
+      const name = u.template_name || 'Unnamed Template';
+      rankingMap[name] = (rankingMap[name] || 0) + 1;
+    });
+    return Object.entries(rankingMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  };
 
-            {/* Table Body Card Strips */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {filteredSubs.map((row, idx) => {
-                const cells = getRowCells(row, selectedFormDb.title);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => setSelectedSubmission(row)}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '80px 1.2fr 1fr 1fr 90px 90px 2fr 1.2fr 100px',
-                      gap: '16px',
-                      alignItems: 'center',
-                      padding: '16px 20px',
-                      background: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'transform 0.15s, box-shadow 0.15s',
-                      fontSize: '13.5px',
-                      color: '#334155'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.04)';
-                      e.currentTarget.style.borderColor = '#cbd5e1';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }}
-                  >
-                    <div>
-                      <span style={{ display: 'inline-block', background: '#1e293b', color: '#f8fafc', padding: '4px 8px', borderRadius: '6px', fontSize: '10.5px', fontWeight: '800' }}>
-                        {cells.col1}
-                      </span>
-                    </div>
+  const getTemplatesUsageLogs = () => {
+    return JSON.parse(localStorage.getItem('formUsage') || '[]');
+  };
 
-                    <div style={{ fontWeight: '700', color: '#0f172a' }}>
-                      {cells.col2}
-                    </div>
-
-                    <div style={{ fontWeight: '500' }}>{cells.col3}</div>
-
-                    <div style={{ fontWeight: '500' }}>{cells.col4}</div>
-
-                    <div>
-                      <span style={{ display: 'inline-block', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
-                        {cells.col5}
-                      </span>
-                    </div>
-
-                    <div style={{ fontWeight: '500' }}>{cells.col6}</div>
-
-                    <div>
-                      <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '13px' }}>{cells.col7.title}</div>
-                      <div style={{ color: '#64748b', fontSize: '11px', marginTop: '2px' }}>{cells.col7.sub}</div>
-                    </div>
-
-                    <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                      {cells.col8 && cells.col8 !== '—' ? (
-                        <span style={{ color: '#2563eb', fontWeight: '600' }}>{cells.col8}</span>
-                      ) : (
-                        <span style={{ color: '#94a3b8' }}>—</span>
-                      )}
-                    </div>
-
-                    {/* Actions Column */}
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingSubmission(row);
-                        }}
-                        className="db-action-btn edit"
-                        title="Edit Record"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSubmission(row.id);
-                        }}
-                        className="db-action-btn delete"
-                        title="Delete Record"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {filteredSubs.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '64px 20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#94a3b8' }}>
-                  <span style={{ fontSize: '32px', display: 'block', marginBottom: '12px' }}>📥</span>
-                  No submission records match the current filters.
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-
+  // Notifications management
+  const handleClearNotifications = () => {
+    setNotifications([]);
+    localStorage.setItem('appNotifications', JSON.stringify([]));
+    logAction('System', 'Notifications list cleared.');
+  };
 
   return (
-    <div className="admin-layout">
-      {/* ── Sidebar ── */}
+    <div className={`admin-layout${sidebarOpen ? ' sidebar-active' : ''}`}>
+      {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      {/* Sidebar Panel */}
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-header">
+        <div className="admin-sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="admin-logo" />
+          <button 
+            type="button"
+            className="admin-sidebar-close-btn" 
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close Menu"
+          >
+            ✕
+          </button>
         </div>
 
         <nav className="admin-nav-links">
+          {/* Dashboard Overview */}
           <button
             className={`admin-nav-item${activeMenu === 'overview' ? ' active' : ''}`}
-            onClick={() => setActiveMenu('overview')}
+            onClick={() => { setActiveMenu('overview'); setSidebarOpen(false); }}
           >
-            Dashboard Overview
+            Dashboard
           </button>
+
+          {/* User Management Collapsible Dropdown */}
+          <div className="admin-menu-dropdown-wrapper">
+            <button
+              className="admin-nav-item dropdown-toggle"
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+            >
+              User Management <span className="dropdown-arrow">{userDropdownOpen ? '▼' : '▶'}</span>
+            </button>
+            {userDropdownOpen && (
+              <div className="admin-dropdown-submenu">
+                <button
+                  className={`submenu-item${activeMenu === 'users' ? ' active' : ''}`}
+                  onClick={() => { setActiveMenu('users'); setSidebarOpen(false); }}
+                >
+                  • All Users
+                </button>
+                <button
+                  className={`submenu-item${activeMenu === 'roles' ? ' active' : ''}`}
+                  onClick={() => { setActiveMenu('roles'); setSidebarOpen(false); }}
+                >
+                  • Roles & Permissions
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Department Management */}
+          <button
+            className={`admin-nav-item${activeMenu === 'departments' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('departments'); setSidebarOpen(false); }}
+          >
+            Department Management
+          </button>
+
+          {/* Form Management */}
           <button
             className={`admin-nav-item${activeMenu === 'forms' ? ' active' : ''}`}
-            onClick={() => setActiveMenu('forms')}
+            onClick={() => { setActiveMenu('forms'); setSidebarOpen(false); }}
           >
-            Manage Forms
+            Form Management
           </button>
+
+          {/* All Submissions */}
           <button
-            className={`admin-nav-item${activeMenu === 'users' ? ' active' : ''}`}
-            onClick={() => setActiveMenu('users')}
+            className={`admin-nav-item${activeMenu === 'submissions' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('submissions'); setSidebarOpen(false); }}
           >
-            Users & Usage logs
+            All Submissions
           </button>
+
+          {/* Reports & Analytics */}
           <button
-            className={`admin-nav-item${activeMenu === 'responses' ? ' active' : ''}`}
-            onClick={() => setActiveMenu('responses')}
+            className={`admin-nav-item${activeMenu === 'reports' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('reports'); setSidebarOpen(false); }}
           >
-            Submissions Feed
+            Reports & Analytics
           </button>
+
+          {/* Announcements */}
+          <button
+            className={`admin-nav-item${activeMenu === 'announcements' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('announcements'); setSidebarOpen(false); }}
+          >
+            Announcements
+          </button>
+
+          {/* Notifications */}
+          <button
+            className={`admin-nav-item${activeMenu === 'notifications' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('notifications'); setSidebarOpen(false); }}
+          >
+            Notifications
+          </button>
+
+          {/* Audit Logs */}
+          <button
+            className={`admin-nav-item${activeMenu === 'logs' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('logs'); setSidebarOpen(false); }}
+          >
+            Audit Logs
+          </button>
+
+          {/* System Settings */}
           <button
             className={`admin-nav-item${activeMenu === 'settings' ? ' active' : ''}`}
-            onClick={() => setActiveMenu('settings')}
+            onClick={() => { setActiveMenu('settings'); setSidebarOpen(false); }}
           >
             System Settings
+          </button>
+
+          {/* Profile */}
+          <button
+            className={`admin-nav-item${activeMenu === 'profile' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('profile'); setSidebarOpen(false); }}
+          >
+            Profile
           </button>
         </nav>
 
         <div className="admin-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Link to="/" className="admin-back-btn">
-            Back to Home
+          <Link to="/" className="admin-back-btn" onClick={() => setSidebarOpen(false)}>
+            Exit to Landing Page
           </Link>
           <button
             onClick={() => {
@@ -755,16 +803,26 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ── Main Content Panel ── */}
+      {/* Main Panel Content */}
       <main className="admin-main">
         {/* Top Header */}
-        <header className="admin-header">
-          <div className="admin-header-title-wrap">
-            <h2>MCC-MRF Portal Admin</h2>
-            <p>Control center for Madras Christian College form management</p>
+        <header className="admin-header" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              type="button"
+              className="admin-menu-toggle-btn" 
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Menu"
+            >
+              ☰
+            </button>
+            <div className="admin-header-title-wrap">
+              <h2>MCC-MRF Portal Admin</h2>
+              <p>Madras Christian College Innovation Park System Center</p>
+            </div>
           </div>
           <div className="admin-profile-badge">
-            <span className="profile-avatar">👤</span>
+            <span className="profile-avatar">{profileData.avatar}</span>
             <div>
               <div className="profile-name">{profileData.name}</div>
               <div className="profile-role">{profileData.role}</div>
@@ -772,405 +830,1029 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* ── OVERVIEW MENU TAB ── */}
+        {/* ── 1. DASHBOARD OVERVIEW ── */}
         {activeMenu === 'overview' && (
           <div className="admin-tab-content anim-fade-in">
-            {/* Quick Stats Grid */}
+            {/* KPI Stats */}
             <div className="admin-stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon forms-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+              <div className="admin-stat-card">
+                <div className="stat-icon-wrapper submissions">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
                 </div>
-                <div className="stat-details">
-                  <span className="stat-label">Total Templates</span>
-                  <span className="stat-value">{forms.length}</span>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon responses-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
-                </div>
-                <div className="stat-details">
+                <div className="stat-info">
                   <span className="stat-label">Total Submissions</span>
-                  <span className="stat-value">{submissions.length}</span>
+                  <span className="stat-value">{stats.totalSubmissions}</span>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon rate-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <div className="admin-stat-card">
+                <div className="stat-icon-wrapper forms">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
                 </div>
-                <div className="stat-details">
-                  <span className="stat-label">Today's Submissions</span>
-                  <span className="stat-value">{todaySubs}</span>
+                <div className="stat-info">
+                  <span className="stat-label">Total Forms</span>
+                  <span className="stat-value">{stats.totalForms}</span>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon active-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              <div className="admin-stat-card">
+                <div className="stat-icon-wrapper admins">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </div>
-                <div className="stat-details">
-                  <span className="stat-label">Active Forms</span>
-                  <span className="stat-value">{forms.filter(f => f.status === 'Active').length}</span>
+                <div className="stat-info">
+                  <span className="stat-label">Registered Users</span>
+                  <span className="stat-value">{stats.totalUsersCount}</span>
+                </div>
+              </div>
+              <div className="admin-stat-card">
+                <div className="stat-icon-wrapper state">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="heartbeat-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">Health & Tunnels</span>
+                  <span className="stat-value">Online (HMR)</span>
                 </div>
               </div>
             </div>
 
-            {/* Form Submissions Databases Card Grid */}
-            <div className="admin-content-card" style={{ marginTop: '24px', marginBottom: '24px' }}>
-              <div className="card-header">
-                <h3>Form Submissions Databases</h3>
-                <span className="card-subtitle">Select any form database below to view, filter, export, and manage its submitted data records.</span>
+            {/* Quick Status Info & Latest Logs */}
+            <div className="admin-overview-panels">
+              <div className="overview-panel quick-controls">
+                <h3>Quick Controls</h3>
+                <div className="controls-grid">
+                  <div className="control-item">
+                    <label>Maintenance Mode</label>
+                    <button
+                      className={`toggle-btn ${settings.maintenanceMode ? 'on' : 'off'}`}
+                      onClick={() => handleSettingChange('maintenanceMode', !settings.maintenanceMode)}
+                    >
+                      {settings.maintenanceMode ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                  <div className="control-item">
+                    <label>New Account Creation</label>
+                    <button className="control-action-btn" onClick={openAddUserModal}>
+                      + Add New User
+                    </button>
+                  </div>
+                  <div className="control-item">
+                    <label>Data Backup Simulation</label>
+                    <button
+                      className="control-action-btn secondary"
+                      onClick={() => {
+                        logAction('System', 'Database snapshot backup successfully triggered.');
+                        alert('System database backup simulated successfully!');
+                      }}
+                    >
+                      Backup Database
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginTop: '20px' }}>
-                {forms.map(form => (
-                  <div
-                    key={form.id}
-                    className="db-form-card"
-                    style={{
-                      background: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.08)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                    }}
-                    onClick={() => setSelectedFormDb(form)}
-                  >
-                    {/* Top Status Border Accent */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: form.status === 'Active' ? '#7B1C1C' : '#94a3b8' }} />
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '24px' }}>📋</span>
-                        <span className={`status-badge ${form.status.toLowerCase()}`} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px' }}>
-                          {form.status}
-                        </span>
+              <div className="overview-panel recent-logs">
+                <div className="panel-header">
+                  <h3>Recent Audit Trail</h3>
+                  <button className="text-btn" onClick={() => setActiveMenu('logs')}>View All Logs</button>
+                </div>
+                <div className="logs-feed-compact">
+                  {logs.slice(0, 5).map((log, index) => (
+                    <div key={index} className="log-row-compact">
+                      <span className="log-time">{log.time.split(' ')[1]}</span>
+                      <span className={`log-tag tag-${log.type.toLowerCase()}`}>{log.type}</span>
+                      <span className="log-text">{log.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. ALL USERS ── */}
+        {activeMenu === 'users' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Registered Portal Users Directory</h3>
+              <button className="admin-btn-primary" onClick={openAddUserModal}>
+                + Register User
+              </button>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>Name / Role</th>
+                    <th>Email Address</th>
+                    <th>Department</th>
+                    <th>Created</th>
+                    <th>Last Active</th>
+                    <th>Session Status</th>
+                    <th>Forms Count</th>
+                    <th>Templates Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => {
+                    const isOnline = localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userEmail') === user.email;
+                    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+                    const userForms = customForms.filter(f => f.creator_id === user.id || f.creator === user.email || f.creator === user.name).length;
+                    const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
+                    const userTemplates = formUsage.filter(u => u.user_id === user.id || u.user_email === user.email).length;
+                    
+                    return (
+                      <tr key={user.id}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <strong style={{ color: '#1e293b' }}>{formatName(user.name)}</strong>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>{user.role}</span>
+                          </div>
+                        </td>
+                        <td>{user.email}</td>
+                        <td>{user.dept || 'Administration'}</td>
+                        <td>{user.created_at || '2026-06-12'}</td>
+                        <td>{formatLastActive(user.last_login_at)}</td>
+                        <td>
+                          <span className={`status-badge-modern ${isOnline ? 'online' : 'offline'}`}>
+                            <span className="status-dot"></span>
+                            {isOnline ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+                        <td className="font-semibold" style={{ textAlign: 'center' }}>{userForms}</td>
+                        <td className="font-semibold" style={{ textAlign: 'center' }}>{userTemplates}</td>
+                        <td>
+                          <div className="table-actions">
+                            <button className="action-btn edit" onClick={() => openEditUserModal(user)}>
+                              Edit
+                            </button>
+                            <button className="action-btn delete" onClick={() => handleDeleteUser(user.id, user.name)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 3. ROLES & PERMISSIONS ── */}
+        {activeMenu === 'roles' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Portal Roles & Permissions Matrix</h3>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>User Role</th>
+                    <th>Manage Users</th>
+                    <th>Manage Forms</th>
+                    <th>Moderate Submissions</th>
+                    <th>Submit Submissions</th>
+                    <th>System Settings Access</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {permissions.map((p, pIdx) => (
+                    <tr key={pIdx}>
+                      <td className="font-semibold" style={p.color ? { color: p.color } : {}}>{p.role}</td>
+                      <td>
+                        <select
+                          value={p.manageUsers}
+                          onChange={(e) => handlePermissionChange(pIdx, 'manageUsers', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.manageForms}
+                          onChange={(e) => handlePermissionChange(pIdx, 'manageForms', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Allowed (Dept Only)">✅ Allowed (Dept Only)</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.moderateSubmissions}
+                          onChange={(e) => handlePermissionChange(pIdx, 'moderateSubmissions', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Allowed (Own Forms)">✅ Allowed (Own Forms)</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.submitSubmissions}
+                          onChange={(e) => handlePermissionChange(pIdx, 'submitSubmissions', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          value={p.settingsAccess}
+                          onChange={(e) => handlePermissionChange(pIdx, 'settingsAccess', e.target.value)}
+                          className="fb-question-type-select"
+                          style={{ minWidth: 'auto', padding: '4px 8px', fontSize: '12px', border: '1.5px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          <option value="Allowed">✅ Allowed</option>
+                          <option value="Denied">❌ Denied</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 4. DEPARTMENT MANAGEMENT ── */}
+        {activeMenu === 'departments' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Madras Christian College Departments</h3>
+              <button className="admin-btn-primary" onClick={openAddDeptModal}>
+                + Add Department
+              </button>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>Department Name</th>
+                    <th>Department Head (HOD)</th>
+                    <th>Forms Registered</th>
+                    <th>Members Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departments.map(dept => (
+                    <tr key={dept.id}>
+                      <td className="font-semibold">{dept.name}</td>
+                      <td>{dept.hod}</td>
+                      <td>{dept.formsCount} Forms</td>
+                      <td>{dept.membersCount} Members</td>
+                      <td>
+                        <div className="table-actions">
+                          <button className="action-btn edit" onClick={() => openEditDeptModal(dept)}>
+                            Edit
+                          </button>
+                          <button className="action-btn delete" onClick={() => handleDeleteDept(dept.id, dept.name)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. FORM MANAGEMENT ── */}
+        {activeMenu === 'forms' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Institutional Form Templates Manager</h3>
+            </div>
+            <AdminFormManagement onLogAction={logAction} />
+          </div>
+        )}
+
+        {/* ── 6. ALL SUBMISSIONS ── */}
+        {activeMenu === 'submissions' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Global Submissions Feed</h3>
+              <div className="forms-search-box" style={{ width: '300px', margin: 0 }}>
+                🔍
+                <input
+                  type="text"
+                  placeholder="Filter submissions..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Form Title</th>
+                    <th>Submitter</th>
+                    <th>Submitted Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions
+                    .filter(sub =>
+                      sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      sub.form.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      sub.id.toString().toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map(sub => (
+                      <tr key={sub.id}>
+                        <td className="font-semibold">{sub.id}</td>
+                        <td>{sub.form}</td>
+                        <td>{sub.name}</td>
+                        <td>{sub.date || '2026-07-09'}</td>
+                        <td>
+                          <span className={`status-badge ${sub.status.replace(' ', '-').toLowerCase()}`}>
+                            {sub.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="action-btn view"
+                              onClick={() => setSelectedSub(sub)}
+                            >
+                              View Details
+                            </button>
+                            <button
+                              className="action-btn edit"
+                              onClick={() => openEditSubModal(sub)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="action-btn delete"
+                              onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {selectedSub && (
+              <div className="admin-modal-overlay">
+                <div className="admin-modal" style={{ maxWidth: '600px' }}>
+                  <div className="modal-header">
+                    <h4>Submission Details - {selectedSub.id}</h4>
+                    <button className="modal-close" onClick={() => setSelectedSub(null)}>×</button>
+                  </div>
+                  <div className="modal-body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div>
+                        <strong>Submitter Name:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.name}</p>
                       </div>
-
-                      <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', marginBottom: '6px', lineHeight: '1.4' }}>
-                        {form.title}
-                      </h4>
-                      <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>
-                        Created by {form.creator} on {form.created}
-                      </p>
+                      <div>
+                        <strong>Email Address:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.email}</p>
+                      </div>
+                      <div>
+                        <strong>Form Name:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.form}</p>
+                      </div>
+                      <div>
+                        <strong>Date Submitted:</strong>
+                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.date || '2026-07-09'}</p>
+                      </div>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '12px' }}>
-                      <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>
-                        📊 {form.responses} Submissions
-                      </span>
-                      <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#7B1C1C', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        View DB →
-                      </span>
+                    <hr style={{ borderColor: '#e2e8f0', margin: '16px 0' }} />
+                    <h5>Field Answers</h5>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                      {(selectedSub.answers || []).map((ans, idx) => (
+                        <div key={idx}>
+                          <strong style={{ color: '#475569', fontSize: '13px' }}>{ans.q}</strong>
+                          <p style={{ margin: '4px 0 0 0', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>{ans.a || '—'}</p>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="admin-btn-secondary" onClick={() => setSelectedSub(null)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editingSub && (
+              <div className="admin-modal-overlay">
+                <form onSubmit={handleSubEditSubmit} className="admin-modal" style={{ maxWidth: '500px' }}>
+                  <div className="modal-header">
+                    <h4>Edit Submission - {editingSub.id}</h4>
+                    <button type="button" className="modal-close" onClick={() => setEditingSub(null)}>×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Submitter Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={subEditData.name}
+                          onChange={e => setSubEditData(prev => ({ ...prev, name: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          value={subEditData.email}
+                          onChange={e => setSubEditData(prev => ({ ...prev, email: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Status</label>
+                        <select
+                          value={subEditData.status}
+                          onChange={e => setSubEditData(prev => ({ ...prev, status: e.target.value }))}
+                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                        >
+                          <option value="Pending Review">Pending Review</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="admin-btn-secondary" onClick={() => setEditingSub(null)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="admin-btn-primary">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── 7. REPORTS & ANALYTICS ── */}
+        {activeMenu === 'reports' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>Portal Reports & Analytics</h3>
+              <button
+                className="admin-btn-primary"
+                onClick={() => showToastMessage('Simulating PDF/CSV Export of system analytics...', 'info')}
+              >
+                📥 Export Analytics Report
+              </button>
+            </div>
+
+            <div className="admin-overview-panels" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="overview-panel">
+                <h3>Submissions by Department</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Computer Science</span>
+                      <span>154 (53%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '53%', height: '100%', background: '#7B1C1C' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Chemistry</span>
+                      <span>98 (34%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '34%', height: '100%', background: '#475569' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>Biotechnology</span>
+                      <span>82 (28%)</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '28%', height: '100%', background: '#166534' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overview-panel">
+                <h3>Monthly Response Rate</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>July 2026 (Active)</span>
+                      <span>282 Submissions</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '90%', height: '100%', background: '#b45309' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px', fontWeight: '600' }}>
+                      <span>June 2026</span>
+                      <span>194 Submissions</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: '70%', height: '100%', background: '#0f172a' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-overview-panels" style={{ gridTemplateColumns: '1fr', marginTop: '24px' }}>
+              <div className="overview-panel">
+                <h3>Form Templates Usage Analytics</h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '16px' }}>
+                  {/* Left Column: Usage Frequency List */}
+                  <div>
+                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>Popular Templates Ranking</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {getTemplatesRanking().map((item, idx) => (
+                        <div key={idx} style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <strong style={{ fontSize: '13px', color: '#1e293b' }}>{item.name}</strong>
+                          </div>
+                          <span style={{ background: '#7B1C1C', color: 'white', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', fontSize: '11px' }}>
+                            {item.count} uses
+                          </span>
+                        </div>
+                      ))}
+                      {getTemplatesRanking().length === 0 && (
+                        <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px' }}>No template activity logged yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Detailed Usage Log Map */}
+                  <div>
+                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>User Template Selections Audit Map</h4>
+                    <div className="super-table-container" style={{ margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
+                      <table className="super-data-table" style={{ fontSize: '12px' }}>
+                        <thead>
+                          <tr>
+                            <th>User Email</th>
+                            <th>Template Used</th>
+                            <th>Used Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getTemplatesUsageLogs().map((log, idx) => (
+                            <tr key={idx}>
+                              <td><strong>{log.user_email}</strong></td>
+                              <td>{log.template_name}</td>
+                              <td>{log.used_at}</td>
+                            </tr>
+                          ))}
+                          {getTemplatesUsageLogs().length === 0 && (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: 'center', padding: '16px 0', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No selections logged.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ── 8. ANNOUNCEMENTS ── */}
+        {activeMenu === 'announcements' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Announcements Feed</h3>
+              <button className="admin-btn-primary" onClick={openAddAnnouncementModal}>
+                + Publish Announcement
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {announcements.map(ann => (
+                <div key={ann.id} className="overview-panel" style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                    className="ann-del-btn"
+                    title="Delete Announcement"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+                    <span className="log-tag tag-system" style={{ background: '#fdf2f2', color: '#7B1C1C' }}>
+                      Target: {ann.target}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                      Published on {ann.date}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+                    {ann.title}
+                  </h4>
+                  <p style={{ margin: 0, color: '#475569', fontSize: '14px', lineHeight: '1.6' }}>
+                    {ann.content}
+                  </p>
+                </div>
+              ))}
+              {announcements.length === 0 && (
+                <div className="text-center" style={{ padding: '64px', color: '#94a3b8' }}>
+                  No active announcements published.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 9. NOTIFICATIONS ── */}
+        {activeMenu === 'notifications' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Alerts & Notifications</h3>
+              <button className="admin-btn-secondary" onClick={handleClearNotifications}>
+                Clear All Notifications
+              </button>
+            </div>
+
+            <div className="overview-panel" style={{ padding: '0 28px' }}>
+              {notifications.map(n => (
+                <div
+                  key={n.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '20px 0',
+                    borderBottom: '1px solid #e2e8f0'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '20px' }}>🔔</span>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '14px' }}>{n.text}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                        Type: {n.type} • {n.time}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {notifications.length === 0 && (
+                <div className="text-center" style={{ padding: '64px', color: '#94a3b8' }}>
+                  No active notifications/alerts.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 10. AUDIT LOGS ── */}
+        {activeMenu === 'logs' && (
+          <div className="admin-tab-content anim-fade-in">
+            <div className="tab-section-header">
+              <h3>System Event Log Feed</h3>
+              <button
+                className="admin-btn-danger"
+                onClick={() => {
+                  if (window.confirm('Clear all audit logs?')) {
+                    setLogs([]);
+                    localStorage.setItem('systemLogs', JSON.stringify([]));
+                  }
+                }}
+              >
+                Clear System Logs
+              </button>
+            </div>
+
+            <div className="logs-panel-full">
+              <div className="logs-table-header">
+                <span>Timestamp</span>
+                <span>Category</span>
+                <span>Details / Event Log Description</span>
+              </div>
+              <div className="logs-list-scrollable">
+                {logs.map((log, index) => (
+                  <div key={index} className="log-row-full">
+                    <span className="log-full-time">{log.time}</span>
+                    <span className={`log-tag tag-${log.type.toLowerCase()}`}>{log.type}</span>
+                    <span className="log-full-desc">{log.text}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Main Dashboard Panel Layout */}
-            <div className="admin-panel-row">
-              {/* Recent Activity Card */}
-              <div className="admin-content-card flex-2">
-                <div className="card-header">
-                  <h3>Recent Submissions Activity</h3>
-                  <button className="card-action-link" onClick={() => setActiveMenu('responses')}>View Feed</button>
-                </div>
-                <div className="submissions-list">
-                  {submissions.slice(0, 4).map(sub => (
-                    <div key={sub.id} className="sub-row-item">
-                      <div className="sub-avatar">👤</div>
-                      <div className="sub-info">
-                        <div className="sub-name">{sub.name}</div>
-                        <div className="sub-form-title">submitted to <strong>{sub.form}</strong></div>
-                      </div>
-                      <div className="sub-meta">
-                        <span className="sub-time">{sub.time}</span>
-                        <span className={`sub-status-badge ${sub.status.toLowerCase().replace(' ', '-')}`}>
-                          {sub.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Actions Card */}
-              <div className="admin-content-card flex-1">
-                <div className="card-header">
-                  <h3>Quick Admin Tasks</h3>
-                </div>
-                <div className="quick-tasks-list">
-                  <button className="task-btn" onClick={() => navigate('/form-builder')}>
-                    ➕ Create New Form Template
-                  </button>
-                  <button className="task-btn outline" onClick={() => setActiveMenu('settings')}>
-                    🔑 Manage Institutional Keys
-                  </button>
-                  <button className="task-btn outline" onClick={() => setActiveMenu('forms')}>
-                    📂 Pause All Active Surveys
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* ── FORMS TAB ── */}
-        {activeMenu === 'forms' && (
+        {/* ── 11. SYSTEM SETTINGS ── */}
+        {activeMenu === 'settings' && (
           <div className="admin-tab-content anim-fade-in">
-            <div className="admin-content-card" style={{ padding: '24px' }}>
-              <div className="card-header" style={{ marginBottom: '16px' }}>
-                <h3>Institutional Form Templates Manager</h3>
-              </div>
-              <AdminFormManagement onLogAction={() => {}} />
-            </div>
-          </div>
-        )}
+            <div className="admin-settings-card">
+              <h3>Global Portal Settings</h3>
 
-        {/* ── USERS & USAGE TAB ── */}
-        {activeMenu === 'users' && (
-          <div className="admin-tab-content anim-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Users Directory Card */}
-            <div className="admin-content-card">
-              <div className="card-header">
-                <h3>Registered Users Directory</h3>
-              </div>
-              <div style={{ overflowX: 'auto', marginTop: '8px' }}>
-                <table className="super-data-table" style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left' }}>Name / Role</th>
-                      <th style={{ textAlign: 'left' }}>Email Address</th>
-                      <th style={{ textAlign: 'left' }}>Last Active</th>
-                      <th style={{ textAlign: 'left' }}>Status</th>
-                      <th style={{ textAlign: 'center' }}>Forms</th>
-                      <th style={{ textAlign: 'center' }}>Templates</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const usersList = JSON.parse(localStorage.getItem('appUsers') || '[]');
-                      const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
-                      const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
-
-                      const formatName = (str) => {
-                        if (!str) return '—';
-                        return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                      };
-
-                      const formatLastActive = (dateStr) => {
-                        if (!dateStr) return '—';
-                        try {
-                          const d = new Date(dateStr);
-                          if (isNaN(d.getTime())) return dateStr;
-                          return d.toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          }).replace(',', ' •');
-                        } catch (e) {
-                          return dateStr;
-                        }
-                      };
-
-                      return usersList.map(user => {
-                        const isOnline = localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('userEmail') === user.email;
-                        const userForms = customForms.filter(f => f.creator_id === user.id || f.creator === user.email || f.creator === user.name).length;
-                        const userTemplates = formUsage.filter(u => u.user_id === user.id || u.user_email === user.email).length;
-                        
-                        return (
-                          <tr key={user.id}>
-                            <td>
-                              <div className="user-info-cell">
-                                <strong className="user-name">{formatName(user.name)}</strong>
-                                <span className="user-role-label">{user.role}</span>
-                              </div>
-                            </td>
-                            <td>{user.email}</td>
-                            <td className="last-active-cell">{formatLastActive(user.last_login_at)}</td>
-                            <td>
-                              <span className={`status-badge-modern ${isOnline ? 'online' : 'offline'}`}>
-                                <span className="status-dot"></span>
-                                {isOnline ? 'Online' : 'Offline'}
-                              </span>
-                            </td>
-                            <td style={{ textAlign: 'center' }} className="stats-count">{userForms}</td>
-                            <td style={{ textAlign: 'center' }} className="stats-count">{userTemplates}</td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Template Usage Rankings Card */}
-            <div className="admin-content-card">
-              <div className="card-header">
-                <h3>Popular Templates</h3>
-              </div>
-              <div className="popular-templates-grid">
-                {(() => {
-                  const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
-                  const rankingMap = {};
-                  formUsage.forEach(u => {
-                    const name = u.template_name || 'Unnamed Template';
-                    rankingMap[name] = (rankingMap[name] || 0) + 1;
-                  });
-                  const ranked = Object.entries(rankingMap)
-                    .map(([name, count]) => ({ name, count }))
-                    .sort((a, b) => b.count - a.count);
-
-                  return ranked.slice(0, 5).map((item, idx) => (
-                    <div key={idx} className="popular-template-item">
-                      <div className="popular-template-left">
-                        <span className={`template-rank rank-${idx + 1}`}>{idx + 1}</span>
-                        <span className="template-name-text" title={item.name}>
-                          {item.name}
-                        </span>
-                      </div>
-                      <span className="template-uses-badge">
-                        {item.count} {item.count === 1 ? 'use' : 'uses'}
-                      </span>
-                    </div>
-                  ));
-                })()}
-                {(() => {
-                  const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
-                  return formUsage.length === 0 && (
-                    <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px' }}>No template activities recorded.</p>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── SUBMISSIONS TAB ── */}
-        {activeMenu === 'responses' && (
-          <div className="admin-tab-content anim-fade-in">
-            <div className="admin-content-card">
-              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3>Live Submissions Feed</h3>
-                  <span className="card-subtitle">Real-time answers across all active MCC forms</span>
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Maintenance Mode</div>
+                  <div className="setting-desc">Direct all student / faculty users to a temporary maintenance page.</div>
                 </div>
-                <div className="forms-search-box" style={{ width: '300px', margin: 0 }}>
-                  🔍
+                <div className="setting-input-block">
                   <input
-                    type="text"
-                    placeholder="Filter submissions..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    type="checkbox"
+                    checked={settings.maintenanceMode}
+                    onChange={(e) => handleSettingChange('maintenanceMode', e.target.checked)}
+                    className="checkbox-toggle"
                   />
                 </div>
               </div>
-              <div className="submissions-list full-list">
-                {submissions
-                  .filter(sub =>
-                    sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    sub.form.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    sub.id.toString().toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .sort((a, b) => b.id.toString().localeCompare(a.id.toString()))
-                  .map(sub => (
-                    <div key={sub.id} className="sub-row-item expanded">
-                      <div className="sub-avatar">👤</div>
-                      <div className="sub-info">
-                        <div className="sub-name">{sub.name}</div>
-                        <div className="sub-form-title">submitted answers to <strong>{sub.form}</strong></div>
-                        <span className="sub-time">Received {sub.time || sub.date}</span>
-                      </div>
-                      <div className="sub-right-section">
-                        <span className={`sub-status-badge ${sub.status.toLowerCase().replace(' ', '-')}`}>
-                          {sub.status}
-                        </span>
-                        <button className="sub-detail-btn" onClick={() => setSelectedSubmission(sub)}>
-                          View Details
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="detail-arrow-icon">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Admin Email Notifications</div>
+                  <div className="setting-desc">Send automated email summaries of submissions to department heads.</div>
+                </div>
+                <div className="setting-input-block">
+                  <input
+                    type="checkbox"
+                    checked={settings.emailNotifications}
+                    onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                    className="checkbox-toggle"
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Form Creation Moderation</div>
+                  <div className="setting-desc">Require explicit approval before newly built templates are set Active.</div>
+                </div>
+                <div className="setting-input-block">
+                  <input
+                    type="checkbox"
+                    checked={settings.requireApproval}
+                    onChange={(e) => handleSettingChange('requireApproval', e.target.checked)}
+                    className="checkbox-toggle"
+                  />
+                </div>
+              </div>
+
+              <div className="setting-card-row">
+                <div className="setting-info-block">
+                  <div className="setting-title font-semibold">Analytics Interval</div>
+                  <div className="setting-desc">Refresh rate for background statistical updates on the dashboard.</div>
+                </div>
+                <div className="setting-input-block">
+                  <select
+                    value={settings.analyticsInterval}
+                    onChange={(e) => handleSettingChange('analyticsInterval', e.target.value)}
+                    className="admin-select"
+                  >
+                    <option value="Realtime">Realtime (5s)</option>
+                    <option value="Hourly">Hourly</option>
+                    <option value="Daily">Daily (24h)</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── SYSTEM SETTINGS TAB ── */}
-        {activeMenu === 'settings' && (
-          <div className="admin-tab-content anim-fade-in">
-            <div className="admin-panel-row">
-              {/* Institution Identity Card */}
-              <div className="admin-content-card flex-1">
-                <div className="card-header">
-                  <h3>Institution Profile</h3>
-                </div>
-                <div className="settings-form">
-                  <div className="settings-field">
-                    <label>Institution Name</label>
-                    <input type="text" className="settings-input" defaultValue="Madras Christian College" />
-                  </div>
-                  <div className="settings-field">
-                    <label>Domain Lock</label>
-                    <input type="text" className="settings-input" defaultValue="mcc.edu.in" placeholder="e.g. mcc.edu.in" />
-                    <span className="field-help">Limits account creation to users with this email domain.</span>
-                  </div>
-                  <button className="save-settings-btn" onClick={() => alert('Settings Saved Successfully!')}>
-                    Save Changes
-                  </button>
-                </div>
+        {/* ── 12. PROFILE ── */}
+        {activeMenu === 'profile' && (
+          <div className="admin-tab-content anim-fade-in" style={{ maxWidth: '600px' }}>
+            <div className="admin-settings-card">
+              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                <span style={{ fontSize: '64px', display: 'block', marginBottom: '12px' }}>
+                  {profileData.avatar}
+                </span>
+                <h3 style={{ margin: '0 0 6px 0' }}>{profileData.name}</h3>
+                <span className="status-badge active">{profileData.role}</span>
               </div>
 
-              {/* Security & Access Controls */}
-              <div className="admin-content-card flex-1">
-                <div className="card-header">
-                  <h3>Security & Access Controls</h3>
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Administrator Profile Name (Username)</h5>
+                <input
+                  type="text"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Email Address</h5>
+                <input
+                  type="email"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Joined System</h5>
+                <input
+                  type="text"
+                  className="pf-input"
+                  style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  value={profileData.joined}
+                  onChange={(e) => setProfileData({ ...profileData, joined: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button 
+                  className="admin-btn-primary" 
+                  onClick={handleSaveProfile}
+                  style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px' }}
+                >
+                  Update Profile
+                </button>
+                <button 
+                  className="action-btn view" 
+                  onClick={() => {
+                    const originalName = localStorage.getItem('userName') || 'MCC Administrator';
+                    const origEmail = localStorage.getItem('userEmail') || 'admin@mcc.edu.in';
+                    const origJoined = localStorage.getItem('userJoined') || '2025-01-10';
+                    setProfileData(prev => ({ ...prev, name: originalName, email: origEmail, joined: origJoined }));
+                  }}
+                  style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px', border: '1px solid #cbd5e1', height: 'auto', background: '#f8fafc' }}
+                >
+                  Reset Changes
+                </button>
+              </div>
+            </div>
+
+            {/* Change Password Card */}
+            <div className="admin-settings-card" style={{ marginTop: '28px' }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '850', color: '#0f172a' }}>
+                Change Password
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <h5 style={{ margin: '0 0 8px 0', fontSize: '13.5px', fontWeight: '700', color: '#475569' }}>Current Password</h5>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showCurrentPwd ? "text" : "password"}
+                      style={{ width: '100%', padding: '10px 42px 10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                      value={pwdData.currentPassword}
+                      onChange={(e) => setPwdData({ ...pwdData, currentPassword: e.target.value })}
+                      placeholder="Enter current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px',
+                        outline: 'none'
+                      }}
+                      title={showCurrentPwd ? "Hide password" : "Show password"}
+                    >
+                      {showCurrentPwd ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="controls-list">
-                  <div className="control-row">
-                    <div>
-                      <div className="control-title">Allow Public Forms</div>
-                      <div className="control-desc">Enable form creation that doesn't require MCC credentials.</div>
-                    </div>
-                    <input type="checkbox" defaultChecked className="admin-toggle" />
+                
+                <div>
+                  <h5 style={{ margin: '0 0 8px 0', fontSize: '13.5px', fontWeight: '700', color: '#475569' }}>New Password</h5>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showNewPwd ? "text" : "password"}
+                      style={{ width: '100%', padding: '10px 42px 10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                      value={pwdData.newPassword}
+                      onChange={(e) => setPwdData({ ...pwdData, newPassword: e.target.value })}
+                      placeholder="Enter new password (min. 6 chars)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPwd(!showNewPwd)}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px',
+                        outline: 'none'
+                      }}
+                      title={showNewPwd ? "Hide password" : "Show password"}
+                    >
+                      {showNewPwd ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      )}
+                    </button>
                   </div>
-                  <div className="control-row">
-                    <div>
-                      <div className="control-title">Require 2FA for Admins</div>
-                      <div className="control-desc">Enforce two-factor authentication for administrative tasks.</div>
-                    </div>
-                    <input type="checkbox" className="admin-toggle" />
+                </div>
+
+                <div>
+                  <h5 style={{ margin: '0 0 8px 0', fontSize: '13.5px', fontWeight: '700', color: '#475569' }}>Confirm New Password</h5>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirmPwd ? "text" : "password"}
+                      style={{ width: '100%', padding: '10px 42px 10px 14px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                      value={pwdData.confirmPassword}
+                      onChange={(e) => setPwdData({ ...pwdData, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px',
+                        outline: 'none'
+                      }}
+                      title={showConfirmPwd ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPwd ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      )}
+                    </button>
                   </div>
-                  <div className="control-row">
-                    <div>
-                      <div className="control-title">Auto-archive Responses</div>
-                      <div className="control-desc">Automatically archive responses that are older than 1 year.</div>
-                    </div>
-                    <input type="checkbox" defaultChecked className="admin-toggle" />
-                  </div>
+                </div>
+                
+                <div style={{ marginTop: '8px' }}>
+                  <button 
+                    className="admin-btn-primary" 
+                    onClick={handleChangePassword}
+                    style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px' }}
+                  >
+                    Change Password
+                  </button>
                 </div>
               </div>
             </div>
@@ -1178,198 +1860,245 @@ export default function AdminDashboard() {
         )}
       </main>
 
-      {/* ── Submission Details Modal ── */}
-      {selectedSubmission && (
-        <div className="admin-modal-overlay" onClick={() => setSelectedSubmission(null)}>
-          <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <div>
-                <h3>Submission from {selectedSubmission.name}</h3>
-                <span className="admin-modal-subtitle">{selectedSubmission.form} — {selectedSubmission.date}</span>
-              </div>
-              <button className="admin-modal-close" onClick={() => setSelectedSubmission(null)}>✕</button>
+      {/* Admin/User Add/Edit Modal */}
+      {showUserModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="modal-header">
+              <h4>{editingUser ? 'Edit User Details' : 'Register Portal User'}</h4>
+              <button className="modal-close" onClick={() => setShowUserModal(false)}>×</button>
             </div>
-
-            <div className="admin-modal-body">
-              <div className="sender-meta-box">
-                <div><strong>Email:</strong> {selectedSubmission.email}</div>
-                <div><strong>Submitted At:</strong> {selectedSubmission.date}</div>
-              </div>
-
-              <div className="answers-list-wrapper">
-                <h4>Questions & Senders Answers:</h4>
-                {selectedSubmission.answers.map((ans, idx) => (
-                  <div key={idx} className="answer-card-item">
-                    <div className="answer-q-label">{ans.q}</div>
-                    <div className="answer-a-val">{ans.a}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="admin-modal-footer">
-              <button className="admin-btn-secondary" onClick={() => setSelectedSubmission(null)}>Close View</button>
-              <button className="admin-btn-primary" onClick={() => { alert('Action registered (Approved/Completed)'); setSelectedSubmission(null); }}>
-                Mark as Reviewed ✓
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Edit Submission Modal ── */}
-      {editingSubmission && (
-        <div className="admin-modal-overlay" onClick={() => setEditingSubmission(null)}>
-          <div className="admin-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-            <div className="admin-modal-header">
-              <div>
-                <h3>Edit Submission Record</h3>
-                <span className="admin-modal-subtitle">ID: {editingSubmission.id} • {editingSubmission.form}</span>
-              </div>
-              <button className="admin-modal-close" onClick={() => setEditingSubmission(null)}>✕</button>
-            </div>
-
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleSaveSubmissionEdit();
-            }}>
-              <div className="admin-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Core Submitter Info */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Submitter Name</label>
-                    <input
-                      type="text"
-                      className="pf-input"
-                      style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
-                      required
-                      value={editingSubmission.name || ''}
-                      onChange={e => setEditingSubmission({ ...editingSubmission, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Submitter Email</label>
-                    <input
-                      type="email"
-                      className="pf-input"
-                      style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
-                      required
-                      value={editingSubmission.email || ''}
-                      onChange={e => setEditingSubmission({ ...editingSubmission, email: e.target.value })}
-                    />
-                  </div>
+            <form onSubmit={handleUserFormSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={userFormData.name}
+                    onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                    placeholder="e.g. Dr. Robert"
+                  />
                 </div>
-
-                {/* Submission Status */}
-                <div className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Review Status</label>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={userFormData.email}
+                    onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                    placeholder="e.g. robert@mcc.edu.in"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Role</label>
                   <select
-                    className="pf-select"
-                    style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: 'white' }}
-                    value={editingSubmission.status || 'Pending Review'}
-                    onChange={e => setEditingSubmission({ ...editingSubmission, status: e.target.value })}
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
                   >
-                    <option value="Pending Review">Pending Review</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Rejected">Rejected</option>
+                    <option value="user">Normal User</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
-
-                {/* Answers list */}
-                <div style={{ marginTop: '12px' }}>
-                  <h4 style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>Form Answers</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto', paddingRight: '8px' }}>
-                    {(editingSubmission.answers || []).map((ans, idx) => (
-                      <div key={idx} className="settings-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>{ans.q}</label>
-                        <input
-                          type="text"
-                          className="pf-input"
-                          style={{ padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
-                          value={ans.a || ''}
-                          onChange={e => {
-                            const nextAns = [...editingSubmission.answers];
-                            nextAns[idx] = { ...ans, a: e.target.value };
-                            setEditingSubmission({ ...editingSubmission, answers: nextAns });
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                <div className="form-group">
+                  <label>Department / Institution role</label>
+                  <select
+                    value={userFormData.dept}
+                    onChange={(e) => setUserFormData({ ...userFormData, dept: e.target.value })}
+                  >
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biotechnology">Biotechnology</option>
+                    <option value="Physics">Physics</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Account Status</label>
+                  <select
+                    value={userFormData.status}
+                    onChange={(e) => setUserFormData({ ...userFormData, status: e.target.value })}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
                 </div>
               </div>
-
-              <div className="admin-modal-footer">
-                <button type="button" className="admin-btn-secondary" onClick={() => setEditingSubmission(null)}>Cancel</button>
-                <button type="submit" className="admin-btn-primary">Save Changes ✓</button>
+              <div className="modal-footer">
+                <button type="button" className="admin-btn-secondary" onClick={() => setShowUserModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="admin-btn-primary">
+                  {editingUser ? 'Save Changes' : 'Register User'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ── Form Summary Reports Modal ── */}
-      {selectedFormSummary && (
-        <div className="admin-modal-overlay" onClick={() => setSelectedFormSummary(null)}>
-          <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <div>
-                <h3>Responses Report Summary</h3>
-                <span className="admin-modal-subtitle">{selectedFormSummary.title}</span>
-              </div>
-              <button className="admin-modal-close" onClick={() => setSelectedFormSummary(null)}>✕</button>
+      {/* Department Add/Edit Modal */}
+      {showDeptModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="modal-header">
+              <h4>{editingDept ? 'Edit Department Registry' : 'Add Department Registry'}</h4>
+              <button className="modal-close" onClick={() => setShowDeptModal(false)}>×</button>
             </div>
-
-            <div className="admin-modal-body">
-              <div className="summary-total-header">
-                <span className="summary-total-val">{selectedFormSummary.total}</span>
-                <span className="summary-total-lbl">Total Responses Received</span>
-              </div>
-
-              {selectedFormSummary.total > 0 ? (
-                <>
-                  <div className="summary-breakdown-section">
-                    <h4>Responses Breakdown</h4>
-                    <div className="summary-bar-chart">
-                      {selectedFormSummary.breakdown.map((row, idx) => (
-                        <div key={idx} className="summary-chart-row">
-                          <div className="chart-row-label">{row.label}</div>
-                          <div className="chart-row-track">
-                            <div className="chart-row-fill" style={{ width: row.pct }} />
-                          </div>
-                          <div className="chart-row-value">{row.count} ({row.pct})</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="summary-recent-section" style={{ marginTop: '24px' }}>
-                    <h4>Recent Submissions list</h4>
-                    <div className="summary-recent-list">
-                      {selectedFormSummary.recent.map((rec, idx) => (
-                        <div key={idx} className="summary-recent-row">
-                          <strong>{rec.name}</strong>
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>Submitted {rec.date}</span>
-                          <span className="status-badge active" style={{ fontSize: '10px', padding: '2px 6px' }}>{rec.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                  No responses have been submitted to this form yet. Share the form link to start collecting answers!
+            <form onSubmit={handleDeptFormSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Department Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={deptFormData.name}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
+                    placeholder="e.g. Mathematics"
+                  />
                 </div>
-              )}
-            </div>
+                <div className="form-group">
+                  <label>Department Head (HOD) Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={deptFormData.hod}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, hod: e.target.value })}
+                    placeholder="e.g. Dr. Robert"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Members Count</label>
+                  <input
+                    type="number"
+                    required
+                    value={deptFormData.membersCount}
+                    onChange={(e) => setDeptFormData({ ...deptFormData, membersCount: parseInt(e.target.value) })}
+                    placeholder="100"
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="admin-btn-secondary" onClick={() => setShowDeptModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="admin-btn-primary">
+                  {editingDept ? 'Save Changes' : 'Add Department'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-            <div className="admin-modal-footer">
-              <button className="admin-btn-secondary" style={{ width: '100%' }} onClick={() => setSelectedFormSummary(null)}>
-                Close Report
+      {/* Announcement Add Modal */}
+      {showAnnouncementModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="modal-header">
+              <h4>Publish New Announcement</h4>
+              <button className="modal-close" onClick={() => setShowAnnouncementModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleAnnouncementSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Announcement Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={announcementFormData.title}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, title: e.target.value })}
+                    placeholder="e.g. System Maintenance Window"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Announcement Content</label>
+                  <textarea
+                    required
+                    style={{ padding: '10px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', height: '100px', fontFamily: 'inherit', outline: 'none' }}
+                    value={announcementFormData.content}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, content: e.target.value })}
+                    placeholder="Enter the detailed announcement content..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Target Audience</label>
+                  <select
+                    value={announcementFormData.target}
+                    onChange={(e) => setAnnouncementFormData({ ...announcementFormData, target: e.target.value })}
+                  >
+                    <option value="All">All Users (Students & Faculty)</option>
+                    <option value="Faculty">Faculty & Admins Only</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="admin-btn-secondary" onClick={() => setShowAnnouncementModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="admin-btn-primary">
+                  Publish Announcement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Custom Confirmation Modal */}
+      {confirmModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h4>Confirm Action</h4>
+              <button className="modal-close" onClick={() => setConfirmModal(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '24px' }}>
+              <span style={{ fontSize: '36px', display: 'block', marginBottom: '12px' }}>⚠️</span>
+              <p style={{ margin: 0, color: '#334155', fontSize: '14.5px', fontWeight: '600', lineHeight: '1.5' }}>
+                {confirmModal.message}
+              </p>
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px' }}>
+              <button className="admin-btn-secondary" onClick={() => setConfirmModal(null)}>
+                Cancel
+              </button>
+              <button 
+                className="admin-btn-danger" 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+              >
+                Yes, Proceed
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Custom Toast Messages */}
+      {toast && (
+        <div 
+          className={`admin-toast anim-fade-in ${toast.type}`}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: toast.type === 'success' ? '#ecfdf5' : toast.type === 'error' ? '#fdf2f2' : '#eff6ff',
+            border: `1.5px solid ${toast.type === 'success' ? '#a7f3d0' : toast.type === 'error' ? '#fca5a5' : '#bfdbfe'}`,
+            color: toast.type === 'success' ? '#065f46' : toast.type === 'error' ? '#991b1b' : '#1e3a8a',
+            padding: '16px 24px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: '700',
+            fontSize: '14px'
+          }}
+        >
+          <span>{toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}</span>
+          <span>{toast.message}</span>
         </div>
       )}
     </div>

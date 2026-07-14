@@ -97,7 +97,7 @@
   margin-bottom: 4px;
   letter-spacing: -1px;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
   animation: fadeInUp 0.8s ease 0.1s both;
 }
 
@@ -491,5 +491,43 @@
 @keyframes pulseSuccess {
   0% { transform: scale(0.95); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── HERO RESPONSIVE MEDIA QUERIES ── */
+@media (max-width: 768px) {
+  .hero {
+    padding-top: 100px;
+    padding-bottom: 20px;
+  }
+  .hero-stats {
+    gap: 24px;
+  }
+  .hero-stat-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-badge {
+    font-size: 11px;
+    padding: 6px 14px;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+  }
 }
 

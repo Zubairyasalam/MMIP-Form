@@ -312,4 +312,55 @@ export const TEMPLATES = [
       },
     ],
   },
+  {
+    name: 'Startup Growth & Assessment Form',
+    desc: 'Track startup metrics, compliance, and support requirements.',
+    tag: 'Assessment',
+    fields: '24 fields',
+    bg: 'blue-bg',
+    questions: [
+      { cardType: 'title-desc', question: 'Section 1: Basic Information & Classification', description: '' },
+      { type: 'short', question: 'Startup Name', options: [], required: true },
+      { type: 'short', question: 'Founder / Point of Contact', options: [], required: true },
+      { type: 'short', question: 'Type of Product', options: [], required: true },
+      { type: 'short', question: 'Sector / Industry', options: [], required: true },
+      { type: 'short', question: 'Reporting Period (Month/Year)', options: [], required: true },
+      {
+        type: 'multiple', question: 'Current Lifecycle Stage',
+        options: ['Pre-Seed (Finding the Fit)', 'Seed (Proving the Model)', 'Series A (Scaling Operations)'],
+        required: true
+      },
+      { cardType: 'title-desc', question: 'Section 2: Registration & Compliance', description: '' },
+      { type: 'short', question: 'DPIIT Registration Number', options: [], required: true },
+      { type: 'short', question: 'MSME / Udyam Registration Number', options: [], required: true },
+      { cardType: 'title-desc', question: 'Section 3: Monthly Survival Metrics', description: '' },
+      { type: 'number', question: 'Current Cash Reserves', options: [], required: true },
+      { type: 'number', question: 'Gross Monthly Burn Rate', options: [], required: true },
+      { type: 'number', question: 'Calculated Cash Runway (Months)', options: [], required: true },
+      { type: 'number', question: 'Current Active Users / Customers', options: [], required: true },
+      { cardType: 'title-desc', question: 'Section 4: Quarterly Growth Metrics (Unit Economics)', description: '' },
+      { type: 'number', question: 'Monthly Recurring Revenue (MRR)', options: [], required: true },
+      { type: 'number', question: 'Customer Acquisition Cost (CAC)', options: [], required: true },
+      { type: 'number', question: 'Customer Lifetime Value (LTV)', options: [], required: true },
+      { type: 'number', question: 'Net Revenue Retention (NRR %)', options: [], required: true },
+      { cardType: 'title-desc', question: 'Section 5: Strategic Updates & Incubation Support', description: '' },
+      { type: 'paragraph', question: 'Key Product Milestones Achieved This Period', options: [], required: true },
+      { type: 'paragraph', question: 'Current Team Size and Key Hiring Needs', options: [], required: true },
+      {
+        type: 'checkbox', question: 'Support Required from the Incubation Centre',
+        options: ['Capacity Building', 'Client References / Introductions', 'Grant Assistance', 'MVP Building & Technical Support', 'Mentorship / Strategic Advisory', 'Other (Please specify)'],
+        required: true
+      },
+      { type: 'paragraph', question: 'Any additional roadblocks or comments?', options: [], required: false },
+      { cardType: 'title-desc', question: 'Section 6: Ecosystem Contribution', description: '' },
+      {
+        type: 'checkbox', question: 'Student Engagement',
+        options: ['Yes, currently offering internships', 'Yes, currently offering academic/capstone projects', 'Yes, currently offering full-time employment', 'No, but we plan to in the next 6 months', 'Not at this time'],
+        required: true
+      },
+      { type: 'paragraph', question: 'Knowledge Sharing', options: [], required: false },
+      { type: 'paragraph', question: 'Peer Collaboration', options: [], required: false },
+      { type: 'paragraph', question: 'Future Contributions', options: [], required: false }
+    ],
+  },
 ];

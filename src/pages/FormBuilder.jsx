@@ -1465,7 +1465,11 @@ export default function FormBuilder() {
   const [tunnelUrl, setTunnelUrl] = useState('');
 
   const getOrigin = () => {
-    return 'https://mmipformbuilder.mccmrfip.in';
+    if (tunnelUrl) return tunnelUrl;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return `http://192.168.1.30:${window.location.port || '5173'}`;
+    }
+    return window.location.origin;
   };
 
   useEffect(() => {

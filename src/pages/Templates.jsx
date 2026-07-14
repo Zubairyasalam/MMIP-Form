@@ -12,9 +12,8 @@ export default function Templates() {
   const [tunnelUrl, setTunnelUrl] = useState('');
   const [customBaseUrl, setCustomBaseUrl] = useState('');
 
-  // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
-    return customBaseUrl || tunnelUrl || window.location.origin;
+    return 'https://mmipformbuilder.mccmrfip.in';
   };
 
   const isLocalhost = () => {
@@ -247,24 +246,6 @@ export default function Templates() {
               Scan this QR code with your phone's camera to open the live form directly.
             </p>
 
-            {/* Network IP section - shown when on localhost */}
-            {isLocalhost() && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', textAlign: 'left' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: '#15803d', textTransform: 'uppercase', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>📡 Network Address for Phone Scanning</div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. http://192.168.1.5:5173"
-                    value={customBaseUrl || tunnelUrl}
-                    onChange={e => setCustomBaseUrl(e.target.value.trim().replace(/\/$/, ''))}
-                    style={{ flex: 1, border: '1px solid #86efac', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', color: '#0f172a', fontWeight: '500', outline: 'none', fontFamily: 'Inter, sans-serif', background: 'white' }}
-                  />
-                </div>
-                <div style={{ fontSize: '11px', color: '#15803d', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                  ✅ QR code points to: <strong>{customBaseUrl || tunnelUrl || window.location.origin}</strong>
-                </div>
-              </div>
-            )}
 
             <div style={{
               background: 'white',

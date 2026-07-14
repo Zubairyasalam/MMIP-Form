@@ -1465,7 +1465,7 @@ export default function FormBuilder() {
   const [tunnelUrl, setTunnelUrl] = useState('');
 
   const getOrigin = () => {
-    return tunnelUrl || window.location.origin;
+    return 'https://mmipformbuilder.mccmrfip.in';
   };
 
   useEffect(() => {

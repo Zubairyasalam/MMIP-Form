@@ -179,7 +179,7 @@ export default function Templates() {
 
           <div className="templates-grid">
             {filtered.map((tmpl, i) => {
-              const theme = TEMPLATE_THEMES[tmpl.bg];
+              const theme = TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'];
               return (
                 <div
                   className="template-card"
@@ -302,7 +302,7 @@ export default function Templates() {
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
-                  style={{ background: TEMPLATE_THEMES[selectedTmplQr.bg].accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                  style={{ background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
                 >
                   Copy Link
                 </button>
@@ -323,7 +323,7 @@ export default function Templates() {
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: TEMPLATE_THEMES[selectedTmplQr.bg].accent,
+                  background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent,
                   color: 'white',
                   borderRadius: '8px',
                   fontSize: '13px',

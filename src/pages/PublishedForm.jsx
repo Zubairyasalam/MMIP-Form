@@ -51,7 +51,7 @@ export default function PublishedForm() {
     // Validate required fields
     let valid = true;
     formConfig.questions.forEach((q, idx) => {
-      if (q.required) {
+      if ((q.cardType === 'question' || !q.cardType) && q.required) {
         const val = answers[idx];
         if (q.type === 'checkbox') {
           if (!val || val.length === 0) valid = false;
@@ -88,14 +88,37 @@ export default function PublishedForm() {
       submitterEmail = `${submitterName.toLowerCase().replace(/[^a-z0-9]/g, '')}@mcc.edu.in`;
     }
 
-    // Construct the answers array
-    const mappedAnswers = formConfig.questions.map((q, idx) => ({
-      q: q.question,
-      a: Array.isArray(answers[idx]) ? answers[idx].join(', ') : String(answers[idx] || '')
-    }));
+    // Construct the answers array (excluding non-question items like title-desc headers)
+    const mappedAnswers = [];
+    formConfig.questions.forEach((q, idx) => {
+      if (q.cardType === 'question' || !q.cardType) {
+        mappedAnswers.push({
+          q: q.question,
+          a: Array.isArray(answers[idx]) ? answers[idx].join(', ') : String(answers[idx] || '')
+        });
+      }
+    });
 
     // Create a unique submission ID
-    const genId = `MMIP-${String(Date.now()).slice(-4)}`;
+    const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+    let maxNum = 5;
+    existing.forEach(sub => {
+      const idStr = sub.id ? sub.id.toString() : '';
+      if (idStr.startsWith('MMIP-')) {
+        const numStr = idStr.replace('MMIP-', '');
+        const num = parseInt(numStr, 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      } else {
+        const num = parseInt(idStr.replace(/\D/g, ''), 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    const nextNum = maxNum + 1;
+    const genId = `MMIP-${nextNum < 10 ? '0' + nextNum : nextNum}`;
     setSubmissionId(genId);
 
     const newSubmission = {
@@ -108,7 +131,6 @@ export default function PublishedForm() {
       answers: mappedAnswers
     };
 
-    const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
     existing.unshift(newSubmission);
     localStorage.setItem('formSubmissions', JSON.stringify(existing));
 
@@ -124,6 +146,7 @@ export default function PublishedForm() {
   }
 
   const theme = formConfig.theme || { banner: 'linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)', accent: '#7B1C1C' };
+  const headerImage = formConfig.headerImage || '/form-header.png';
 
   return (
     <div className="pf-page">
@@ -132,6 +155,29 @@ export default function PublishedForm() {
         <div className="pf-body">
           {!submitted ? (
             <form onSubmit={handleSubmit}>
+              {/* Header Image */}
+              {headerImage ? (
+                <img
+                  src={headerImage}
+                  alt="Form Header"
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                    borderRadius: '10px 10px 0 0',
+                    display: 'block',
+                    background: '#fff',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  height: '10px',
+                  background: theme.banner,
+                  borderRadius: '10px 10px 0 0',
+                }} />
+              )}
+
               <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }}>
                 {formConfig.name}
               </div>
@@ -145,19 +191,71 @@ export default function PublishedForm() {
               <div className="pf-grid">
                 {formConfig.questions.map((q, idx) => {
                   const value = answers[idx];
+
+                  if (q.cardType === 'title-desc') {
+                    return (
+                      <div key={idx} className="pf-field full pf-section-header">
+                        <div className="pf-section-title">{q.question}</div>
+                        {q.description && <div className="pf-section-desc">{q.description}</div>}
+                      </div>
+                    );
+                  }
+
+                  if (q.cardType === 'image') {
+                    return (
+                      <div key={idx} className="pf-field full pf-image-block">
+                        {q.question && <div className="pf-image-title">{q.question}</div>}
+                        {q.mediaUrl && <img src={q.mediaUrl} alt={q.question} className="pf-image-img" />}
+                      </div>
+                    );
+                  }
+
+                  if (q.cardType === 'video') {
+                    return (
+                      <div key={idx} className="pf-field full pf-video-block">
+                        {q.question && <div className="pf-video-title">{q.question}</div>}
+                        {q.mediaUrl && (
+                          <iframe
+                            src={q.mediaUrl}
+                            title="Form Video"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="pf-video-iframe"
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+
                   const isFullWidth = ['paragraph', 'file', 'signature', 'budget'].includes(q.type);
                   
                   return (
                     <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`}>
-                      <label className="pf-label">
+                      <label className="pf-label" style={{ marginBottom: q.description ? '4px' : '8px' }}>
                         {q.question} {q.required && <span style={{ color: '#ef4444' }}>*</span>}
                       </label>
+                      {q.description && (
+                        <div className="pf-question-desc" style={{ fontSize: '12.5px', color: '#000000', marginTop: '-2px', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+                          {q.description}
+                        </div>
+                      )}
                       
                       {q.type === 'short' && (
                         <input
                           type="text"
                           className="pf-input"
                           placeholder="Your answer"
+                          required={q.required}
+                          value={value || ''}
+                          onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
+                        />
+                      )}
+                      
+                      {q.type === 'number' && (
+                        <input
+                          type="number"
+                          className="pf-input"
+                          placeholder="Your number answer"
                           required={q.required}
                           value={value || ''}
                           onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
@@ -252,7 +350,7 @@ export default function PublishedForm() {
                         </div>
                       )}
 
-                      {!['short', 'paragraph', 'multiple', 'dropdown', 'checkbox', 'date', 'scale'].includes(q.type) && (
+                      {!['short', 'paragraph', 'multiple', 'dropdown', 'checkbox', 'date', 'scale', 'number'].includes(q.type) && (
                         <input
                           type="text"
                           className="pf-input"
@@ -268,7 +366,7 @@ export default function PublishedForm() {
               </div>
 
               <button type="submit" className="pf-submit-btn" style={{ background: theme.accent }}>
-                Submit Response →
+                Submit Responses
               </button>
             </form>
           ) : (

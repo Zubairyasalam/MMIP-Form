@@ -3,7 +3,7 @@
 export const TEMPLATE_THEMES = {
   'maroon-bg': { banner: 'linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)', accent: '#7B1C1C', label: 'Maroon' },
   'light-bg': { banner: 'linear-gradient(90deg, #c94040, #e05555, #f08080)', accent: '#c94040', label: 'Rose' },
-  'blue-bg': { banner: 'linear-gradient(90deg, #1a56db, #3b82f6, #60a5fa)', accent: '#1a56db', label: 'Blue' },
+  'orange-bg': { banner: 'linear-gradient(90deg, #ea580c, #f97316, #fdba74)', accent: '#ea580c', label: 'Orange' },
   'green-bg': { banner: 'linear-gradient(90deg, #057a55, #10b981, #34d399)', accent: '#057a55', label: 'Green' },
   'purple-bg': { banner: 'linear-gradient(90deg, #6c2bd9, #8b5cf6, #a78bfa)', accent: '#6c2bd9', label: 'Purple' },
 };
@@ -72,7 +72,7 @@ export const TEMPLATES = [
     desc: 'Submit research proposals with objectives and methodology.',
     tag: 'Research',
     fields: '15 fields',
-    bg: 'blue-bg',
+    bg: 'orange-bg',
     questions: [
       { type: 'short', question: 'Researcher Full Name', options: [], required: true },
       { type: 'short', question: 'Guide / Supervisor Name', options: [], required: true },
@@ -178,7 +178,7 @@ export const TEMPLATES = [
     desc: 'End-of-semester feedback form for students.',
     tag: 'Survey',
     fields: '9 fields',
-    bg: 'blue-bg',
+    bg: 'orange-bg',
     questions: [
       { type: 'short', question: 'Course Name & Code', options: [], required: true },
       { type: 'scale', question: 'Overall course satisfaction (1–5)', options: [], required: true },
@@ -286,7 +286,7 @@ export const TEMPLATES = [
     desc: 'Collect patient details for healthcare programs.',
     tag: 'Healthcare',
     fields: '16 fields',
-    bg: 'blue-bg',
+    bg: 'orange-bg',
     questions: [
       { type: 'short', question: 'Patient Full Name', options: [], required: true },
       { type: 'date', question: 'Date of Birth', options: [], required: true },
@@ -317,33 +317,33 @@ export const TEMPLATES = [
     desc: 'Track startup metrics, compliance, and support requirements.',
     tag: 'Assessment',
     fields: '24 fields',
-    bg: 'blue-bg',
+    bg: '#06b6d4',
     questions: [
       { cardType: 'title-desc', question: 'Section 1: Basic Information & Classification', description: '' },
       { type: 'short', question: 'Startup Name', options: [], required: true },
       { type: 'short', question: 'Founder / Point of Contact', options: [], required: true },
-      { type: 'short', question: 'Type of Product', options: [], required: true },
-      { type: 'short', question: 'Sector / Industry', options: [], required: true },
+      { type: 'short', question: 'Type of Product (e.g., Hardware, SaaS, AI Algorithm, Service)', options: [], required: true },
+      { type: 'short', question: 'Sector / Industry (e.g. Deeptech, Healthcare, EdTech, FinTech)', options: [], required: true },
       { type: 'short', question: 'Reporting Period (Month/Year)', options: [], required: true },
       {
         type: 'multiple', question: 'Current Lifecycle Stage',
         options: ['Pre-Seed (Finding the Fit)', 'Seed (Proving the Model)', 'Series A (Scaling Operations)'],
         required: true
       },
-      { cardType: 'title-desc', question: 'Section 2: Registration & Compliance', description: '' },
-      { type: 'short', question: 'DPIIT Registration Number', options: [], required: true },
-      { type: 'short', question: 'MSME / Udyam Registration Number', options: [], required: true },
-      { cardType: 'title-desc', question: 'Section 3: Monthly Survival Metrics', description: '' },
+      { cardType: 'title-desc', question: 'Section 2: Registration & Compliance', description: 'Essential for verifying eligibility for specific ecosystem grants or benefits.' },
+      { type: 'short', question: 'DPIIT Registration Number', description: 'Leave blank if not applicable', options: [], required: true },
+      { type: 'short', question: 'MSME / Udyam Registration Number', description: 'Leave blank if not applicable', options: [], required: true },
+      { cardType: 'title-desc', question: 'Section 3: Monthly Survival Metrics', description: 'Required for all startups to monitor runway and immediate health.' },
       { type: 'number', question: 'Current Cash Reserves', options: [], required: true },
       { type: 'number', question: 'Gross Monthly Burn Rate', options: [], required: true },
       { type: 'number', question: 'Calculated Cash Runway (Months)', options: [], required: true },
       { type: 'number', question: 'Current Active Users / Customers', options: [], required: true },
-      { cardType: 'title-desc', question: 'Section 4: Quarterly Growth Metrics (Unit Economics)', description: '' },
+      { cardType: 'title-desc', question: 'Section 4: Quarterly Growth Metrics (Unit Economics)', description: 'Required quarterly to assess scale and valuation readiness.' },
       { type: 'number', question: 'Monthly Recurring Revenue (MRR)', options: [], required: true },
       { type: 'number', question: 'Customer Acquisition Cost (CAC)', options: [], required: true },
       { type: 'number', question: 'Customer Lifetime Value (LTV)', options: [], required: true },
       { type: 'number', question: 'Net Revenue Retention (NRR %)', options: [], required: true },
-      { cardType: 'title-desc', question: 'Section 5: Strategic Updates & Incubation Support', description: '' },
+      { cardType: 'title-desc', question: 'Section 5: Strategic Updates & Incubation Support', description: 'To align institutional resources with founder needs.' },
       { type: 'paragraph', question: 'Key Product Milestones Achieved This Period', options: [], required: true },
       { type: 'paragraph', question: 'Current Team Size and Key Hiring Needs', options: [], required: true },
       {
@@ -351,16 +351,29 @@ export const TEMPLATES = [
         options: ['Capacity Building', 'Client References / Introductions', 'Grant Assistance', 'MVP Building & Technical Support', 'Mentorship / Strategic Advisory', 'Other (Please specify)'],
         required: true
       },
-      { type: 'paragraph', question: 'Any additional roadblocks or comments?', options: [], required: false },
+      { type: 'paragraph', question: 'Any additional roadblocks or comments?', options: [], required: true },
       { cardType: 'title-desc', question: 'Section 6: Ecosystem Contribution', description: '' },
       {
         type: 'checkbox', question: 'Student Engagement',
+        description: 'Are you currently offering internships, live academic projects, or employment opportunities to the student community?',
         options: ['Yes, currently offering internships', 'Yes, currently offering academic/capstone projects', 'Yes, currently offering full-time employment', 'No, but we plan to in the next 6 months', 'Not at this time'],
         required: true
       },
-      { type: 'paragraph', question: 'Knowledge Sharing', options: [], required: false },
-      { type: 'paragraph', question: 'Peer Collaboration', options: [], required: false },
-      { type: 'paragraph', question: 'Future Contributions', options: [], required: false }
+      {
+        type: 'paragraph', question: 'Knowledge Sharing',
+        description: 'Have you conducted or participated in any mentorship sessions, guest lectures, or workshops for other startups or students this period?',
+        options: [], required: true
+      },
+      {
+        type: 'paragraph', question: 'Peer Collaboration',
+        description: 'Have you collaborated, partnered, or shared technical resources with any other startups within the incubator? (If yes, describe the collaboration)',
+        options: [], required: true
+      },
+      {
+        type: 'paragraph', question: 'Future Contributions',
+        description: 'How do you plan to contribute to the growth and collaborative culture of this innovation ecosystem in the upcoming quarter?',
+        options: [], required: true
+      }
     ],
   },
 ];

@@ -127,12 +127,71 @@
 
 .fb-send-btn:hover { background: #5a1313; box-shadow: 0 2px 8px rgba(123,28,28,0.3); }
 
-/* ── Theme banner ── */
-.fb-banner {
-  height: 10px;
-  background: linear-gradient(90deg, var(--primary, #7B1C1C), #a82828, #c94040);
+/* ── Dynamic Header Image Banner ── */
+.fb-header-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
   border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: linear-gradient(90deg, #5a1313, #7B1C1C, #a82828);
 }
+.fb-header-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
+}
+.fb-header-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Inter, sans-serif;
+}
+.fb-header-img-placeholder span:first-child { font-size: 32px; }
+.fb-header-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+.fb-header-image-wrap:hover .fb-header-img-overlay {
+  opacity: 1;
+  background: rgba(0,0,0,0.35);
+}
+.fb-header-img-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(255,255,255,0.95);
+  color: #333;
+  font-family: Inter, sans-serif;
+  transition: background 0.15s;
+  backdrop-filter: blur(4px);
+}
+.fb-header-img-btn:hover { background: #fff; }
+.fb-header-img-btn.remove { background: rgba(255,59,48,0.9); color: #fff; }
+.fb-header-img-btn.remove:hover { background: #ff3b30; }
 
 /* ── Main layout ── */
 .fb-main {
@@ -141,6 +200,12 @@
   justify-content: center;
   padding: 24px 16px 80px;
   gap: 16px;
+}
+
+/* ── Floating card wrapper ── */
+.fb-card-wrapper {
+  position: relative;
+  width: 100%;
 }
 
 /* ── Left floating toolbar ── */
@@ -154,10 +219,12 @@
   border-radius: 12px;
   padding: 10px 6px;
   height: fit-content;
-  position: sticky;
-  top: 88px;
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 0;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
   border: 1px solid #e0e0e0;
+  z-index: 100;
 }
 
 .fb-tool-btn {
@@ -1350,6 +1417,7 @@
     left: 50%;
     transform: translateX(-50%);
     top: auto;
+    right: auto;
     height: 48px;
     border-radius: 24px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.16);
@@ -1469,5 +1537,74 @@
     padding: 4px 8px;
     font-size: 12px;
   }
+
+  /* Mobile touch & width overrides */
+  .fb-option-delete {
+    opacity: 1 !important;
+    color: #64748b !important;
+  }
+  
+  .fb-short-answer-preview,
+  .fb-dropdown-preview,
+  .fb-date-preview {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── Inline Add Button Row ── */
+.fb-inline-add-row {
+  height: 24px;
+  margin: -6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.fb-inline-add-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #cbd5e1;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 1;
+}
+
+.fb-inline-add-row:hover::before {
+  opacity: 0.5;
+}
+
+.fb-inline-add-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 2;
+  transition: all 0.2s ease-in-out;
+  opacity: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.fb-inline-add-row:hover .fb-inline-add-btn {
+  opacity: 1;
+}
+
+.fb-inline-add-btn:hover {
+  border-color: var(--acc, #7B1C1C);
+  color: var(--acc, #7B1C1C);
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 

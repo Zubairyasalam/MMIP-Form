@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { TEMPLATES } from '../data/templates';
 import './FormBuilder.css';
 
 const TYPES = [
   { value: 'short', label: '📝 Short answer' },
+  { value: 'number', label: '🔢 Number' },
   { value: 'paragraph', label: '📄 Paragraph' },
   { value: 'multiple', label: '🔘 Multiple choice' },
   { value: 'checkbox', label: '☑ Checkboxes' },
@@ -28,7 +29,7 @@ const TYPES = [
 let nextId = 100;
 
 function makeQ(q) {
-  return { ...q, id: nextId++, cardType: 'question' };
+  return { ...q, id: nextId++, cardType: q.cardType || 'question' };
 }
 
 function RichTextToolbar({ onFormat }) {
@@ -179,6 +180,29 @@ function AnswerArea({
             outline: 'none',
             fontFamily: 'Inter, sans-serif',
             background: 'transparent',
+          }}
+        />
+      </div>
+    );
+  }
+  if (q.type === 'number') {
+    return (
+      <div className="fb-answer-area">
+        <input
+          type="number"
+          disabled
+          placeholder="Number answer..."
+          style={{
+            width: '100%',
+            maxWidth: '200px',
+            padding: '8px 10px',
+            border: '1px solid #e0e0e0',
+            borderBottom: '2px solid #aaa',
+            borderRadius: '4px 4px 0 0',
+            fontSize: '13.5px',
+            color: '#888',
+            background: 'transparent',
+            outline: 'none'
           }}
         />
       </div>
@@ -1183,6 +1207,14 @@ function QuestionCard({
   const questionInputRef = useRef(null);
   const savedRangeRef = useRef(null);
 
+  useEffect(() => {
+    if (questionInputRef.current) {
+      if (questionInputRef.current.innerText !== (q.question || '')) {
+        questionInputRef.current.innerText = q.question || '';
+      }
+    }
+  }, [q.question]);
+
   const saveSelection = () => {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
@@ -1217,21 +1249,24 @@ function QuestionCard({
       id={`question-card-${q.id}`}
     >
       <div className="fb-question-top">
-        <div
-          ref={questionInputRef}
-          contentEditable
-          suppressContentEditableWarning
-          className="fb-question-input"
-          style={{ '--acc': accent, outline: 'none', cursor: 'text' }}
-          onInput={e => onChange({ ...q, question: e.currentTarget.innerText })}
-          onBlur={saveSelection}
-          onKeyUp={saveSelection}
-          onMouseUp={saveSelection}
-          data-placeholder="Question"
-          dangerouslySetInnerHTML={undefined}
-          suppressHydrationWarning
-        >
-          {q.question || ''}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div
+            ref={questionInputRef}
+            contentEditable
+            suppressContentEditableWarning
+            className="fb-question-input"
+            style={{ '--acc': accent, outline: 'none', cursor: 'text', flex: 1 }}
+            onInput={e => onChange({ ...q, question: e.currentTarget.innerText })}
+            onBlur={saveSelection}
+            onKeyUp={saveSelection}
+            onMouseUp={saveSelection}
+            data-placeholder="Question"
+            dangerouslySetInnerHTML={undefined}
+            suppressHydrationWarning
+          />
+          {q.required && (
+            <span style={{ color: '#ef4444', fontSize: '15px', fontWeight: 'bold', userSelect: 'none', alignSelf: 'center', marginTop: '-4px' }} title="Required">*</span>
+          )}
         </div>
         <select
           className="fb-question-type-select"
@@ -1250,6 +1285,28 @@ function QuestionCard({
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
+
+      {(focused || q.description) && (
+        <input
+          type="text"
+          className="fb-question-desc-input"
+          value={q.description || ''}
+          placeholder="Description (optional)"
+          onChange={e => onChange({ ...q, description: e.target.value })}
+          style={{
+            border: 'none',
+            borderBottom: '1px dashed #e2e8f0',
+            fontSize: '12.5px',
+            color: '#000000',
+            width: '100%',
+            marginTop: '2px',
+            marginBottom: '10px',
+            padding: '4px 0',
+            outline: 'none',
+            fontFamily: 'Inter, sans-serif'
+          }}
+        />
+      )}
 
       {focused && (
         <div style={{ padding: '4px 0 6px 0' }}>
@@ -1441,7 +1498,7 @@ function VideoCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
           <input
             className="fb-video-url-input"
             value={url}
-            placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
+            placeholder="Paste Video URL"
             style={{ '--acc': accent }}
             onChange={e => setUrl(e.target.value)}
           />
@@ -1519,6 +1576,59 @@ export default function FormBuilder() {
   const [videoUploads, setVideoUploads] = useState({});
   const [locationInputs, setLocationInputs] = useState({});
   const [collectEmail, setCollectEmail] = useState('do-not');
+  const [headerImage, setHeaderImage] = useState(state.headerImage || '/form-header.png');
+  const headerImageInputRef = useRef(null);
+
+  const handleHeaderImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setHeaderImage(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const renderToolbar = () => (
+    <div className="fb-toolbar">
+      <button className="fb-tool-btn" title="Add question" onClick={() => addQuestion('short')} id="tool-add-q" style={{ color: accent }}>➕</button>
+      <button className="fb-tool-btn" title="Add title & description" onClick={addTitleDesc} id="tool-add-title">T</button>
+      <div className="fb-tool-divider" />
+      <button className="fb-tool-btn" title="Add image" onClick={addImage} id="tool-img">🖼</button>
+      <button className="fb-tool-btn" title="Add video" onClick={addVideo} id="tool-video">▶</button>
+      <div className="fb-tool-divider" />
+      <button className="fb-tool-btn" title="Import questions" onClick={() => setShowImport(true)} id="tool-import">📥</button>
+    </div>
+  );
+
+  const addQuestionAt = (index, type = 'short') => {
+    const newQ = {
+      id: nextId++,
+      cardType: 'question',
+      type,
+      question: '',
+      options: ['multiple', 'checkbox', 'dropdown'].includes(type) ? ['Option 1', 'Option 2'] : [],
+      required: false,
+    };
+    setQuestions(prev => {
+      const next = [...prev];
+      next.splice(index, 0, newQ);
+      return next;
+    });
+    setFocusedId(newQ.id);
+  };
+
+  const renderInlineAddButton = (index) => (
+    <div className="fb-inline-add-row">
+      <button
+        type="button"
+        className="fb-inline-add-btn"
+        onClick={() => addQuestionAt(index)}
+        style={{ '--acc': accent }}
+        title="Add question here"
+      >
+        <span>+</span>
+      </button>
+    </div>
+  );
 
   // Responses states
   const [acceptingResponses, setAcceptingResponses] = useState(true);
@@ -1571,9 +1681,13 @@ export default function FormBuilder() {
       fields: `${questions.filter(q => q.cardType === 'question').length} fields`,
       bg: 'maroon-bg',
       theme: theme,
-      questions: questions.filter(q => q.cardType === 'question').map(q => ({
-        type: q.type,
-        question: q.question,
+      headerImage: headerImage,
+      questions: questions.map(q => ({
+        cardType: q.cardType || 'question',
+        type: q.type || '',
+        question: q.question || '',
+        description: q.description || '',
+        mediaUrl: q.mediaUrl || null,
         options: q.options || [],
         required: q.required || false
       })),
@@ -1593,6 +1707,22 @@ export default function FormBuilder() {
     setShowSuccess(true);
   };
 
+  const insertCard = (newCard) => {
+    setQuestions(prev => {
+      if (focusedId === 'title') {
+        return [newCard, ...prev];
+      }
+      const idx = prev.findIndex(q => q.id === focusedId);
+      if (idx > -1) {
+        const next = [...prev];
+        next.splice(idx + 1, 0, newCard);
+        return next;
+      }
+      return [...prev, newCard];
+    });
+    setFocusedId(newCard.id);
+  };
+
   const addQuestion = (type = 'short') => {
     const newQ = {
       id: nextId++,
@@ -1602,8 +1732,7 @@ export default function FormBuilder() {
       options: ['multiple', 'checkbox', 'dropdown'].includes(type) ? ['Option 1', 'Option 2'] : [],
       required: false,
     };
-    setQuestions(prev => [...prev, newQ]);
-    setFocusedId(newQ.id);
+    insertCard(newQ);
   };
 
   const addTitleDesc = () => {
@@ -1613,8 +1742,7 @@ export default function FormBuilder() {
       question: 'Section Title',
       description: 'Section description (optional)'
     };
-    setQuestions(prev => [...prev, newTitle]);
-    setFocusedId(newTitle.id);
+    insertCard(newTitle);
   };
 
   const addImage = () => {
@@ -1624,8 +1752,7 @@ export default function FormBuilder() {
       question: 'Image Title',
       mediaUrl: null
     };
-    setQuestions(prev => [...prev, newImg]);
-    setFocusedId(newImg.id);
+    insertCard(newImg);
   };
 
   const addVideo = () => {
@@ -1635,8 +1762,7 @@ export default function FormBuilder() {
       question: 'Video Title',
       mediaUrl: null
     };
-    setQuestions(prev => [...prev, newVid]);
-    setFocusedId(newVid.id);
+    insertCard(newVid);
   };
 
   const handleImport = (template) => {
@@ -1704,27 +1830,60 @@ export default function FormBuilder() {
         {/* ── 1. QUESTIONS TAB VIEW ── */}
         {activeTab === 'Questions' && (
           <>
-            {/* Left toolbar */}
-            <div className="fb-toolbar">
-              <button className="fb-tool-btn" title="Add question" onClick={() => addQuestion('short')} id="tool-add-q" style={{ color: accent }}>➕</button>
-              <button className="fb-tool-btn" title="Add title & description" onClick={addTitleDesc} id="tool-add-title">T</button>
-              <div className="fb-tool-divider" />
-              <button className="fb-tool-btn" title="Add image" onClick={addImage} id="tool-img">🖼</button>
-              <button className="fb-tool-btn" title="Add video" onClick={addVideo} id="tool-video">▶</button>
-              <div className="fb-tool-divider" />
-              <button className="fb-tool-btn" title="Import questions" onClick={() => setShowImport(true)} id="tool-import">📥</button>
-            </div>
-
             {/* Form content */}
             <div className="fb-content">
               {/* Title card */}
-              <div
-                className={`fb-card fb-title-card${focusedId === 'title' ? ' focused' : ''}`}
-                style={focusedId === 'title' ? { borderLeftColor: accent } : {}}
-                onClick={() => setFocusedId('title')}
-              >
-                {/* Themed banner */}
-                <div className="fb-banner" style={{ background: theme.banner }} />
+              <div className="fb-card-wrapper">
+                {focusedId === 'title' && renderToolbar()}
+                <div
+                  className={`fb-card fb-title-card${focusedId === 'title' ? ' focused' : ''}`}
+                  style={focusedId === 'title' ? { borderLeftColor: accent } : {}}
+                  onClick={() => setFocusedId('title')}
+                >
+                {/* Dynamic Header Image Banner */}
+                <input
+                  ref={headerImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleHeaderImageUpload}
+                />
+                <div
+                  className="fb-header-image-wrap"
+                  onClick={() => headerImageInputRef.current?.click()}
+                  title="Click to change header image"
+                >
+                  {headerImage ? (
+                    <img
+                      src={headerImage}
+                      alt="Form Header"
+                      className="fb-header-img"
+                    />
+                  ) : (
+                    <div className="fb-header-img-placeholder">
+                      <span>🖼️</span>
+                      <span>Click to add a header image</span>
+                    </div>
+                  )}
+                  <div className="fb-header-img-overlay">
+                    <button
+                      type="button"
+                      className="fb-header-img-btn"
+                      onClick={(e) => { e.stopPropagation(); headerImageInputRef.current?.click(); }}
+                    >
+                      ✏️ Change Image
+                    </button>
+                    {headerImage && (
+                      <button
+                        type="button"
+                        className="fb-header-img-btn remove"
+                        onClick={(e) => { e.stopPropagation(); setHeaderImage(''); }}
+                      >
+                        ✕ Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="fb-title-card-inner">
                   <input
                     className="fb-main-title-input"
@@ -1756,6 +1915,7 @@ export default function FormBuilder() {
                   </div>
                 </div>
               </div>
+            </div>
 
               {/* Email collection notification banner */}
               {collectEmail !== 'do-not' && (
@@ -1807,11 +1967,15 @@ export default function FormBuilder() {
                 </div>
               )}
 
+              {/* Inline Add Button after Title Card */}
+              {renderInlineAddButton(0)}
+
               {/* Cards Loop (Questions & Custom Blocks) */}
-              {questions.map(q => {
+              {questions.map((q, idx) => {
+                const isFocused = focusedId === q.id;
                 const props = {
                   q,
-                  focused: focusedId === q.id,
+                  focused: isFocused,
                   accent,
                   onFocus: () => setFocusedId(q.id),
                   onChange: updateQuestion,
@@ -1839,16 +2003,19 @@ export default function FormBuilder() {
                   setLocationInputs
                 };
 
-                if (q.cardType === 'title-desc') {
-                  return <TitleDescCard key={q.id} {...props} />;
-                }
-                if (q.cardType === 'image') {
-                  return <ImageCard key={q.id} {...props} />;
-                }
-                if (q.cardType === 'video') {
-                  return <VideoCard key={q.id} {...props} />;
-                }
-                return <QuestionCard key={q.id} {...props} />;
+                return (
+                  <Fragment key={q.id}>
+                    <div className="fb-card-wrapper">
+                      {isFocused && renderToolbar()}
+                      {q.cardType === 'title-desc' && <TitleDescCard {...props} />}
+                      {q.cardType === 'image' && <ImageCard {...props} />}
+                      {q.cardType === 'video' && <VideoCard {...props} />}
+                      {q.cardType === 'question' && <QuestionCard {...props} />}
+                    </div>
+                    {/* Inline Add Button after each card */}
+                    {renderInlineAddButton(idx + 1)}
+                  </Fragment>
+                );
               })}
 
               {/* Submit & Publish Card */}
@@ -1859,7 +2026,7 @@ export default function FormBuilder() {
                   onClick={handlePublish}
                   id="fb-submit-publish-btn"
                 >
-                  Submit & Publish Form
+                  Save Form
                 </button>
               </div>
             </div>
@@ -2150,10 +2317,10 @@ export default function FormBuilder() {
             </div>
 
             <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-              Form Successfully Published!
+              Form Successfully Saved!
             </h2>
             <p style={{ fontSize: '14px', color: '#555', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
-              Your form <strong>"{formTitle}"</strong> is now live and ready to collect submissions.
+              Your form <strong>"{formTitle}"</strong> has been successfully saved.
             </p>
 
             {/* Shareable Link Block */}
@@ -2161,7 +2328,7 @@ export default function FormBuilder() {
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
                 <a
-                  href={`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  href={`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{
@@ -2175,12 +2342,12 @@ export default function FormBuilder() {
                     marginRight: '8px'
                   }}
                 >
-                  {`${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  {`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 </a>
                 <button
                   onClick={() => {
                     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                    const link = `${getOrigin()}/#/form/${slug}`;
+                    const link = `${getOrigin()}/form/${slug}`;
                     navigator.clipboard.writeText(link);
                     alert('Link copied to clipboard!');
                   }}
@@ -2205,7 +2372,7 @@ export default function FormBuilder() {
               }}>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    `${getOrigin()}/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                    `${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=000000`}
                   alt="Form QR Code"
                   style={{ width: '150px', height: '150px', display: 'block' }}
@@ -2221,7 +2388,7 @@ export default function FormBuilder() {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href={`/#/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                href={`/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{

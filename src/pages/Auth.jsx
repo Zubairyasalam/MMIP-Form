@@ -435,6 +435,42 @@ export default function Auth({ portalType }) {
               </button>
             </form>
 
+            <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              {portalType === 'admin' ? (
+                <div>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setEmail('admin@mcc.edu.in');
+                      setPassword('admin123');
+                    }}
+                    style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '12px', width: '100%' }}
+                  >
+                    ⚡ Auto-fill Demo Admin Credentials
+                  </button>
+                  <p style={{ fontSize: '13.5px', color: '#64748b' }}>
+                    Not an admin?{' '}
+                    <span 
+                      onClick={() => navigate('/auth')} 
+                      style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Go to User Portal
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
+                  Are you an administrator?{' '}
+                  <span 
+                    onClick={() => navigate('/admin/login')} 
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Go to Admin Portal
+                  </span>
+                </p>
+              )}
+            </div>
+
           </div>
         </div>
 

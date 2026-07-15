@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
@@ -100,6 +101,156 @@ export default function AdminDashboard() {
   const [departments, setDepartments] = useState([]);
   const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+
+  const handleDownloadSubCSV = (sub) => {
+    const headers = ['Question', 'Answer'];
+    const rows = (sub.answers || []).map(ans => {
+      const qText = ans.q ? ans.q.toString() : '';
+      const aText = ans.a ? ans.a.toString() : '';
+      return `"${qText.replace(/"/g, '""')}","${aText.replace(/"/g, '""')}"`;
+    });
+    
+    const metadata = [
+      `"Submission ID","${sub.id || ''}"`,
+      `"Submitter Name","${sub.name || ''}"`,
+      `"Email Address","${sub.email || ''}"`,
+      `"Form Name","${sub.form || ''}"`,
+      `"Date Submitted","${sub.date || ''}"`,
+      `""`,
+      `""`
+    ];
+    
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([metadata.join('\n'), headers.join(','), ...rows].join('\n'));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", csvContent);
+    downloadAnchor.setAttribute("download", `submission-${sub.id || 'export'}.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleDownloadSubPDF = (sub) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Pop-up blocker is enabled! Please allow pop-ups for this site to generate the PDF report.');
+      return;
+    }
+    
+    const answersHtml = (sub.answers || []).map(ans => {
+      const q = ans.q || '';
+      const a = ans.a || '—';
+      return '<div class="answer-card"><strong>' + q + '</strong><p>' + a + '</p></div>';
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Submission Details - ${sub.id}</title>
+          <style>
+            body {
+              font-family: 'Inter', sans-serif;
+              padding: 40px;
+              color: #1e293b;
+            }
+            .header {
+              border-bottom: 2px solid #800000;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            .header h1 {
+              margin: 0;
+              color: #800000;
+              font-size: 24px;
+            }
+            .meta-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 30px;
+              background: #f8fafc;
+              padding: 20px;
+              border-radius: 8px;
+              border: 1px solid #e2e8f0;
+            }
+            .meta-item strong {
+              color: #475569;
+              display: block;
+              font-size: 13px;
+              margin-bottom: 4px;
+            }
+            .meta-item p {
+              margin: 0;
+              font-weight: 600;
+              font-size: 15px;
+            }
+            .answers-section h2 {
+              font-size: 18px;
+              border-bottom: 1px solid #cbd5e1;
+              padding-bottom: 8px;
+              margin-bottom: 20px;
+            }
+            .answer-card {
+              margin-bottom: 20px;
+              page-break-inside: avoid;
+            }
+            .answer-card strong {
+              display: block;
+              color: #334155;
+              font-size: 14px;
+              margin-bottom: 6px;
+            }
+            .answer-card p {
+              margin: 0;
+              background: #f8fafc;
+              padding: 12px;
+              border-radius: 6px;
+              border: 1px solid #e2e8f0;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>MCC-MRF Innovation Park - Submission Report</h1>
+            <p style="margin: 5px 0 0 0; color: #64748b;">ID: ${sub.id} | Form: ${sub.form}</p>
+          </div>
+          
+          <div class="meta-grid">
+            <div class="meta-item">
+              <strong>Submitter Name</strong>
+              <p>${sub.name}</p>
+            </div>
+            <div class="meta-item">
+              <strong>Email Address</strong>
+              <p>${sub.email}</p>
+            </div>
+            <div class="meta-item">
+              <strong>Form Name</strong>
+              <p>${sub.form}</p>
+            </div>
+            <div class="meta-item">
+              <strong>Date Submitted</strong>
+              <p>${sub.date || new Date().toISOString()}</p>
+            </div>
+          </div>
+          
+          <div class="answers-section">
+            <h2>Field Answers</h2>
+            ${answersHtml}
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
   const [announcements, setAnnouncements] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -160,6 +311,15 @@ export default function AdminDashboard() {
     content: '',
     target: 'All'
   });
+
+  // Theme state: dark/light
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('adminTheme') || 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('adminTheme', theme);
+  }, [theme]);
 
   // Submission Detail View
   const [selectedSub, setSelectedSub] = useState(null);
@@ -287,14 +447,31 @@ export default function AdminDashboard() {
 
     // 4. Load Submissions
     const localSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+    let sanitized = false;
+    const sortedSubs = [...localSubs].reverse();
+    let nextSeq = 6;
+    const sanitizedLocalSubs = sortedSubs.map(s => {
+      const expectedId = `MMIP-${nextSeq < 10 ? '0' + nextSeq : nextSeq}`;
+      let updatedItem = s;
+      if (s.id !== expectedId) {
+        sanitized = true;
+        updatedItem = { ...s, id: expectedId };
+      }
+      nextSeq++;
+      return updatedItem;
+    }).reverse();
+    if (sanitized) {
+      localStorage.setItem('formSubmissions', JSON.stringify(sanitizedLocalSubs));
+    }
+
     const defaultSubs = [
-      { id: 'MMIP-101', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
-      { id: 'MMIP-102', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
-      { id: 'MMIP-103', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
-      { id: 'MMIP-104', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
-      { id: 'MMIP-105', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
+      { id: 'MMIP-05', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
+      { id: 'MMIP-04', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
+      { id: 'MMIP-03', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
+      { id: 'MMIP-02', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
+      { id: 'MMIP-01', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
     ];
-    const combinedSubmissions = [...localSubs, ...defaultSubs];
+    const combinedSubmissions = [...sanitizedLocalSubs, ...defaultSubs];
     setSubmissions(combinedSubmissions);
 
     // 5. Load Announcements
@@ -319,7 +496,7 @@ export default function AdminDashboard() {
     } else {
       notificationList = [
         { id: 1, text: 'New student registration: Arun Kumar', time: '10 mins ago', type: 'Registration' },
-        { id: 2, text: 'Submission flagged: MMIP-105 has incomplete fields', time: '1 hour ago', type: 'System' },
+        { id: 2, text: 'Submission flagged: MMIP-05 has incomplete fields', time: '1 hour ago', type: 'System' },
         { id: 3, text: 'New custom template submitted for moderation: Alumni Survey', time: '1 day ago', type: 'Form' }
       ];
       localStorage.setItem('appNotifications', JSON.stringify(notificationList));
@@ -657,7 +834,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className={`admin-layout${sidebarOpen ? ' sidebar-active' : ''}`}>
+    <div className={`admin-layout ${theme === 'dark' ? 'dark-mode' : 'light-mode'}${sidebarOpen ? ' sidebar-active' : ''}`}>
       {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       {/* Sidebar Panel */}
       <aside className="admin-sidebar">
@@ -708,12 +885,12 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Department Management */}
+          {/* All Submissions */}
           <button
-            className={`admin-nav-item${activeMenu === 'departments' ? ' active' : ''}`}
-            onClick={() => { setActiveMenu('departments'); setSidebarOpen(false); }}
+            className={`admin-nav-item${activeMenu === 'submissions' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('submissions'); setSidebarOpen(false); }}
           >
-            Department Management
+            All Submissions
           </button>
 
           {/* Form Management */}
@@ -724,20 +901,20 @@ export default function AdminDashboard() {
             Form Management
           </button>
 
-          {/* All Submissions */}
-          <button
-            className={`admin-nav-item${activeMenu === 'submissions' ? ' active' : ''}`}
-            onClick={() => { setActiveMenu('submissions'); setSidebarOpen(false); }}
-          >
-            All Submissions
-          </button>
-
           {/* Reports & Analytics */}
           <button
             className={`admin-nav-item${activeMenu === 'reports' ? ' active' : ''}`}
             onClick={() => { setActiveMenu('reports'); setSidebarOpen(false); }}
           >
             Reports & Analytics
+          </button>
+
+          {/* Department Management */}
+          <button
+            className={`admin-nav-item${activeMenu === 'departments' ? ' active' : ''}`}
+            onClick={() => { setActiveMenu('departments'); setSidebarOpen(false); }}
+          >
+            Department Management
           </button>
 
           {/* Announcements */}
@@ -821,11 +998,21 @@ export default function AdminDashboard() {
               <p>Madras Christian College Innovation Park System Center</p>
             </div>
           </div>
-          <div className="admin-profile-badge">
-            <span className="profile-avatar">{profileData.avatar}</span>
-            <div>
-              <div className="profile-name">{profileData.name}</div>
-              <div className="profile-role">{profileData.role}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+              title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+            <div className="admin-profile-badge">
+              <span className="profile-avatar">{profileData.avatar}</span>
+              <div>
+                <div className="profile-name">{profileData.name}</div>
+                <div className="profile-role">{profileData.role}</div>
+              </div>
             </div>
           </div>
         </header>
@@ -1148,8 +1335,11 @@ export default function AdminDashboard() {
           <div className="admin-tab-content anim-fade-in">
             <div className="tab-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3>Global Submissions Feed</h3>
-              <div className="forms-search-box" style={{ width: '300px', margin: 0 }}>
-                🔍
+              <div className="admin-search-box" style={{ width: '300px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
                 <input
                   type="text"
                   placeholder="Filter submissions..."
@@ -1199,6 +1389,22 @@ export default function AdminDashboard() {
                             </button>
                             <button
                               className="action-btn edit"
+                              style={{ background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}
+                              onClick={() => handleDownloadSubCSV(sub)}
+                              title="Download as Excel/CSV"
+                            >
+                              📥 Excel
+                            </button>
+                            <button
+                              className="action-btn edit"
+                              style={{ background: '#fff5f5', color: '#991b1b', borderColor: '#fca5a5' }}
+                              onClick={() => handleDownloadSubPDF(sub)}
+                              title="Download as PDF"
+                            >
+                              📄 PDF
+                            </button>
+                            <button
+                              className="action-btn edit"
                               onClick={() => openEditSubModal(sub)}
                             >
                               Edit
@@ -1217,14 +1423,14 @@ export default function AdminDashboard() {
               </table>
             </div>
 
-            {selectedSub && (
+            {selectedSub && createPortal(
               <div className="admin-modal-overlay">
-                <div className="admin-modal" style={{ maxWidth: '600px' }}>
+                <div className="admin-modal" style={{ maxWidth: '1100px', width: '95%' }}>
                   <div className="modal-header">
                     <h4>Submission Details - {selectedSub.id}</h4>
                     <button className="modal-close" onClick={() => setSelectedSub(null)}>×</button>
                   </div>
-                  <div className="modal-body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                       <div>
                         <strong>Submitter Name:</strong>
@@ -1254,16 +1460,31 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </div>
-                  <div className="modal-footer">
-                    <button className="admin-btn-secondary" onClick={() => setSelectedSub(null)}>
+                  <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button
+                      className="admin-btn-primary"
+                      style={{ background: '#16a34a', borderColor: '#16a34a' }}
+                      onClick={() => handleDownloadSubCSV(selectedSub)}
+                    >
+                      📥 Download Excel (CSV)
+                    </button>
+                    <button
+                      className="admin-btn-primary"
+                      style={{ background: '#991b1b', borderColor: '#991b1b' }}
+                      onClick={() => handleDownloadSubPDF(selectedSub)}
+                    >
+                      📄 Download PDF Report
+                    </button>
+                    <button type="button" className="admin-btn-secondary" style={{ background: '#64748b', borderColor: '#64748b', color: 'white' }} onClick={() => setSelectedSub(null)}>
                       Close
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
 
-            {editingSub && (
+            {editingSub && createPortal(
               <div className="admin-modal-overlay">
                 <form onSubmit={handleSubEditSubmit} className="admin-modal" style={{ maxWidth: '500px' }}>
                   <div className="modal-header">
@@ -1316,7 +1537,8 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </form>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         )}
@@ -1861,7 +2083,7 @@ export default function AdminDashboard() {
       </main>
 
       {/* Admin/User Add/Edit Modal */}
-      {showUserModal && (
+      {showUserModal && createPortal(
         <div className="admin-modal-overlay">
           <div className="admin-modal">
             <div className="modal-header">
@@ -1933,11 +2155,12 @@ export default function AdminDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Department Add/Edit Modal */}
-      {showDeptModal && (
+      {showDeptModal && createPortal(
         <div className="admin-modal-overlay">
           <div className="admin-modal">
             <div className="modal-header">
@@ -1987,11 +2210,12 @@ export default function AdminDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Announcement Add Modal */}
-      {showAnnouncementModal && (
+      {showAnnouncementModal && createPortal(
         <div className="admin-modal-overlay">
           <div className="admin-modal">
             <div className="modal-header">
@@ -2041,10 +2265,11 @@ export default function AdminDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Custom Confirmation Modal */}
-      {confirmModal && (
+      {confirmModal && createPortal(
         <div className="admin-modal-overlay">
           <div className="admin-modal" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
@@ -2072,7 +2297,8 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Toast Messages */}

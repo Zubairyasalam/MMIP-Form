@@ -234,8 +234,8 @@
   background: linear-gradient(135deg, #fdf4f4 0%, #f9e8e8 100%);
 }
 
-.template-card-preview.blue-bg {
-  background: linear-gradient(135deg, #e8f0ff 0%, #d4e3ff 100%);
+.template-card-preview.orange-bg {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
 }
 
 .template-card-preview.green-bg {

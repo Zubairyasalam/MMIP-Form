@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
 import './AdminFormManagement.css';
 
@@ -15,6 +16,62 @@ export default function AdminFormManagement({ onLogAction }) {
   const [selectedForm, setSelectedForm] = useState(null); // For preview
   const [editingForm, setEditingForm] = useState(null); // For add/edit modal
   const [activeModalTab, setActiveModalTab] = useState('basic'); // 'basic' or 'fields'
+
+  const handleDownloadSchema = (form) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(form, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `${form.id || 'form'}-schema.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleDownloadSubmissions = (form) => {
+    const allSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+    const formSubs = allSubs.filter(s => s.formId === form.id || s.formName === form.name);
+    
+    if (formSubs.length === 0) {
+      alert(`No submissions found for the form "${form.name}".`);
+      return;
+    }
+    
+    const headers = ['Submission ID', 'Timestamp'];
+    form.questions.forEach((q) => {
+      if (q.cardType === 'question' || !q.cardType) {
+        headers.push(`"${q.question.replace(/"/g, '""')}"`);
+      }
+    });
+    
+    const rows = formSubs.map(sub => {
+      const row = [
+        sub.id,
+        sub.timestamp || new Date(sub.submittedAt || Date.now()).toISOString()
+      ];
+      
+      form.questions.forEach((q, qIdx) => {
+        if (q.cardType === 'question' || !q.cardType) {
+          const ans = sub.answers?.[qIdx];
+          if (ans === undefined || ans === null) {
+            row.push('');
+          } else if (Array.isArray(ans)) {
+            row.push(`"${ans.join(', ').replace(/"/g, '""')}"`);
+          } else {
+            row.push(`"${String(ans).replace(/"/g, '""')}"`);
+          }
+        }
+      });
+      return row.join(',');
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", csvContent);
+    downloadAnchor.setAttribute("download", `${form.id}-submissions.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   // New field working state (within modal)
   const [newFieldData, setNewFieldData] = useState({
@@ -59,13 +116,14 @@ export default function AdminFormManagement({ onLogAction }) {
 
     let changed = false;
     defaultForms.forEach(df => {
-      if (!existing.some(e => e.id === df.id)) {
+      const exists = existing.find(e => e.id === df.id);
+      if (!exists) {
         existing.push(df);
         changed = true;
       }
     });
 
-    if (changed || !saved) {
+    if (changed) {
       localStorage.setItem('customForms', JSON.stringify(existing));
     }
 
@@ -312,21 +370,32 @@ export default function AdminFormManagement({ onLogAction }) {
       ) : viewMode === 'grid' ? (
         <div className="templates-grid" style={{ padding: 0 }}>
           {filteredForms.map(tmpl => {
-            const theme = TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'];
+            let theme = TEMPLATE_THEMES[tmpl.bg];
+            let dynamicBannerStyle = {};
+            let isDynamic = false;
+            
+            if (!theme && tmpl.bg?.startsWith('#')) {
+              theme = { accent: tmpl.bg, label: 'Custom' };
+              dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
+              isDynamic = true;
+            } else if (!theme) {
+              theme = TEMPLATE_THEMES['maroon-bg'];
+            }
+
             return (
               <div key={tmpl.id} className="template-card">
-                <div className="template-card-banner" style={{ background: theme.banner }}>
-                  <div className="template-card-header-overlay">
-                    <span className="tmpl-badge-status" style={{ background: tmpl.status === 'Active' ? '#22c55e' : '#94a3b8' }}>
+                <div className={`template-card-preview ${isDynamic ? '' : tmpl.bg}`} style={{ position: 'relative', ...(isDynamic ? dynamicBannerStyle : {}) }}>
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}>
+                    <span className="tmpl-badge-status" style={{ background: tmpl.status === 'Active' ? '#22c55e' : '#94a3b8', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                       {tmpl.status}
                     </span>
                   </div>
-                  <div className="template-card-preview-mini">
-                    <div className="preview-field-mini" />
-                    <div className="preview-field-mini" />
-                    <button className="preview-btn-mini" style={{ background: theme.accent }} type="button">
-                      {tmpl.button_text || 'Use Template'}
-                    </button>
+                  <div className="template-mini-form">
+                    <div className="mini-form-title">{tmpl.name}</div>
+                    <div className="mini-form-field full" />
+                    <div className="mini-form-field short" />
+                    <div className="mini-form-field full" />
+                    <div className="mini-form-btn" style={{ background: theme.accent }} />
                   </div>
                 </div>
                 <div className="template-card-info">
@@ -415,7 +484,7 @@ export default function AdminFormManagement({ onLogAction }) {
       )}
 
       {/* ── CREATE / EDIT MODAL ── */}
-      {editingForm && (
+      {editingForm && createPortal(
         <div className="super-modal-overlay">
           <form onSubmit={handleSaveForm} className="super-modal" style={{ maxWidth: '750px', width: '90%' }}>
             <div className="modal-header">
@@ -479,18 +548,37 @@ export default function AdminFormManagement({ onLogAction }) {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
+                  <div className="tmpl-form-row">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label className="form-label">Card Theme Color</label>
-                      <select
-                        value={editingForm.bg}
-                        onChange={e => setEditingForm(prev => ({ ...prev, bg: e.target.value }))}
-                        className="form-select"
-                      >
-                        {Object.entries(TEMPLATE_THEMES).map(([key, val]) => (
-                          <option key={key} value={key}>{val.label} Accent</option>
-                        ))}
-                      </select>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select
+                          value={editingForm.bg?.startsWith('#') ? 'custom' : editingForm.bg}
+                          onChange={e => {
+                            if (e.target.value === 'custom') {
+                              setEditingForm(prev => ({ ...prev, bg: '#3b82f6' }));
+                            } else {
+                              setEditingForm(prev => ({ ...prev, bg: e.target.value }));
+                            }
+                          }}
+                          className="form-select"
+                          style={{ flex: 1 }}
+                        >
+                          {Object.entries(TEMPLATE_THEMES).map(([key, val]) => (
+                            <option key={key} value={key}>{val.label} Accent</option>
+                          ))}
+                          <option value="custom">Custom Color...</option>
+                        </select>
+                        {editingForm.bg?.startsWith('#') && (
+                          <input
+                            type="color"
+                            value={editingForm.bg}
+                            onChange={e => setEditingForm(prev => ({ ...prev, bg: e.target.value }))}
+                            style={{ height: '42px', width: '42px', padding: '0', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', background: 'white' }}
+                            title="Choose Custom Color"
+                          />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="form-label">CTA Button Text</label>
@@ -547,7 +635,9 @@ export default function AdminFormManagement({ onLogAction }) {
                         <div key={idx} className="builder-field-row">
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <strong style={{ fontSize: '13px', color: '#334155' }}>{q.question}</strong>
+                              <strong style={{ fontSize: '13px', color: '#334155' }}>
+                                {q.question} {q.required && <span style={{ color: '#ef4444', marginLeft: '2px' }}>*</span>}
+                              </strong>
                               <span className="field-type-pill">{q.type}</span>
                               {q.required && <span className="field-required-pill">Required</span>}
                             </div>
@@ -696,13 +786,14 @@ export default function AdminFormManagement({ onLogAction }) {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── LIVE PREVIEW MODAL ── */}
-      {selectedForm && (
+      {selectedForm && createPortal(
         <div className="super-modal-overlay">
-          <div className="super-modal" style={{ maxWidth: '600px', width: '90%' }}>
+          <div className="super-modal" style={{ maxWidth: '950px', width: '95%' }}>
             <div className="modal-header">
               <h4>Preview Template: "{selectedForm.name}"</h4>
               <button type="button" className="modal-close" onClick={() => setSelectedForm(null)}>×</button>
@@ -716,11 +807,18 @@ export default function AdminFormManagement({ onLogAction }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {selectedForm.questions?.map((q, idx) => (
                   <div key={idx}>
-                    <label style={{ display: 'block', fontWeight: '700', fontSize: '12.5px', color: '#334155', marginBottom: '6px' }}>
-                      {q.question} {q.required && <span style={{ color: '#dc2626' }}>*</span>}
+                    <label style={{ display: 'block', fontWeight: '700', fontSize: '12.5px', color: '#334155', marginBottom: q.description ? '3px' : '6px' }}>
+                      {q.question} {q.required && <span style={{ color: '#ef4444' }}>*</span>}
                     </label>
+                    {q.description && (
+                      <p style={{ fontSize: '11px', color: '#000000', marginTop: '-2px', marginBottom: '6px', fontFamily: 'Inter, sans-serif' }}>
+                        {q.description}
+                      </p>
+                    )}
                     
-                    {q.type === 'paragraph' ? (
+                    {q.type === 'number' ? (
+                      <input type="number" placeholder="Enter number..." disabled style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }} />
+                    ) : q.type === 'paragraph' ? (
                       <textarea placeholder={q.placeholder} disabled style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }} />
                     ) : ['multiple', 'select', 'dropdown'].includes(q.type) ? (
                       <select disabled style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }}>
@@ -750,13 +848,30 @@ export default function AdminFormManagement({ onLogAction }) {
                 ))}
               </div>
             </div>
-            <div className="modal-footer">
-              <button type="button" className="super-btn-primary" onClick={() => setSelectedForm(null)}>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="super-btn-primary"
+                style={{ background: '#0284c7', borderColor: '#0284c7' }}
+                onClick={() => handleDownloadSchema(selectedForm)}
+              >
+                📥 Download Schema (JSON)
+              </button>
+              <button
+                type="button"
+                className="super-btn-primary"
+                style={{ background: '#16a34a', borderColor: '#16a34a' }}
+                onClick={() => handleDownloadSubmissions(selectedForm)}
+              >
+                📊 Download Submissions (CSV)
+              </button>
+              <button type="button" className="super-btn-primary" style={{ background: '#64748b', borderColor: '#64748b' }} onClick={() => setSelectedForm(null)}>
                 Close Preview
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './Footer.css';
 
 export default function Footer() {
@@ -50,6 +51,7 @@ export default function Footer() {
               <li><a href="#faq">FAQ</a></li>
               <li><a href="#contact">Contact</a></li>
               <li><a href="#status">System Status</a></li>
+              <li><Link to="/admin/login">Admin Portal</Link></li>
               <li><a href="#privacy">Privacy Policy</a></li>
             </ul>
           </div>

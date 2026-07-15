@@ -611,8 +611,18 @@
   background: #94a3b8;
 }
 
+.tmpl-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 /* ── MOBILE RESPONSIVE FORM MANAGEMENT OVERRIDES ── */
 @media (max-width: 768px) {
+  .tmpl-form-row {
+    grid-template-columns: 1fr;
+  }
+
   .tmpl-mgmt-controls {
     padding: 16px !important;
     gap: 14px !important;

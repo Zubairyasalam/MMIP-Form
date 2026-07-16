@@ -193,7 +193,7 @@ export default function MyForms() {
                             onClick={() => handleEdit(tmpl)}
                             style={{ flex: 1, padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', color: '#2563eb', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}
                           >
-                            Edit
+                            Create
                           </button>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>

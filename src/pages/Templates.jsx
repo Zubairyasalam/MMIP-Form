@@ -26,6 +26,89 @@ export default function Templates() {
     setSelectedTmplQr(tmpl);
   };
 
+  const handleDownloadQR = async (name) => {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+      `${getOrigin()}/form/${slug}`
+    )}&color=000000`;
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${slug}-qr-code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      window.open(qrUrl, '_blank');
+    }
+  };
+
+  const handleShareLink = async (title, url) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Scan or open this form: ${title}`,
+          url: url,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard! (Web Share is not supported on this device/browser)');
+    }
+  };
+
+  const handleShareQR = async (title, qrUrl) => {
+    try {
+      const response = await fetch(qrUrl.replace('size=180x180', 'size=500x500'));
+      const blob = await response.blob();
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const file = new File([blob], `${slug}-qr-code.png`, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${title} QR Code`,
+          text: `Scan this QR code to access the ${title} form`,
+        });
+      } else {
+        const formUrl = `${getOrigin()}/form/${slug}`;
+        if (navigator.share) {
+          await navigator.share({
+            title: title,
+            text: `Scan or open this form: ${title}`,
+            url: formUrl,
+          });
+        } else {
+          navigator.clipboard.writeText(formUrl);
+          alert('Link copied to clipboard! (Device does not support file sharing)');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const formUrl = `${getOrigin()}/form/${slug}`;
+      if (navigator.share) {
+        await navigator.share({
+          title: title,
+          text: `Scan or open this form: ${title}`,
+          url: formUrl,
+        });
+      } else {
+        navigator.clipboard.writeText(formUrl);
+        alert('Link copied to clipboard!');
+      }
+    }
+  };
+
+
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
@@ -137,9 +220,7 @@ export default function Templates() {
     <div className="templates-page">
       {/* Top bar */}
       <div className="templates-topbar">
-        <Link to="/">
-          <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="templates-topbar-logo" />
-        </Link>
+        <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="templates-topbar-logo" />
 
         <div className="templates-search-wrap">
           <svg className="templates-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -155,8 +236,44 @@ export default function Templates() {
         </div>
 
         <div className="templates-topbar-right" style={{ display: 'flex', alignItems: 'center' }}>
-          <Link to="/" style={{ padding: '9px 20px', fontSize: '13px', borderRadius: '999px', border: '1.5px solid #cbd5e1', color: '#475569', textDecoration: 'none', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
-            ← Home
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 18px',
+              fontSize: '13px',
+              borderRadius: '20px',
+              border: '1.5px solid #cbd5e1',
+              color: '#475569',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontFamily: 'Inter, sans-serif',
+              background: '#ffffff',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#f1f5f9';
+              e.currentTarget.style.color = '#7B1C1C';
+              e.currentTarget.style.borderColor = '#7B1C1C';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.color = '#475569';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.02)';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Home
           </Link>
         </div>
       </div>
@@ -254,7 +371,37 @@ export default function Templates() {
       {/* QR Code Scanner Modal */}
       {selectedTmplQr && (
         <div style={{ display: 'flex', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, justifyContent: 'center', alignItems: 'center', overflowY: 'auto', padding: '20px 0' }} onClick={() => { setSelectedTmplQr(null); }}>
-          <div style={{ background: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxWidth: '440px', width: '90%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+          <div style={{ position: 'relative', background: 'white', padding: '32px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxWidth: '440px', width: '90%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedTmplQr(null)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#f1f5f9',
+                border: 'none',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b',
+                transition: 'all 0.2s',
+                zIndex: 10
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#334155'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+              aria-label="Close modal"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
             <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
               {selectedTmplQr.name}
             </h3>
@@ -281,46 +428,130 @@ export default function Templates() {
               </div>
             )}
 
-            <div style={{
-              background: 'white',
-              padding: '16px',
-              borderRadius: '20px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
-              border: '1px solid #f1f5f9',
-              display: 'inline-flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
-                )}&color=000000`}
-                alt="Registration QR Code"
-                style={{ width: '180px', height: '180px', display: 'block' }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
+              <div style={{
+                background: 'white',
+                padding: '16px',
+                borderRadius: '20px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+                border: '1px solid #f1f5f9',
+                display: 'inline-flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                    `${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                  )}&color=000000`}
+                  alt="Registration QR Code"
+                  style={{ width: '180px', height: '180px', display: 'block' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button
+                  onClick={() => handleDownloadQR(selectedTmplQr.name)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#f1f5f9',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: '600',
+                    color: '#475569',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download
+                </button>
+                <button
+                  onClick={() => {
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                      `${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                    )}&color=000000`;
+                    handleShareQR(selectedTmplQr.name, qrUrl);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent,
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11.5px',
+                    fontWeight: '600',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = `${(TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent}cc`; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  Share
+                </button>
+              </div>
             </div>
+
 
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '24px', textAlign: 'left' }}>
               <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', fontFamily: 'Inter, sans-serif' }}>Shareable Form Link</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <input
                   type="text"
                   readOnly
                   value={`${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
-                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                  style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif', width: '0' }}
                 />
-                <button
-                  onClick={() => {
-                    const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    const link = `${getOrigin()}/form/${slug}`;
-                    navigator.clipboard.writeText(link);
-                    alert('Link copied to clipboard!');
-                  }}
-                  style={{ background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-                >
-                  Copy Link
-                </button>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => {
+                      const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      const link = `${getOrigin()}/form/${slug}`;
+                      navigator.clipboard.writeText(link);
+                      alert('Link copied to clipboard!');
+                    }}
+                    style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    onClick={() => {
+                      const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      const link = `${getOrigin()}/form/${slug}`;
+                      handleShareLink(selectedTmplQr.name, link);
+                    }}
+                    style={{ background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    Share
+                  </button>
+                </div>
               </div>
             </div>
 

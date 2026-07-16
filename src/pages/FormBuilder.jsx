@@ -1525,6 +1525,89 @@ export default function FormBuilder() {
     return tunnelUrl || window.location.origin;
   };
 
+  const handleDownloadQR = async (title) => {
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+      `${getOrigin()}/form/${slug}`
+    )}&color=000000`;
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${slug}-qr-code.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      window.open(qrUrl, '_blank');
+    }
+  };
+
+  const handleShareLink = async (title, url) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Scan or open this form: ${title}`,
+          url: url,
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard! (Web Share is not supported on this device/browser)');
+    }
+  };
+
+  const handleShareQR = async (title, qrUrl) => {
+    try {
+      const response = await fetch(qrUrl.replace('size=120x120', 'size=500x500').replace('size=150x150', 'size=500x500'));
+      const blob = await response.blob();
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const file = new File([blob], `${slug}-qr-code.png`, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${title} QR Code`,
+          text: `Scan this QR code to access the ${title} form`,
+        });
+      } else {
+        const formUrl = `${getOrigin()}/form/${slug}`;
+        if (navigator.share) {
+          await navigator.share({
+            title: title,
+            text: `Scan or open this form: ${title}`,
+            url: formUrl,
+          });
+        } else {
+          navigator.clipboard.writeText(formUrl);
+          alert('Link copied to clipboard! (Device does not support file sharing)');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const formUrl = `${getOrigin()}/form/${slug}`;
+      if (navigator.share) {
+        await navigator.share({
+          title: title,
+          text: `Scan or open this form: ${title}`,
+          url: formUrl,
+        });
+      } else {
+        navigator.clipboard.writeText(formUrl);
+        alert('Link copied to clipboard!');
+      }
+    }
+  };
+
+
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
@@ -1796,9 +1879,34 @@ export default function FormBuilder() {
       {/* ── Top bar ── */}
       <div className="fb-topbar">
         <div className="fb-topbar-inner">
-          <Link to="/templates">
-            <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="fb-logo" />
-          </Link>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#475569',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px',
+              borderRadius: '50%',
+              marginRight: '2px',
+              transition: 'all 0.2s',
+              flexShrink: 0
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#7B1C1C'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
+            title="Go Back"
+            aria-label="Go Back"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+          </button>
+          
+          <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="fb-logo" />
 
           <div className="fb-title-area">
             <input
@@ -2295,77 +2403,126 @@ export default function FormBuilder() {
       {/* ── Success Modal ── */}
       {showSuccess && (
         <div className="fb-success-overlay" onClick={() => { setShowSuccess(false); }}>
-          <div className="fb-success-card" onClick={e => e.stopPropagation()}>
+          <div className="fb-success-card" style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSuccess(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#f1f5f9',
+                border: 'none',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b',
+                transition: 'all 0.2s',
+                zIndex: 10
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#334155'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+              aria-label="Close modal"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
             {/* Animated checkmark circle */}
-            <div style={{ position: 'relative', marginBottom: '24px' }}>
+            <div style={{ position: 'relative', marginBottom: '14px' }}>
               <div style={{
-                width: '80px', height: '80px', borderRadius: '50%',
+                width: '64px', height: '64px', borderRadius: '50%',
                 background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto',
-                boxShadow: `0 8px 32px ${accent}44`,
+                boxShadow: `0 6px 24px ${accent}44`,
                 animation: 'fb-success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
               }}>
-                <span style={{ fontSize: '36px', color: 'white', lineHeight: 1 }}>✓</span>
+                <span style={{ fontSize: '28px', color: 'white', lineHeight: 1 }}>✓</span>
               </div>
               {/* Ripple rings */}
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: '80px', height: '80px', borderRadius: '50%',
+                width: '64px', height: '64px', borderRadius: '50%',
                 border: `3px solid ${accent}55`,
                 animation: 'fb-ripple 1.2s ease-out 0.3s infinite'
               }} />
             </div>
 
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#111', marginBottom: '4px', fontFamily: 'Inter, sans-serif' }}>
               Form Successfully Saved!
             </h2>
-            <p style={{ fontSize: '14px', color: '#555', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
+            <p style={{ fontSize: '13px', color: '#555', marginBottom: '10px', fontFamily: 'Inter, sans-serif' }}>
               Your form <strong>"{formTitle}"</strong> has been successfully saved.
             </p>
 
             {/* Shareable Link Block */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', textAlign: 'left' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 12px', marginBottom: '12px', textAlign: 'left' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <a
                   href={`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{
                     flex: 1,
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     color: accent,
                     fontWeight: '600',
                     textDecoration: 'underline',
                     wordBreak: 'break-all',
                     lineHeight: '1.4',
-                    marginRight: '8px'
+                    marginRight: '8px',
+                    width: '0'
                   }}
                 >
                   {`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 </a>
-                <button
-                  onClick={() => {
-                    const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                    const link = `${getOrigin()}/form/${slug}`;
-                    navigator.clipboard.writeText(link);
-                    alert('Link copied to clipboard!');
-                  }}
-                  style={{ background: accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  Copy Link
-                </button>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => {
+                      const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+                      const link = `${getOrigin()}/form/${slug}`;
+                      navigator.clipboard.writeText(link);
+                      alert('Link copied to clipboard!');
+                    }}
+                    style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Copy
+                  </button>
+                  <button
+                    onClick={() => {
+                      const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+                      const link = `${getOrigin()}/form/${slug}`;
+                      handleShareLink(formTitle, link);
+                    }}
+                    style={{ background: accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    Share
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* QR Code Scanner Card */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
               <div style={{
                 background: 'white',
-                padding: '16px',
-                borderRadius: '16px',
+                padding: '12px',
+                borderRadius: '12px',
                 boxShadow: '0 8px 20px rgba(0, 0, 0, 0.04)',
                 border: '1px solid #f1f5f9',
                 display: 'inline-flex',
@@ -2373,20 +2530,83 @@ export default function FormBuilder() {
                 alignItems: 'center'
               }}>
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
                     `${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
                   )}&color=000000`}
                   alt="Form QR Code"
-                  style={{ width: '150px', height: '150px', display: 'block' }}
+                  style={{ width: '120px', height: '120px', display: 'block' }}
                 />
               </div>
-              <span style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', fontWeight: '500', fontFamily: 'Inter, sans-serif' }}>
-                Scan to preview or screenshot to share QR scanner.
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button
+                  onClick={() => handleDownloadQR(formTitle)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#f1f5f9',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#475569',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download
+                </button>
+                <button
+                  onClick={() => {
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
+                      `${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`
+                    )}&color=000000`;
+                    handleShareQR(formTitle, qrUrl);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: accent,
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = `${accent}cc`; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = accent; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  Share
+                </button>
+              </div>
+              <span style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', fontWeight: '500', fontFamily: 'Inter, sans-serif', marginTop: '2px' }}>
+                Scan to preview or share/download QR scanner.
               </span>
             </div>
 
             {/* Divider */}
-            <div style={{ width: '48px', height: '3px', background: `linear-gradient(90deg, ${accent}, ${accent}66)`, borderRadius: '99px', margin: '0 auto 24px' }} />
+            <div style={{ width: '48px', height: '3px', background: `linear-gradient(90deg, ${accent}, ${accent}66)`, borderRadius: '99px', margin: '0 auto 12px' }} />
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
@@ -2394,9 +2614,9 @@ export default function FormBuilder() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  padding: '10px 20px', borderRadius: '8px', border: 'none',
+                  padding: '8px 16px', borderRadius: '8px', border: 'none',
                   background: `linear-gradient(135deg, ${accent}, ${accent}cc)`, color: 'white',
-                  fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                  fontSize: '12.5px', fontWeight: '700', cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif', transition: 'all 0.2s', textDecoration: 'none',
                   boxShadow: `0 4px 12px ${accent}44`
                 }}
@@ -2406,8 +2626,8 @@ export default function FormBuilder() {
               <button
                 onClick={() => navigate('/templates')}
                 style={{
-                  padding: '10px 20px', borderRadius: '8px', border: `2px solid ${accent}`,
-                  background: 'white', color: accent, fontSize: '13px', fontWeight: '700',
+                  padding: '8px 16px', borderRadius: '8px', border: `2px solid ${accent}`,
+                  background: 'white', color: accent, fontSize: '12.5px', fontWeight: '700',
                   cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s'
                 }}
               >

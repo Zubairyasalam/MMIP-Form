@@ -412,6 +412,9 @@ export default function AdminFormManagement({ onLogAction }) {
                     <button type="button" onClick={() => setSelectedForm(tmpl)} className="card-act-btn preview">Preview</button>
                     <button type="button" onClick={() => startEditForm(tmpl)} className="card-act-btn edit">Edit</button>
                     <button type="button" onClick={() => handleCloneForm(tmpl)} className="card-act-btn clone">Clone</button>
+                    <button type="button" onClick={() => handleToggleStatus(tmpl.id, tmpl.status, tmpl.name)} className="card-act-btn" style={{ background: tmpl.status === 'Active' ? '#f59e0b' : '#10b981', color: 'white' }}>
+                      {tmpl.status === 'Active' ? 'Hide' : 'Show'}
+                    </button>
                     <button type="button" onClick={() => handleDeleteForm(tmpl.id, tmpl.name)} className="card-act-btn delete">Delete</button>
                   </div>
                 </div>

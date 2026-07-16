@@ -103,7 +103,10 @@ export default function AdminFormManagement({ onLogAction }) {
       button_text: 'Use Template',
       status: 'Active',
       created_at: '2026-06-12',
-      creator: 'System'
+      creator: 'System',
+      visibility: 'public',
+      is_hidden: false,
+      created_by: 'System'
     }));
 
     let existing = [];
@@ -118,6 +121,14 @@ export default function AdminFormManagement({ onLogAction }) {
         } catch (e) {}
       }
     }
+
+    // Migrate any existing custom forms to include the new visibility settings safely
+    existing = existing.map(f => ({
+      ...f,
+      visibility: f.visibility || 'public',
+      is_hidden: f.is_hidden !== undefined ? f.is_hidden : (f.status === 'Hidden'),
+      created_by: f.created_by || f.creator_id || 'System'
+    }));
 
     defaultForms.forEach(df => {
       const exists = existing.find(e => e.id === df.id);
@@ -136,8 +147,8 @@ export default function AdminFormManagement({ onLogAction }) {
     // Group forms by creator_id
     const formsByUser = {};
     updatedForms.forEach(f => {
-      if (f.id.startsWith('default-')) return;
-      const cid = f.creator_id || 'guest';
+      const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
+      const cid = f.created_by === 'System' || f.creator_id === 'System' ? 'System' : (f.created_by || f.creator_id || currentAdminId);
       if (!formsByUser[cid]) formsByUser[cid] = [];
       formsByUser[cid].push(f);
     });
@@ -173,11 +184,15 @@ export default function AdminFormManagement({ onLogAction }) {
 
     let updated;
     const nowStr = new Date().toLocaleDateString();
+    const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
 
     const formToSave = {
       ...editingForm,
       fields: `${editingForm.questions.length} fields`,
-      updated_at: nowStr
+      updated_at: nowStr,
+      visibility: editingForm.visibility || 'public',
+      is_hidden: editingForm.is_hidden !== undefined ? editingForm.is_hidden : false,
+      created_by: (!editingForm.created_by || editingForm.created_by === 'System') ? currentAdminId : editingForm.created_by
     };
 
     const isEdit = forms.some(f => f.id === formToSave.id);
@@ -227,6 +242,42 @@ export default function AdminFormManagement({ onLogAction }) {
     triggerLog(`Changed "${name}" status to: ${nextStatus}`);
   };
 
+  // Toggle is_hidden
+  const handleToggleHide = (id, currentIsHidden, name) => {
+    const nextHidden = !currentIsHidden;
+    const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
+    const updated = forms.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          is_hidden: nextHidden,
+          created_by: (!f.created_by || f.created_by === 'System') ? currentAdminId : f.created_by
+        };
+      }
+      return f;
+    });
+    saveForms(updated);
+    triggerLog(`${nextHidden ? 'Hidden' : 'Unhidden'} template: "${name}"`);
+  };
+
+  // Toggle visibility (public / private)
+  const handleToggleVisibility = (id, currentVisibility, name) => {
+    const nextVisibility = currentVisibility === 'public' ? 'private' : 'public';
+    const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
+    const updated = forms.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          visibility: nextVisibility,
+          created_by: (!f.created_by || f.created_by === 'System') ? currentAdminId : f.created_by
+        };
+      }
+      return f;
+    });
+    saveForms(updated);
+    triggerLog(`Changed visibility of "${name}" to: ${nextVisibility}`);
+  };
+
   // Initialize new form
   const startNewForm = () => {
     setEditingForm({
@@ -239,7 +290,10 @@ export default function AdminFormManagement({ onLogAction }) {
       status: 'Active',
       questions: [],
       creator: 'Administrator',
-      creator_id: sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest'
+      creator_id: sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest',
+      visibility: 'public',
+      is_hidden: false,
+      created_by: sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest'
     });
     setActiveModalTab('basic');
   };
@@ -248,6 +302,9 @@ export default function AdminFormManagement({ onLogAction }) {
   const startEditForm = (form) => {
     setEditingForm({
       ...form,
+      visibility: form.visibility || 'public',
+      is_hidden: form.is_hidden !== undefined ? form.is_hidden : (form.status === 'Hidden'),
+      created_by: form.created_by || form.creator_id || sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest',
       questions: form.questions || []
     });
     setActiveModalTab('basic');
@@ -309,15 +366,28 @@ export default function AdminFormManagement({ onLogAction }) {
   const filteredForms = (forms || []).map(f => ({
     ...f,
     name: f.name || f.title || 'Untitled Form',
-    status: f.status || 'Active'
+    status: f.status || 'Active',
+    visibility: f.visibility || 'public',
+    is_hidden: f.is_hidden !== undefined ? f.is_hidden : false,
+    created_by: f.created_by || f.creator_id || 'System'
   })).filter(f => {
+    const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
     const nameVal = (f.name || '').toLowerCase();
     const descVal = (f.desc || '').toLowerCase();
     const matchesSearch = nameVal.includes(searchQuery.toLowerCase()) ||
       descVal.includes(searchQuery.toLowerCase());
     const matchesCat = selectedCategory === 'All' || f.tag === selectedCategory;
     const matchesStatus = selectedStatus === 'All' || f.status === selectedStatus;
-    return matchesSearch && matchesCat && matchesStatus;
+    
+    // Admin visibility logic:
+    // Display all templates that belong to the logged-in admin (created_by === currentAdminId), OR
+    // any public templates (visibility !== 'private'), OR
+    // if the creator is 'System' (system templates are accessible to all admins).
+    const isAdminVisible = (f.visibility !== 'private') || 
+                           (f.created_by === currentAdminId || f.creator_id === currentAdminId) ||
+                           (f.created_by === 'System');
+
+    return matchesSearch && matchesCat && matchesStatus && isAdminVisible;
   }).sort((a, b) => {
     if (sortBy === 'alpha') {
       return (a.name || '').localeCompare(b.name || '');
@@ -407,9 +477,12 @@ export default function AdminFormManagement({ onLogAction }) {
             return (
               <div key={tmpl.id} className="template-card">
                 <div className={`template-card-preview ${isDynamic ? '' : tmpl.bg}`} style={{ position: 'relative', ...(isDynamic ? dynamicBannerStyle : {}) }}>
-                  <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}>
-                    <span className="tmpl-badge-status" style={{ background: tmpl.status === 'Active' ? '#22c55e' : '#94a3b8', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                      {tmpl.status}
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                    <span className="tmpl-badge-status" style={{ background: tmpl.visibility === 'public' ? '#3b82f6' : '#64748b', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textTransform: 'none' }}>
+                      {tmpl.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
+                    </span>
+                    <span className="tmpl-badge-status" style={{ background: !tmpl.is_hidden ? '#22c55e' : '#ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textTransform: 'none' }}>
+                      {!tmpl.is_hidden ? '👁 Visible' : '🚫 Hidden'}
                     </span>
                   </div>
                   <div className="template-mini-form">
@@ -434,10 +507,23 @@ export default function AdminFormManagement({ onLogAction }) {
                     <button type="button" onClick={() => setSelectedForm(tmpl)} className="card-act-btn preview">Preview</button>
                     <button type="button" onClick={() => startEditForm(tmpl)} className="card-act-btn edit">Edit</button>
                     <button type="button" onClick={() => handleCloneForm(tmpl)} className="card-act-btn clone">Clone</button>
-                    <button type="button" onClick={() => handleToggleStatus(tmpl.id, tmpl.status, tmpl.name)} className="card-act-btn" style={{ background: tmpl.status === 'Active' ? '#f59e0b' : '#10b981', color: 'white' }}>
-                      {tmpl.status === 'Active' ? 'Hide' : 'Show'}
-                    </button>
                     <button type="button" onClick={() => handleDeleteForm(tmpl.id, tmpl.name)} className="card-act-btn delete">Delete</button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleHide(tmpl.id, tmpl.is_hidden, tmpl.name)}
+                      className="card-act-btn"
+                      style={{ background: tmpl.is_hidden ? '#10b981' : '#f59e0b', color: 'white' }}
+                    >
+                      {tmpl.is_hidden ? '👁 Unhide' : '🚫 Hide'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVisibility(tmpl.id, tmpl.visibility, tmpl.name)}
+                      className="card-act-btn"
+                      style={{ background: tmpl.visibility === 'public' ? '#64748b' : '#3b82f6', color: 'white' }}
+                    >
+                      {tmpl.visibility === 'public' ? '🔒 Private' : '🌍 Public'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -475,14 +561,14 @@ export default function AdminFormManagement({ onLogAction }) {
                   </td>
                   <td className="font-semibold">{tmpl.questions?.length || 0}</td>
                   <td>
-                    <button
-                      onClick={() => handleToggleStatus(tmpl.id, tmpl.status, tmpl.name)}
-                      className={`status-pill ${tmpl.status.toLowerCase()}`}
-                      style={{ border: 'none', cursor: 'pointer' }}
-                      type="button"
-                    >
-                      {tmpl.status === 'Active' ? '🟢 Active' : '⚪ Inactive'}
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: tmpl.visibility === 'public' ? '#3b82f6' : '#64748b', whiteSpace: 'nowrap' }}>
+                        {tmpl.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: !tmpl.is_hidden ? '#22c55e' : '#ef4444', whiteSpace: 'nowrap' }}>
+                        {!tmpl.is_hidden ? '👁 Visible' : '🚫 Hidden'}
+                      </span>
+                    </div>
                   </td>
                   <td>{tmpl.created_at || tmpl.created || 'N/A'}</td>
                   <td>
@@ -495,6 +581,22 @@ export default function AdminFormManagement({ onLogAction }) {
                       </button>
                       <button type="button" onClick={() => handleCloneForm(tmpl)} className="action-btn clone">
                         Clone
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleHide(tmpl.id, tmpl.is_hidden, tmpl.name)}
+                        className={`action-btn ${tmpl.is_hidden ? 'clone' : 'view'}`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {tmpl.is_hidden ? 'Unhide' : 'Hide'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVisibility(tmpl.id, tmpl.visibility, tmpl.name)}
+                        className={`action-btn ${tmpl.visibility === 'public' ? 'edit' : 'clone'}`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {tmpl.visibility === 'public' ? 'Private' : 'Public'}
                       </button>
                       <button type="button" onClick={() => handleDeleteForm(tmpl.id, tmpl.name)} className="action-btn delete">
                         Delete
@@ -641,6 +743,32 @@ export default function AdminFormManagement({ onLogAction }) {
                         />
                         <span className="status-dot offline"></span>
                         <span className="status-option-text">Draft / Inactive</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Template Visibility</label>
+                    <div className="status-radio-group">
+                      <label className={`status-radio-option ${editingForm.visibility === 'public' ? 'active' : ''}`}>
+                        <input
+                          type="radio"
+                          name="tmpl-visibility"
+                          checked={editingForm.visibility === 'public'}
+                          onChange={() => setEditingForm(prev => ({ ...prev, visibility: 'public' }))}
+                          style={{ display: 'none' }}
+                        />
+                        <span className="status-option-text">🌍 Public</span>
+                      </label>
+                      <label className={`status-radio-option ${editingForm.visibility === 'private' ? 'active' : ''}`}>
+                        <input
+                          type="radio"
+                          name="tmpl-visibility"
+                          checked={editingForm.visibility === 'private'}
+                          onChange={() => setEditingForm(prev => ({ ...prev, visibility: 'private' }))}
+                          style={{ display: 'none' }}
+                        />
+                        <span className="status-option-text">🔒 Private (Only Me)</span>
                       </label>
                     </div>
                   </div>

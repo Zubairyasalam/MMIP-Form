@@ -1756,13 +1756,18 @@ export default function FormBuilder() {
   const handlePublish = () => {
     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const formId = state.id || slug || `form-${Date.now()}`;
+    const currentUserId = localStorage.getItem('userId') || 'guest';
+    const storageKey = `customForms_${currentUserId}`;
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    const existingForm = existing.find(f => f.id === formId);
+
     const newForm = {
       id: formId,
       name: formTitle,
       desc: formDesc,
-      tag: 'Custom Form',
+      tag: existingForm?.tag || 'Custom Form',
       fields: `${questions.filter(q => q.cardType === 'question').length} fields`,
-      bg: 'maroon-bg',
+      bg: existingForm?.bg || 'maroon-bg',
       theme: theme,
       headerImage: headerImage,
       questions: questions.map(q => ({
@@ -1774,14 +1779,14 @@ export default function FormBuilder() {
         options: q.options || [],
         required: q.required || false
       })),
-      created: new Date().toLocaleDateString(),
-      creator: localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'Administrator',
-      creator_id: localStorage.getItem('userId') || 'guest'
+      created: existingForm?.created || new Date().toLocaleDateString(),
+      creator: existingForm?.creator || localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'Administrator',
+      creator_id: existingForm?.creator_id || localStorage.getItem('userId') || 'guest',
+      visibility: existingForm?.visibility || 'public',
+      is_hidden: existingForm?.is_hidden !== undefined ? existingForm.is_hidden : false,
+      created_by: existingForm?.created_by || existingForm?.creator_id || localStorage.getItem('userId') || 'guest'
     };
 
-    const currentUserId = localStorage.getItem('userId') || 'guest';
-    const storageKey = `customForms_${currentUserId}`;
-    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     const index = existing.findIndex(f => f.id === formId);
     if (index > -1) {
       existing[index] = newForm;

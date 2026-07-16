@@ -142,29 +142,29 @@ export default function Templates() {
       }));
 
       const currentUserId = localStorage.getItem('userId') || 'guest';
-      const storageKey = `customForms_${currentUserId}`;
-      const saved = localStorage.getItem(storageKey);
       let existing = [];
-      try {
-        existing = saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        existing = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('customForms_')) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(parsed)) {
+              parsed.forEach(p => {
+                if (!existing.some(e => e.id === p.id)) {
+                  existing.push(p);
+                }
+              });
+            }
+          } catch (e) {}
+        }
       }
 
-      let changed = false;
       defaultForms.forEach(df => {
-        // Find if template already exists by ID
         const exists = existing.find(e => e.id === df.id);
         if (!exists) {
-          // Only add it if it's completely missing
           existing.push(df);
-          changed = true;
         }
       });
-
-      if (changed || !saved) {
-        localStorage.setItem(storageKey, JSON.stringify(existing));
-      }
 
       const mapped = existing.map(cf => ({
         id: cf.id,
@@ -174,11 +174,34 @@ export default function Templates() {
         fields: cf.fields || `${cf.questions?.length || 0} fields`,
         bg: cf.bg || 'maroon-bg',
         questions: cf.questions || [],
-        status: cf.status || 'Active'
+        status: cf.status || 'Active',
+        visibility: cf.visibility || 'public',
+        is_hidden: cf.is_hidden !== undefined ? cf.is_hidden : (cf.status === 'Hidden'),
+        created_by: cf.created_by || cf.creator_id || 'System'
       }));
 
-      // Only display Active templates to users in the listing page
-      setAllTemplates(mapped.filter(t => t.status === 'Active'));
+      // Filter based on User Dashboard visibility rules:
+      // Only display templates where: Visibility = Public AND Hidden = No AND Status = Active
+      // Private templates are visible only to the creator admin
+      const visibleTemplates = mapped.filter(t => {
+        const creatorId = t.created_by || t.creator_id || 'System';
+        
+        // Hide if status is not Active (Draft / Inactive templates are hidden from users)
+        if (t.status !== 'Active') return false;
+
+        // Hide if is_hidden is true
+        if (t.is_hidden) return false;
+
+        // If visibility is private, only the creator can see it
+        if (t.visibility === 'private') {
+          return creatorId === currentUserId;
+        }
+
+        // Public templates are visible to everyone
+        return true;
+      });
+
+      setAllTemplates(visibleTemplates);
     };
 
     loadTemplates();

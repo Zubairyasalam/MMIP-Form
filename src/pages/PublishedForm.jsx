@@ -11,6 +11,7 @@ export default function PublishedForm() {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
 
@@ -43,6 +44,15 @@ export default function PublishedForm() {
     // 4. Default fallback if nothing matches
     if (!config) {
       config = TEMPLATES[0]; // fallback to first template
+    }
+
+    const currentUserId = localStorage.getItem('userId') || 'guest';
+    const creatorId = config.created_by || config.creator_id || 'System';
+
+    if (config.visibility === 'private' && creatorId !== currentUserId) {
+      setAccessDenied(true);
+    } else {
+      setAccessDenied(false);
     }
 
     setFormConfig(config);
@@ -152,6 +162,18 @@ export default function PublishedForm() {
     return (
       <div style={{ padding: '80px 20px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
         <h2>Loading Form...</h2>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div style={{ padding: '80px 20px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <h2>Access Denied</h2>
+        <p style={{ color: '#64748b', marginTop: '12px' }}>This form is private and only accessible by its creator.</p>
+        <Link to="/" style={{ display: 'inline-block', marginTop: '20px', padding: '10px 20px', background: '#7B1C1C', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
+          Back to Home
+        </Link>
       </div>
     );
   }

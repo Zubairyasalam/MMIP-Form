@@ -43,6 +43,16 @@ export default function Auth({ portalType }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Forgot Password Flow States
+  const [forgotStep, setForgotStep] = useState(1); // 1 = Enter Email, 2 = Verify & Reset
+  const [resetEmail, setResetEmail] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [enteredCode, setEnteredCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [showSimulatedEmail, setShowSimulatedEmail] = useState(false);
+
   // Extra controls
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -284,13 +294,107 @@ export default function Auth({ portalType }) {
     }
   };
 
+  const handleForgotSendCode = (e) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+
+    setTimeout(() => {
+      const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+      const targetUser = users.find(u => u.email.trim().toLowerCase() === resetEmail.trim().toLowerCase());
+
+      if (!targetUser) {
+        setErrorMsg('This email address is not registered in our system.');
+        setLoading(false);
+        return;
+      }
+
+      // Generate a mock 6-digit verification code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedCode(code);
+      setForgotStep(2);
+      setShowSimulatedEmail(true);
+      setLoading(false);
+    }, 800);
+  };
+
+  const handleForgotResetPassword = (e) => {
+    e.preventDefault();
+    if (!enteredCode.trim()) {
+      setErrorMsg('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (enteredCode.trim() !== generatedCode) {
+      setErrorMsg('Incorrect verification code. Please try again.');
+      return;
+    }
+    if (!newPassword) {
+      setErrorMsg('Please enter a new password.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+
+    setTimeout(() => {
+      const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+      const targetIndex = users.findIndex(u => u.email.trim().toLowerCase() === resetEmail.trim().toLowerCase());
+
+      if (targetIndex === -1) {
+        setErrorMsg('User not found. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Update password
+      const user = users[targetIndex];
+      users[targetIndex] = {
+        ...user,
+        password: hashPassword(newPassword),
+        plain_password: newPassword
+      };
+      localStorage.setItem('appUsers', JSON.stringify(users));
+
+      // Success
+      setSuccessMsg('Password reset successfully! Redirecting to login...');
+      setShowSimulatedEmail(false);
+      setLoading(false);
+
+      setTimeout(() => {
+        // Reset everything and go back to Sign In
+        setAuthMode('signin');
+        setForgotStep(1);
+        setResetEmail('');
+        setGeneratedCode('');
+        setEnteredCode('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setSuccessMsg('');
+      }, 2000);
+
+    }, 800);
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-container">
 
         {/* Left Branding Panel */}
         <div className="auth-brand-panel">
-          <img src="/mcc-mrf-logo-white.png?v=2" alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
+          <img src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
           <div className="auth-welcome-text">
             <h2>{portalType === 'admin' ? 'Admin Portal' : 'Madras Christian College'}</h2>
             <h3 style={{ opacity: 0.9, fontWeight: '600', fontSize: '18px', marginTop: '6px' }}>
@@ -312,7 +416,16 @@ export default function Auth({ portalType }) {
           <div className="auth-card-body">
 
             {/* Clean Switch Header */}
-            {(!portalType || portalType !== 'admin') ? (
+            {authMode === 'forgot' ? (
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <h2 style={{ color: '#0f172a', fontSize: '20px', fontWeight: '800' }}>
+                  🔑 Reset Account Password
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px' }}>
+                  {forgotStep === 1 ? 'Enter your registered email address to verify your account.' : 'Verify the code and enter your new password.'}
+                </p>
+              </div>
+            ) : (!portalType || portalType !== 'admin') ? (
               <div className="auth-tabs" style={{ display: 'flex', borderBottom: '2.5px solid #f1f5f9', marginBottom: '24px', gap: '16px' }}>
                 <button
                   type="button"
@@ -343,102 +456,216 @@ export default function Auth({ portalType }) {
             )}
 
             {errorMsg && <div className="auth-error-banner">⚠️ {errorMsg}</div>}
-
-            <form onSubmit={handleSubmit} className="auth-inputs-wrap">
-              {authMode === 'signup' && (
-                <div className="auth-input-group">
-                  <label>Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Name"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    disabled={loading}
-                    autoFocus
-                  />
-                </div>
-              )}
-
-              <div className="auth-input-group">
-                <label>Email Address</label>
-                <input
-                  type={authMode === 'signup' ? 'email' : 'text'}
-                  required
-                  placeholder="e.g. user@gmail.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  disabled={loading}
-                />
+            {successMsg && (
+              <div style={{ background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0', padding: '12px 16px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '500', marginBottom: '20px', textAlign: 'center' }}>
+                ✅ {successMsg}
               </div>
+            )}
 
-              <div className="auth-input-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label>Password</label>
-                  {authMode === 'signin' && (
-                    <span
-                      style={{ fontSize: '11px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600' }}
-                      onClick={() => alert('Password reset simulation: An instructions link has been sent to your email.')}
-                    >
-                      Forgot Password?
-                    </span>
-                  )}
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    disabled={loading}
-                    style={{ paddingRight: '45px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', outline: 'none' }}
+            {showSimulatedEmail && (
+              <div style={{
+                background: '#eff6ff',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '20px',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📩 Simulated Email Notification
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSimulatedEmail(false)}
+                    style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
                   >
-                    {showPassword ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    )}
+                    ✕
                   </button>
                 </div>
+                <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: '1.4' }}>
+                  <strong>To:</strong> {resetEmail}<br />
+                  <strong>Subject:</strong> Password Reset Code<br />
+                  Your 6-digit verification code is: <strong style={{ fontSize: '16px', color: '#b91c1c', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', marginLeft: '4px' }}>{generatedCode}</strong>
+                </div>
               </div>
+            )}
 
-              {authMode === 'signup' && (
+            {authMode === 'forgot' ? (
+              forgotStep === 1 ? (
+                <form onSubmit={handleForgotSendCode} className="auth-inputs-wrap">
+                  <div className="auth-input-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. admin@mcc.edu.in"
+                      value={resetEmail}
+                      onChange={e => setResetEmail(e.target.value)}
+                      disabled={loading}
+                      autoFocus
+                    />
+                  </div>
+                  <button type="submit" className="auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', outline: 'none' }}>
+                    <span>{loading ? 'Sending Code...' : 'Send Verification Code'}</span>
+                  </button>
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <span 
+                      style={{ fontSize: '13px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
+                      onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}
+                    >
+                      Back to Sign In
+                    </span>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleForgotResetPassword} className="auth-inputs-wrap">
+                  <div className="auth-input-group">
+                    <label>6-Digit Verification Code</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Enter verification code"
+                      value={enteredCode}
+                      onChange={e => setEnteredCode(e.target.value)}
+                      disabled={loading}
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="auth-input-group">
+                    <label>New Password</label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="auth-input-group">
+                    <label>Confirm New Password</label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={confirmNewPassword}
+                      onChange={e => setConfirmNewPassword(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <button type="submit" className="auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', outline: 'none' }}>
+                    <span>{loading ? 'Resetting Password...' : 'Reset Password'}</span>
+                  </button>
+                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                    <span 
+                      style={{ fontSize: '13px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
+                      onClick={() => { setForgotStep(1); setErrorMsg(''); }}
+                    >
+                      Back to Step 1
+                    </span>
+                  </div>
+                </form>
+              )
+            ) : (
+              <form onSubmit={handleSubmit} className="auth-inputs-wrap">
+                {authMode === 'signup' && (
+                  <div className="auth-input-group">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Name"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      disabled={loading}
+                      autoFocus
+                    />
+                  </div>
+                )}
+
                 <div className="auth-input-group">
-                  <label>Confirm Password</label>
+                  <label>Email Address</label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={authMode === 'signup' ? 'email' : 'text'}
                     required
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="e.g. user@gmail.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                     disabled={loading}
                   />
                 </div>
-              )}
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#7B1C1C', cursor: 'pointer' }}
-                />
-                <label htmlFor="rememberMe" style={{ fontSize: '13px', color: '#475569', cursor: 'pointer', select: 'none' }}>
-                  Remember me on this device
-                </label>
-              </div>
+                <div className="auth-input-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label>Password</label>
+                    {authMode === 'signin' && (
+                      <span
+                        style={{ fontSize: '11px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600' }}
+                        onClick={() => { setAuthMode('forgot'); setForgotStep(1); setErrorMsg(''); }}
+                      >
+                        Forgot Password?
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      disabled={loading}
+                      style={{ paddingRight: '45px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', outline: 'none' }}
+                    >
+                      {showPassword ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-              <button type="submit" className="btn-primary auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <span>{loading ? 'Processing...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}</span>
-              </button>
-            </form>
+                {authMode === 'signup' && (
+                  <div className="auth-input-group">
+                    <label>Confirm Password</label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#7B1C1C', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="rememberMe" style={{ fontSize: '13px', color: '#475569', cursor: 'pointer', userSelect: 'none' }}>
+                    Remember me on this device
+                  </label>
+                </div>
+
+                <button type="submit" className="btn-primary auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                  <span>{loading ? 'Processing...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                </button>
+              </form>
+            )}
 
             {portalType === 'admin' && (
               <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>

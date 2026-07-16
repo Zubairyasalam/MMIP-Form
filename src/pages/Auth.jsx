@@ -210,7 +210,6 @@ export default function Auth({ portalType }) {
         } else {
           navigate('/templates');
         }
-        window.location.reload();
       }, 800);
 
     } else {
@@ -274,7 +273,6 @@ export default function Auth({ portalType }) {
             navigate('/templates');
           }
         }
-        window.location.reload();
       }, 700);
     }
   };
@@ -356,11 +354,11 @@ export default function Auth({ portalType }) {
               )}
 
               <div className="auth-input-group">
-                <label>{authMode === 'signup' ? 'Email Address' : 'Email Address or Username'}</label>
+                <label>Email Address</label>
                 <input
                   type={authMode === 'signup' ? 'email' : 'text'}
                   required
-                  placeholder={authMode === 'signup' ? 'e.g. user@gmail.com' : 'e.g. admin@mcc.edu.in or Admin'}
+                  placeholder="e.g. user@gmail.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   disabled={loading}

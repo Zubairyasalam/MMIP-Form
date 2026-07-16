@@ -42,7 +42,7 @@ export default function Auth({ portalType }) {
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Extra controls
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -60,10 +60,10 @@ export default function Auth({ portalType }) {
         users = [];
       }
     }
-    
+
     let updated = [...users];
     let changed = false;
-    
+
     DEFAULT_ACCOUNTS.forEach(defAcc => {
       const exists = updated.some(u => u.email === defAcc.email);
       if (!exists) {
@@ -71,7 +71,7 @@ export default function Auth({ portalType }) {
         changed = true;
       }
     });
-    
+
     if (changed || !saved) {
       localStorage.setItem('appUsers', JSON.stringify(updated));
     }
@@ -218,7 +218,7 @@ export default function Auth({ portalType }) {
       setLoading(true);
       setTimeout(() => {
         const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-        const targetUser = users.find(u => 
+        const targetUser = users.find(u =>
           u.email.toLowerCase() === email.toLowerCase() ||
           u.name.toLowerCase() === email.toLowerCase()
         );
@@ -253,9 +253,9 @@ export default function Auth({ portalType }) {
         }
 
         // Update login stats
-        const updatedUsers = users.map(u => 
-          u.id === targetUser.id 
-            ? { ...u, last_login_at: new Date().toLocaleString() } 
+        const updatedUsers = users.map(u =>
+          u.id === targetUser.id
+            ? { ...u, last_login_at: new Date().toLocaleString() }
             : u
         );
         localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
@@ -282,7 +282,7 @@ export default function Auth({ portalType }) {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        
+
         {/* Left Branding Panel */}
         <div className="auth-brand-panel">
           <img src="/mcc-mrf-logo-white.png?v=2" alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
@@ -305,11 +305,11 @@ export default function Auth({ portalType }) {
         {/* Right Authentication Form Panel */}
         <div className="auth-form-panel">
           <div className="auth-card-body">
-            
+
             {/* Clean Switch Header */}
             {(!portalType || portalType !== 'admin') ? (
               <div className="auth-tabs" style={{ display: 'flex', borderBottom: '2.5px solid #f1f5f9', marginBottom: '24px', gap: '16px' }}>
-                <button 
+                <button
                   type="button"
                   className={`auth-tab-btn ${authMode === 'signin' ? 'active' : ''}`}
                   onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}
@@ -317,7 +317,7 @@ export default function Auth({ portalType }) {
                 >
                   Sign In
                 </button>
-                <button 
+                <button
                   type="button"
                   className={`auth-tab-btn ${authMode === 'signup' ? 'active' : ''}`}
                   onClick={() => { setAuthMode('signup'); setErrorMsg(''); }}
@@ -371,7 +371,7 @@ export default function Auth({ portalType }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label>Password</label>
                   {authMode === 'signin' && (
-                    <span 
+                    <span
                       style={{ fontSize: '11px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600' }}
                       onClick={() => alert('Password reset simulation: An instructions link has been sent to your email.')}
                     >
@@ -389,7 +389,7 @@ export default function Auth({ portalType }) {
                     disabled={loading}
                     style={{ paddingRight: '45px' }}
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', outline: 'none' }}
@@ -418,8 +418,8 @@ export default function Auth({ portalType }) {
               )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={e => setRememberMe(e.target.checked)}
@@ -438,8 +438,8 @@ export default function Auth({ portalType }) {
             <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
               {portalType === 'admin' ? (
                 <div>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
                       setEmail('admin@mcc.edu.in');
                       setPassword('admin123');
@@ -450,8 +450,8 @@ export default function Auth({ portalType }) {
                   </button>
                   <p style={{ fontSize: '13.5px', color: '#64748b' }}>
                     Not an admin?{' '}
-                    <span 
-                      onClick={() => navigate('/auth')} 
+                    <span
+                      onClick={() => navigate('/auth')}
                       style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                     >
                       Go to User Portal
@@ -461,8 +461,8 @@ export default function Auth({ portalType }) {
               ) : (
                 <p style={{ fontSize: '13.5px', color: '#64748b' }}>
                   Are you an administrator?{' '}
-                  <span 
-                    onClick={() => navigate('/admin/login')} 
+                  <span
+                    onClick={() => navigate('/admin/login')}
                     style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     Go to Admin Portal

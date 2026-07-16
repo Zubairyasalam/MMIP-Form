@@ -5,12 +5,30 @@ import './Navbar.css';
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
+
+    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+    setUserRole(localStorage.getItem('userRole'));
+
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    setIsLoggedIn(false);
+    window.location.href = '/';
+  };
+
+  const dashboardLink = userRole === 'admin' ? '/admin/dashboard' : '/templates';
 
   return (
     <nav className={`navbar${scrolled ? ' scrolled' : ''}${menuOpen ? ' mobile-active' : ''}`}>
@@ -27,10 +45,21 @@ export default function Navbar() {
           </ul>
 
           <div className="navbar-cta">
-            <Link to="/auth" className="nav-sign-in" onClick={() => setMenuOpen(false)}>Sign In</Link>
-            <Link to="/auth" className="btn-primary" onClick={() => setMenuOpen(false)}>
-              <span>Get Started</span>
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link to={dashboardLink} className="nav-sign-in" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                <button onClick={handleLogout} className="btn-primary" style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <span>Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth" className="nav-sign-in" onClick={() => setMenuOpen(false)}>Sign In</Link>
+                <Link to="/auth" className="btn-primary" onClick={() => setMenuOpen(false)}>
+                  <span>Get Started</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 

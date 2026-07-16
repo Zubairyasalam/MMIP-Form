@@ -58,7 +58,9 @@ export default function Templates() {
         creator: 'System'
       }));
 
-      const saved = localStorage.getItem('customForms');
+      const currentUserId = localStorage.getItem('userId') || 'guest';
+      const storageKey = `customForms_${currentUserId}`;
+      const saved = localStorage.getItem(storageKey);
       let existing = [];
       try {
         existing = saved ? JSON.parse(saved) : [];
@@ -78,7 +80,7 @@ export default function Templates() {
       });
 
       if (changed || !saved) {
-        localStorage.setItem('customForms', JSON.stringify(existing));
+        localStorage.setItem(storageKey, JSON.stringify(existing));
       }
 
       const mapped = existing.map(cf => ({
@@ -182,18 +184,18 @@ export default function Templates() {
           <div className="templates-grid">
             {filtered.map((tmpl, i) => {
               let theme = TEMPLATE_THEMES[tmpl.bg];
-            let dynamicBannerStyle = {};
-            let isDynamic = false;
-            
-            if (!theme && tmpl.bg?.startsWith('#')) {
-              theme = { accent: tmpl.bg, label: 'Custom' };
-              dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
-              isDynamic = true;
-            } else if (!theme) {
-              theme = TEMPLATE_THEMES['maroon-bg'];
-            }
+              let dynamicBannerStyle = {};
+              let isDynamic = false;
 
-            return (
+              if (!theme && tmpl.bg?.startsWith('#')) {
+                theme = { accent: tmpl.bg, label: 'Custom' };
+                dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
+                isDynamic = true;
+              } else if (!theme) {
+                theme = TEMPLATE_THEMES['maroon-bg'];
+              }
+
+              return (
                 <div
                   className="template-card"
                   key={tmpl.id || i}

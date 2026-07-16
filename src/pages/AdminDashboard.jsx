@@ -74,7 +74,7 @@ export default function AdminDashboard() {
       return dateStr;
     }
   };
-  
+
   // Navigation Tabs
   const [activeMenu, setActiveMenu] = useState('overview'); // overview, users, roles, departments, forms, submissions, reports, announcements, notifications, logs, settings, profile
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
     localStorage.setItem('portalPermissions', JSON.stringify(updated));
     logAction('System', `Updated ${field} permission for ${updated[roleIndex].role} to: ${value}`);
   };
-  
+
   // Data States (loaded from localStorage or initialized with defaults)
   const [admins, setAdmins] = useState([]); // Dynamic list of admins/users
   const [users, setUsers] = useState([]); // Dynamic list of all users
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
       const aText = ans.a ? ans.a.toString() : '';
       return `"${qText.replace(/"/g, '""')}","${aText.replace(/"/g, '""')}"`;
     });
-    
+
     const metadata = [
       `"Submission ID","${sub.id || ''}"`,
       `"Submitter Name","${sub.name || ''}"`,
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
       `""`,
       `""`
     ];
-    
+
     const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([metadata.join('\n'), headers.join(','), ...rows].join('\n'));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", csvContent);
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
       alert('Pop-up blocker is enabled! Please allow pop-ups for this site to generate the PDF report.');
       return;
     }
-    
+
     const answersHtml = (sub.answers || []).map(ans => {
       const q = ans.q || '';
       const a = ans.a || '—';
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
     const role = localStorage.getItem('userRole') || 'admin';
     const name = localStorage.getItem('userName') || 'MCC Administrator';
     const joined = localStorage.getItem('userJoined') || '2025-01-10';
-    
+
     setOriginalEmail(email);
     setProfileData(prev => ({
       ...prev,
@@ -424,7 +424,19 @@ export default function AdminDashboard() {
     setDepartments(deptList);
 
     // 3. Load Forms
-    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+    let customForms = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('customForms_')) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(parsed)) {
+            customForms = [...customForms, ...parsed];
+          }
+        } catch (e) {}
+      }
+    }
+
     const mappedCustom = customForms.map(cf => ({
       id: cf.id,
       title: cf.name || cf.title || 'Untitled Form',
@@ -581,7 +593,7 @@ export default function AdminDashboard() {
     }
     setUsers(updatedUsers);
     localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
-    
+
     // Sync admins list
     const adminList = updatedUsers.filter(u => u.role === 'admin');
     localStorage.setItem('appAdmins', JSON.stringify(adminList));
@@ -738,7 +750,7 @@ export default function AdminDashboard() {
     localStorage.setItem('userName', profileData.name);
     localStorage.setItem('userEmail', profileData.email);
     localStorage.setItem('userJoined', profileData.joined);
-    
+
     // Propagate change to appUsers
     const savedUsers = localStorage.getItem('appUsers');
     if (savedUsers) {
@@ -746,7 +758,7 @@ export default function AdminDashboard() {
       const updated = users.map(u => u.email === originalEmail ? { ...u, name: profileData.name, email: profileData.email, created_at: profileData.joined } : u);
       localStorage.setItem('appUsers', JSON.stringify(updated));
     }
-    
+
     setOriginalEmail(profileData.email);
     logAction('System', `Administrator profile updated. Name: ${profileData.name}, Email: ${profileData.email}, Joined: ${profileData.joined}`);
     showToastMessage('Profile updated successfully!');
@@ -840,9 +852,9 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="admin-logo" />
-          <button 
+          <button
             type="button"
-            className="admin-sidebar-close-btn" 
+            className="admin-sidebar-close-btn"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close Menu"
           >
@@ -985,9 +997,9 @@ export default function AdminDashboard() {
         {/* Top Header */}
         <header className="admin-header" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button 
+            <button
               type="button"
-              className="admin-menu-toggle-btn" 
+              className="admin-menu-toggle-btn"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open Menu"
             >
@@ -1146,7 +1158,7 @@ export default function AdminDashboard() {
                     const userForms = customForms.filter(f => f.creator_id === user.id || f.creator === user.email || f.creator === user.name).length;
                     const formUsage = JSON.parse(localStorage.getItem('formUsage') || '[]');
                     const userTemplates = formUsage.filter(u => u.user_id === user.id || u.user_email === user.email).length;
-                    
+
                     return (
                       <tr key={user.id}>
                         <td>
@@ -1618,7 +1630,7 @@ export default function AdminDashboard() {
             <div className="admin-overview-panels" style={{ gridTemplateColumns: '1fr', marginTop: '24px' }}>
               <div className="overview-panel">
                 <h3>Form Templates Usage Analytics</h3>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '16px' }}>
                   {/* Left Column: Usage Frequency List */}
                   <div>
@@ -1921,15 +1933,15 @@ export default function AdminDashboard() {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <button 
-                  className="admin-btn-primary" 
+                <button
+                  className="admin-btn-primary"
                   onClick={handleSaveProfile}
                   style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px' }}
                 >
                   Update Profile
                 </button>
-                <button 
-                  className="action-btn view" 
+                <button
+                  className="action-btn view"
                   onClick={() => {
                     const originalName = localStorage.getItem('userName') || 'MCC Administrator';
                     const origEmail = localStorage.getItem('userEmail') || 'admin@mcc.edu.in';
@@ -1988,7 +2000,7 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div>
                   <h5 style={{ margin: '0 0 8px 0', fontSize: '13.5px', fontWeight: '700', color: '#475569' }}>New Password</h5>
                   <div style={{ position: 'relative' }}>
@@ -2066,10 +2078,10 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div style={{ marginTop: '8px' }}>
-                  <button 
-                    className="admin-btn-primary" 
+                  <button
+                    className="admin-btn-primary"
                     onClick={handleChangePassword}
                     style={{ padding: '10px 20px', fontSize: '13.5px', borderRadius: '8px' }}
                   >
@@ -2286,8 +2298,8 @@ export default function AdminDashboard() {
               <button className="admin-btn-secondary" onClick={() => setConfirmModal(null)}>
                 Cancel
               </button>
-              <button 
-                className="admin-btn-danger" 
+              <button
+                className="admin-btn-danger"
                 onClick={() => {
                   confirmModal.onConfirm();
                   setConfirmModal(null);
@@ -2303,7 +2315,7 @@ export default function AdminDashboard() {
 
       {/* Custom Toast Messages */}
       {toast && (
-        <div 
+        <div
           className={`admin-toast anim-fade-in ${toast.type}`}
           style={{
             position: 'fixed',

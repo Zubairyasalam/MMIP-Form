@@ -1696,14 +1696,16 @@ export default function FormBuilder() {
       creator_id: localStorage.getItem('userId') || 'guest'
     };
 
-    const existing = JSON.parse(localStorage.getItem('customForms') || '[]');
+    const currentUserId = localStorage.getItem('userId') || 'guest';
+    const storageKey = `customForms_${currentUserId}`;
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     const index = existing.findIndex(f => f.id === formId);
     if (index > -1) {
       existing[index] = newForm;
     } else {
       existing.unshift(newForm);
     }
-    localStorage.setItem('customForms', JSON.stringify(existing));
+    localStorage.setItem(storageKey, JSON.stringify(existing));
     setShowSuccess(true);
   };
 
@@ -1840,82 +1842,82 @@ export default function FormBuilder() {
                   style={focusedId === 'title' ? { borderLeftColor: accent } : {}}
                   onClick={() => setFocusedId('title')}
                 >
-                {/* Dynamic Header Image Banner */}
-                <input
-                  ref={headerImageInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={handleHeaderImageUpload}
-                />
-                <div
-                  className="fb-header-image-wrap"
-                  onClick={() => headerImageInputRef.current?.click()}
-                  title="Click to change header image"
-                >
-                  {headerImage ? (
-                    <img
-                      src={headerImage}
-                      alt="Form Header"
-                      className="fb-header-img"
-                    />
-                  ) : (
-                    <div className="fb-header-img-placeholder">
-                      <span>🖼️</span>
-                      <span>Click to add a header image</span>
-                    </div>
-                  )}
-                  <div className="fb-header-img-overlay">
-                    <button
-                      type="button"
-                      className="fb-header-img-btn"
-                      onClick={(e) => { e.stopPropagation(); headerImageInputRef.current?.click(); }}
-                    >
-                      ✏️ Change Image
-                    </button>
-                    {headerImage && (
+                  {/* Dynamic Header Image Banner */}
+                  <input
+                    ref={headerImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleHeaderImageUpload}
+                  />
+                  <div
+                    className="fb-header-image-wrap"
+                    onClick={() => headerImageInputRef.current?.click()}
+                    title="Click to change header image"
+                  >
+                    {headerImage ? (
+                      <img
+                        src={headerImage}
+                        alt="Form Header"
+                        className="fb-header-img"
+                      />
+                    ) : (
+                      <div className="fb-header-img-placeholder">
+                        <span>🖼️</span>
+                        <span>Click to add a header image</span>
+                      </div>
+                    )}
+                    <div className="fb-header-img-overlay">
                       <button
                         type="button"
-                        className="fb-header-img-btn remove"
-                        onClick={(e) => { e.stopPropagation(); setHeaderImage(''); }}
+                        className="fb-header-img-btn"
+                        onClick={(e) => { e.stopPropagation(); headerImageInputRef.current?.click(); }}
                       >
-                        ✕ Remove
+                        ✏️ Change Image
                       </button>
-                    )}
+                      {headerImage && (
+                        <button
+                          type="button"
+                          className="fb-header-img-btn remove"
+                          onClick={(e) => { e.stopPropagation(); setHeaderImage(''); }}
+                        >
+                          ✕ Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="fb-title-card-inner">
-                  <input
-                    className="fb-main-title-input"
-                    value={formTitle}
-                    onChange={e => setFormTitle(e.target.value)}
-                    placeholder="Form title"
-                    id="fb-main-title"
-                  />
-                  <textarea
-                    className="fb-main-desc-input"
-                    value={formDesc}
-                    onChange={e => setFormDesc(e.target.value)}
-                    placeholder="Form description"
-                    rows={1}
-                    id="fb-main-desc"
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' }}>
-                    <button
-                      type="button"
-                      className={`fb-toggle-switch${collectEmail !== 'do-not' ? ' on' : ''}`}
-                      style={collectEmail !== 'do-not' ? { background: accent, width: '32px', height: '18px' } : { width: '32px', height: '18px' }}
-                      onClick={() => setCollectEmail(prev => prev === 'do-not' ? 'responder' : 'do-not')}
-                    >
-                      <div className="fb-toggle-knob" style={collectEmail !== 'do-not' ? { left: '16px', width: '14px', height: '14px' } : { width: '14px', height: '14px' }} />
-                    </button>
-                    <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#555' }}>
-                      ✉️ Collect email addresses automatically
-                    </span>
+                  <div className="fb-title-card-inner">
+                    <input
+                      className="fb-main-title-input"
+                      value={formTitle}
+                      onChange={e => setFormTitle(e.target.value)}
+                      placeholder="Form title"
+                      id="fb-main-title"
+                    />
+                    <textarea
+                      className="fb-main-desc-input"
+                      value={formDesc}
+                      onChange={e => setFormDesc(e.target.value)}
+                      placeholder="Form description"
+                      rows={1}
+                      id="fb-main-desc"
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' }}>
+                      <button
+                        type="button"
+                        className={`fb-toggle-switch${collectEmail !== 'do-not' ? ' on' : ''}`}
+                        style={collectEmail !== 'do-not' ? { background: accent, width: '32px', height: '18px' } : { width: '32px', height: '18px' }}
+                        onClick={() => setCollectEmail(prev => prev === 'do-not' ? 'responder' : 'do-not')}
+                      >
+                        <div className="fb-toggle-knob" style={collectEmail !== 'do-not' ? { left: '16px', width: '14px', height: '14px' } : { width: '14px', height: '14px' }} />
+                      </button>
+                      <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#555' }}>
+                        ✉️ Collect email addresses automatically
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
               {/* Email collection notification banner */}
               {collectEmail !== 'do-not' && (

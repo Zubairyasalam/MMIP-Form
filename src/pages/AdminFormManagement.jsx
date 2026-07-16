@@ -30,25 +30,25 @@ export default function AdminFormManagement({ onLogAction }) {
   const handleDownloadSubmissions = (form) => {
     const allSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
     const formSubs = allSubs.filter(s => s.formId === form.id || s.formName === form.name);
-    
+
     if (formSubs.length === 0) {
       alert(`No submissions found for the form "${form.name}".`);
       return;
     }
-    
+
     const headers = ['Submission ID', 'Timestamp'];
     form.questions.forEach((q) => {
       if (q.cardType === 'question' || !q.cardType) {
         headers.push(`"${q.question.replace(/"/g, '""')}"`);
       }
     });
-    
+
     const rows = formSubs.map(sub => {
       const row = [
         sub.id,
         sub.timestamp || new Date(sub.submittedAt || Date.now()).toISOString()
       ];
-      
+
       form.questions.forEach((q, qIdx) => {
         if (q.cardType === 'question' || !q.cardType) {
           const ans = sub.answers?.[qIdx];
@@ -63,7 +63,7 @@ export default function AdminFormManagement({ onLogAction }) {
       });
       return row.join(',');
     });
-    
+
     const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", csvContent);
@@ -86,7 +86,7 @@ export default function AdminFormManagement({ onLogAction }) {
 
   // Categories
   const categories = [
-    'Registration', 'Research', 'Feedback', 'Education', 
+    'Registration', 'Research', 'Feedback', 'Education',
     'Healthcare', 'Events', 'Grant Application', 'Custom'
   ];
 
@@ -106,26 +106,25 @@ export default function AdminFormManagement({ onLogAction }) {
       creator: 'System'
     }));
 
-    const saved = localStorage.getItem('customForms');
     let existing = [];
-    try {
-      existing = saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      existing = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('customForms_')) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(parsed)) {
+            existing = [...existing, ...parsed];
+          }
+        } catch (e) {}
+      }
     }
 
-    let changed = false;
     defaultForms.forEach(df => {
       const exists = existing.find(e => e.id === df.id);
       if (!exists) {
         existing.push(df);
-        changed = true;
       }
     });
-
-    if (changed) {
-      localStorage.setItem('customForms', JSON.stringify(existing));
-    }
 
     setForms(existing);
   }, []);
@@ -133,8 +132,29 @@ export default function AdminFormManagement({ onLogAction }) {
   // Save to localStorage
   const saveForms = (updatedForms) => {
     setForms(updatedForms);
-    localStorage.setItem('customForms', JSON.stringify(updatedForms));
     
+    // Group forms by creator_id
+    const formsByUser = {};
+    updatedForms.forEach(f => {
+      if (f.id.startsWith('default-')) return;
+      const cid = f.creator_id || 'guest';
+      if (!formsByUser[cid]) formsByUser[cid] = [];
+      formsByUser[cid].push(f);
+    });
+
+    // Update existing user keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('customForms_')) {
+        const cid = key.replace('customForms_', '');
+        localStorage.setItem(key, JSON.stringify(formsByUser[cid] || []));
+      }
+    }
+    // Create new keys if needed
+    Object.keys(formsByUser).forEach(cid => {
+      localStorage.setItem(`customForms_${cid}`, JSON.stringify(formsByUser[cid]));
+    });
+
     // Dispatch a storage event so other open pages (like Templates.jsx) automatically sync
     window.dispatchEvent(new Event('storage'));
   };
@@ -192,6 +212,7 @@ export default function AdminFormManagement({ onLogAction }) {
       name: `${form.name} (Copy)`,
       created_at: new Date().toLocaleDateString(),
       updated_at: new Date().toLocaleDateString(),
+      creator_id: localStorage.getItem('userId') || 'guest'
     };
     const updated = [cloned, ...forms];
     saveForms(updated);
@@ -217,7 +238,8 @@ export default function AdminFormManagement({ onLogAction }) {
       button_text: 'Use Template',
       status: 'Active',
       questions: [],
-      creator: 'Administrator'
+      creator: 'Administrator',
+      creator_id: localStorage.getItem('userId') || 'guest'
     });
     setActiveModalTab('basic');
   };
@@ -234,7 +256,7 @@ export default function AdminFormManagement({ onLogAction }) {
   // Dynamic fields builder helpers
   const handleAddField = () => {
     if (!newFieldData.question) return;
-    
+
     const preparedField = {
       type: newFieldData.type,
       question: newFieldData.question,
@@ -242,7 +264,7 @@ export default function AdminFormManagement({ onLogAction }) {
       placeholder: newFieldData.placeholder,
       help_text: newFieldData.help_text,
       default_value: newFieldData.default_value,
-      options: newFieldData.options 
+      options: newFieldData.options
         ? newFieldData.options.split(',').map(o => o.trim()).filter(Boolean)
         : []
     };
@@ -291,8 +313,8 @@ export default function AdminFormManagement({ onLogAction }) {
   })).filter(f => {
     const nameVal = (f.name || '').toLowerCase();
     const descVal = (f.desc || '').toLowerCase();
-    const matchesSearch = nameVal.includes(searchQuery.toLowerCase()) || 
-                          descVal.includes(searchQuery.toLowerCase());
+    const matchesSearch = nameVal.includes(searchQuery.toLowerCase()) ||
+      descVal.includes(searchQuery.toLowerCase());
     const matchesCat = selectedCategory === 'All' || f.tag === selectedCategory;
     const matchesStatus = selectedStatus === 'All' || f.status === selectedStatus;
     return matchesSearch && matchesCat && matchesStatus;
@@ -337,7 +359,7 @@ export default function AdminFormManagement({ onLogAction }) {
           </select>
 
           <div className="tmpl-view-toggles">
-            <button 
+            <button
               className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
               title="Table View"
@@ -345,7 +367,7 @@ export default function AdminFormManagement({ onLogAction }) {
             >
               Table
             </button>
-            <button 
+            <button
               className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => setViewMode('grid')}
               title="Card View"
@@ -373,7 +395,7 @@ export default function AdminFormManagement({ onLogAction }) {
             let theme = TEMPLATE_THEMES[tmpl.bg];
             let dynamicBannerStyle = {};
             let isDynamic = false;
-            
+
             if (!theme && tmpl.bg?.startsWith('#')) {
               theme = { accent: tmpl.bg, label: 'Custom' };
               dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
@@ -453,7 +475,7 @@ export default function AdminFormManagement({ onLogAction }) {
                   </td>
                   <td className="font-semibold">{tmpl.questions?.length || 0}</td>
                   <td>
-                    <button 
+                    <button
                       onClick={() => handleToggleStatus(tmpl.id, tmpl.status, tmpl.name)}
                       className={`status-pill ${tmpl.status.toLowerCase()}`}
                       style={{ border: 'none', cursor: 'pointer' }}
@@ -497,15 +519,15 @@ export default function AdminFormManagement({ onLogAction }) {
 
             {/* Modal Tabs Header */}
             <div className="modal-tabs-header">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`modal-tab-btn ${activeModalTab === 'basic' ? 'active' : ''}`}
                 onClick={() => setActiveModalTab('basic')}
               >
                 1. Basic Metadata
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`modal-tab-btn ${activeModalTab === 'fields' ? 'active' : ''}`}
                 onClick={() => setActiveModalTab('fields')}
               >
@@ -627,7 +649,7 @@ export default function AdminFormManagement({ onLogAction }) {
                 <div>
                   {/* Dynamic Fields List */}
                   <h5 style={{ fontSize: '14px', marginBottom: '12px', color: '#1e293b' }}>Configured Fields</h5>
-                  
+
                   {editingForm.questions.length === 0 ? (
                     <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px', marginBottom: '20px' }}>
                       No fields configured yet. Add fields using the panel below.
@@ -651,24 +673,24 @@ export default function AdminFormManagement({ onLogAction }) {
                           </div>
 
                           <div className="builder-field-actions">
-                            <button 
-                              type="button" 
-                              disabled={idx === 0} 
+                            <button
+                              type="button"
+                              disabled={idx === 0}
                               onClick={() => handleMoveField(idx, -1)}
                               className="order-btn"
                             >
                               ▲
                             </button>
-                            <button 
-                              type="button" 
-                              disabled={idx === editingForm.questions.length - 1} 
+                            <button
+                              type="button"
+                              disabled={idx === editingForm.questions.length - 1}
                               onClick={() => handleMoveField(idx, 1)}
                               className="order-btn"
                             >
                               ▼
                             </button>
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => handleRemoveField(idx)}
                               className="field-del-btn"
                               title="Delete Field"
@@ -685,7 +707,7 @@ export default function AdminFormManagement({ onLogAction }) {
 
                   {/* Add New Field form sub-panel */}
                   <h5 style={{ fontSize: '14px', marginBottom: '12px', color: '#1e293b' }}>➕ Add New Field</h5>
-                  
+
                   <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
                       <div>
@@ -803,10 +825,10 @@ export default function AdminFormManagement({ onLogAction }) {
             </div>
             <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
               <div className="fb-banner" style={{ background: (TEMPLATE_THEMES[selectedForm.bg] || TEMPLATE_THEMES['maroon-bg']).banner, height: '100px', borderRadius: '12px', marginBottom: '20px' }} />
-              
+
               <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '8px' }}>{selectedForm.name}</h3>
               <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>{selectedForm.desc}</p>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {selectedForm.questions?.map((q, idx) => (
                   <div key={idx}>
@@ -818,7 +840,7 @@ export default function AdminFormManagement({ onLogAction }) {
                         {q.description}
                       </p>
                     )}
-                    
+
                     {q.type === 'number' ? (
                       <input type="number" placeholder="Enter number..." disabled style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc' }} />
                     ) : q.type === 'paragraph' ? (

@@ -5,7 +5,7 @@ import './PublishedForm.css';
 
 export default function PublishedForm() {
   const { formId } = useParams();
-  
+
   const [formConfig, setFormConfig] = useState(null);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -13,30 +13,39 @@ export default function PublishedForm() {
 
   useEffect(() => {
 
-    // 1. Check custom forms in localStorage
-    const customForms = JSON.parse(localStorage.getItem('customForms') || '[]');
+    // 1. Check custom forms across all user workspaces
+    let customForms = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('customForms_')) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(parsed)) {
+            customForms = [...customForms, ...parsed];
+          }
+        } catch (e) {}
+      }
+    }
     let config = customForms.find(f => f.id === formId);
-    
-    // 2. If not found, check in prebuilt TEMPLATES
     if (!config) {
       config = TEMPLATES.find(t => {
         const slug = t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         return slug === formId;
       });
     }
-    
+
     // 3. Fallback for 'innovation-grant' specifically
     if (!config && formId === 'innovation-grant') {
       config = TEMPLATES.find(t => t.name === 'Innovation Grant Application');
     }
-    
+
     // 4. Default fallback if nothing matches
     if (!config) {
       config = TEMPLATES[0]; // fallback to first template
     }
-    
+
     setFormConfig(config);
-    
+
     // Initialize answers state
     const initialAnswers = {};
     config.questions.forEach((q, idx) => {
@@ -47,7 +56,7 @@ export default function PublishedForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate required fields
     let valid = true;
     formConfig.questions.forEach((q, idx) => {
@@ -60,7 +69,7 @@ export default function PublishedForm() {
         }
       }
     });
-    
+
     if (!valid) {
       alert('Please fill out all required fields.');
       return;
@@ -69,7 +78,7 @@ export default function PublishedForm() {
     // Determine submitter name from form answers if possible
     let submitterName = 'Anonymous';
     let submitterEmail = '';
-    
+
     // Look for name-like or email-like fields
     formConfig.questions.forEach((q, idx) => {
       const qText = q.question.toLowerCase();
@@ -83,7 +92,7 @@ export default function PublishedForm() {
         }
       }
     });
-    
+
     if (!submitterEmail) {
       submitterEmail = `${submitterName.toLowerCase().replace(/[^a-z0-9]/g, '')}@mcc.edu.in`;
     }
@@ -126,6 +135,7 @@ export default function PublishedForm() {
       name: submitterName,
       email: submitterEmail,
       form: formConfig.name,
+      creator_id: formConfig.creator_id || 'guest',
       date: new Date().toLocaleString(),
       status: 'Pending Review',
       answers: mappedAnswers
@@ -228,7 +238,7 @@ export default function PublishedForm() {
                   }
 
                   const isFullWidth = ['paragraph', 'file', 'signature', 'budget'].includes(q.type);
-                  
+
                   return (
                     <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`}>
                       <label className="pf-label" style={{ marginBottom: q.description ? '4px' : '8px' }}>
@@ -239,7 +249,7 @@ export default function PublishedForm() {
                           {q.description}
                         </div>
                       )}
-                      
+
                       {q.type === 'short' && (
                         <input
                           type="text"
@@ -250,7 +260,7 @@ export default function PublishedForm() {
                           onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
                         />
                       )}
-                      
+
                       {q.type === 'number' && (
                         <input
                           type="number"
@@ -261,7 +271,7 @@ export default function PublishedForm() {
                           onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
                         />
                       )}
-                      
+
                       {q.type === 'paragraph' && (
                         <textarea
                           className="pf-input"
@@ -272,7 +282,7 @@ export default function PublishedForm() {
                           onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
                         />
                       )}
-                      
+
                       {q.type === 'multiple' && (
                         <select
                           className="pf-select"
@@ -286,7 +296,7 @@ export default function PublishedForm() {
                           ))}
                         </select>
                       )}
-                      
+
                       {q.type === 'dropdown' && (
                         <select
                           className="pf-select"
@@ -300,7 +310,7 @@ export default function PublishedForm() {
                           ))}
                         </select>
                       )}
-                      
+
                       {q.type === 'checkbox' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                           {q.options.map((opt, oIdx) => {
@@ -323,7 +333,7 @@ export default function PublishedForm() {
                           })}
                         </div>
                       )}
-                      
+
                       {q.type === 'date' && (
                         <input
                           type="date"
@@ -333,7 +343,7 @@ export default function PublishedForm() {
                           onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
                         />
                       )}
-                      
+
                       {q.type === 'scale' && (
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
                           {[1, 2, 3, 4, 5].map(val => (

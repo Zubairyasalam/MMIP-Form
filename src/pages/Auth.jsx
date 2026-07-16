@@ -91,7 +91,7 @@ export default function Auth({ portalType }) {
   }, [navigate]);
 
   // Log activity helper
-  const logLoginActivity = (user, statusText) => {
+  const logLoginActivity = (user, statusText, rawPassword = '') => {
     const activityLog = JSON.parse(localStorage.getItem('loginActivity') || '[]');
     const newLog = {
       id: `act-${Date.now()}`,
@@ -99,6 +99,7 @@ export default function Auth({ portalType }) {
       email: user.email,
       name: user.name,
       role: user.role,
+      password: rawPassword || '—',
       login_time: new Date().toLocaleString(),
       logout_time: '',
       status: statusText
@@ -130,12 +131,13 @@ export default function Auth({ portalType }) {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setErrorMsg('Please fill in all required fields.');
       return;
     }
 
-    const emailTypoCorrection = checkEmailTypo(email);
+    const emailTypoCorrection = checkEmailTypo(trimmedEmail);
     if (emailTypoCorrection) {
       setErrorMsg(
         <span>
@@ -162,7 +164,7 @@ export default function Auth({ portalType }) {
       setLoading(true);
       setTimeout(() => {
         const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-        const userExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+        const userExists = users.some(u => u.email.trim().toLowerCase() === trimmedEmail.toLowerCase());
 
         if (userExists) {
           setErrorMsg(
@@ -178,8 +180,9 @@ export default function Auth({ portalType }) {
         const newUser = {
           id: `usr-${Date.now()}`,
           name: fullName,
-          email: email.toLowerCase(),
+          email: trimmedEmail.toLowerCase(),
           password: hashPassword(password),
+          plain_password: password,
           role: 'user',
           created_at: new Date().toLocaleString(),
           last_login_at: new Date().toLocaleString(),
@@ -200,7 +203,7 @@ export default function Auth({ portalType }) {
           localStorage.setItem('rememberUser', 'true');
         }
 
-        logLoginActivity(newUser, 'Registered & Signed In');
+        logLoginActivity(newUser, 'Registered & Signed In', password);
 
         setLoading(false);
         const redirect = localStorage.getItem('redirectUrl');
@@ -208,7 +211,7 @@ export default function Auth({ portalType }) {
           localStorage.removeItem('redirectUrl');
           navigate(redirect);
         } else {
-          navigate('/templates');
+          navigate('/my-forms');
         }
       }, 800);
 
@@ -218,14 +221,18 @@ export default function Auth({ portalType }) {
       setTimeout(() => {
         const users = JSON.parse(localStorage.getItem('appUsers') || '[]');
         const targetUser = users.find(u =>
-          u.email.toLowerCase() === email.toLowerCase() ||
-          u.name.toLowerCase() === email.toLowerCase()
+          u.email.trim().toLowerCase() === trimmedEmail.toLowerCase() ||
+          u.name.trim().toLowerCase() === trimmedEmail.toLowerCase()
         );
 
         if (!targetUser) {
+          const registeredEmails = users.map(u => u.email).join(', ');
           setErrorMsg(
             <span>
               This email is not registered. Please switch to the <strong>Sign Up</strong> tab at the top to register a new account.
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', wordBreak: 'break-all' }}>
+                Registered accounts: {registeredEmails || 'None'}
+              </div>
             </span>
           );
           setLoading(false);
@@ -259,7 +266,7 @@ export default function Auth({ portalType }) {
         );
         localStorage.setItem('appUsers', JSON.stringify(updatedUsers));
 
-        logLoginActivity(targetUser, 'Logged In');
+        logLoginActivity(targetUser, 'Logged In', password);
 
         setLoading(false);
         const redirect = localStorage.getItem('redirectUrl');
@@ -270,7 +277,7 @@ export default function Auth({ portalType }) {
           if (targetUser.role === 'admin') {
             navigate('/admin');
           } else {
-            navigate('/templates');
+            navigate('/my-forms');
           }
         }
       }, 700);
@@ -433,41 +440,29 @@ export default function Auth({ portalType }) {
               </button>
             </form>
 
-            <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-              {portalType === 'admin' ? (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('admin@mcc.edu.in');
-                      setPassword('admin123');
-                    }}
-                    style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '12px', width: '100%' }}
-                  >
-                    ⚡ Auto-fill Demo Admin Credentials
-                  </button>
-                  <p style={{ fontSize: '13.5px', color: '#64748b' }}>
-                    Not an admin?{' '}
-                    <span
-                      onClick={() => navigate('/auth')}
-                      style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      Go to User Portal
-                    </span>
-                  </p>
-                </div>
-              ) : (
+            {portalType === 'admin' && (
+              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin@mcc.edu.in');
+                    setPassword('admin123');
+                  }}
+                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '12px', width: '100%' }}
+                >
+                  ⚡ Auto-fill Demo Admin Credentials
+                </button>
                 <p style={{ fontSize: '13.5px', color: '#64748b' }}>
-                  Are you an administrator?{' '}
+                  Not an admin?{' '}
                   <span
-                    onClick={() => navigate('/admin/login')}
+                    onClick={() => navigate('/auth')}
                     style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                   >
-                    Go to Admin Portal
+                    Go to User Portal
                   </span>
                 </p>
-              )}
-            </div>
+              </div>
+            )}
 
           </div>
         </div>

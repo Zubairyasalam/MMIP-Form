@@ -212,7 +212,7 @@ export default function AdminFormManagement({ onLogAction }) {
       name: `${form.name} (Copy)`,
       created_at: new Date().toLocaleDateString(),
       updated_at: new Date().toLocaleDateString(),
-      creator_id: localStorage.getItem('userId') || 'guest'
+      creator_id: sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest'
     };
     const updated = [cloned, ...forms];
     saveForms(updated);
@@ -239,7 +239,7 @@ export default function AdminFormManagement({ onLogAction }) {
       status: 'Active',
       questions: [],
       creator: 'Administrator',
-      creator_id: localStorage.getItem('userId') || 'guest'
+      creator_id: sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest'
     });
     setActiveModalTab('basic');
   };

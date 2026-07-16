@@ -4,6 +4,7 @@ import './index.css';
 import LandingPage from './pages/LandingPage';
 import Templates from './pages/Templates';
 import FormBuilder from './pages/FormBuilder';
+import MyForms from './pages/MyForms';
 import PublishedForm from './pages/PublishedForm';
 import AdminDashboard from './pages/AdminDashboard';
 import Auth from './pages/Auth';
@@ -46,8 +47,13 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/get-started" element={<Navigate to="/auth" replace />} />
-      
+
       {/* User Paths */}
+      <Route path="/my-forms" element={
+        <ProtectedRoute allowedRoles={['user', 'admin']}>
+          <MyForms />
+        </ProtectedRoute>
+      } />
       <Route path="/templates" element={
         <ProtectedRoute allowedRoles={['user', 'admin']}>
           <Templates />
@@ -60,7 +66,7 @@ function App() {
       } />
       <Route path="/form/:formId" element={<PublishedForm />} />
       <Route path="/auth" element={<Auth />} />
-      
+
       {/* Dedicated Admin Login */}
       <Route path="/admin/login" element={<Auth portalType="admin" />} />
       <Route path="/super-admin/login" element={<Navigate to="/admin/login" replace />} />

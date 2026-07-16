@@ -49,8 +49,8 @@ export default function GetStarted() {
         <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF Innovation Park" />
         <Link to="/" className="getstarted-back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
           </svg>
           Back to Home
         </Link>
@@ -137,8 +137,8 @@ export default function GetStarted() {
                   <Link to="/templates" className="btn-primary" id="getstarted-dashboard-btn">
                     <span>Go to Dashboard</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="5" y1="12" x2="19" y2="12"/>
-                      <polyline points="12 5 19 12 12 19"/>
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
                     </svg>
                   </Link>
                 </>
@@ -148,8 +148,8 @@ export default function GetStarted() {
                   <Link to="/auth?mode=signup" className="btn-primary" id="getstarted-create-btn">
                     <span>Create Free Account</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="5" y1="12" x2="19" y2="12"/>
-                      <polyline points="12 5 19 12 12 19"/>
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
                     </svg>
                   </Link>
                 </>

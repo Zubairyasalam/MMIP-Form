@@ -1672,7 +1672,7 @@ export default function FormBuilder() {
 
   const handlePublish = () => {
     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const formId = slug || `form-${Date.now()}`;
+    const formId = state.id || slug || `form-${Date.now()}`;
     const newForm = {
       id: formId,
       name: formTitle,

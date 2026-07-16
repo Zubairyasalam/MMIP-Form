@@ -7,28 +7,36 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
 
-    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
-    setUserRole(localStorage.getItem('userRole'));
+    setIsLoggedIn(sessionStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('isLoggedIn') === 'true');
+    setUserRole(sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
+    setUserName(sessionStorage.getItem('userName') || localStorage.getItem('userName') || '');
 
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const handleLogout = () => {
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('userEmail');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userId');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
     setIsLoggedIn(false);
+    setUserName('');
     window.location.href = '/';
   };
 
-  const dashboardLink = userRole === 'admin' ? '/admin/dashboard' : '/templates';
+  const dashboardLink = userRole === 'admin' ? '/admin/dashboard' : '/my-forms';
 
   return (
     <nav className={`navbar${scrolled ? ' scrolled' : ''}${menuOpen ? ' mobile-active' : ''}`}>
@@ -44,10 +52,15 @@ export default function Navbar() {
             <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
           </ul>
 
-          <div className="navbar-cta">
+          <div className="navbar-cta" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {isLoggedIn ? (
               <>
-                <Link to={dashboardLink} className="nav-sign-in" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                <span className="navbar-username" style={{ color: '#475569', fontWeight: '700', fontSize: '13.5px', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 14px', borderRadius: '20px', border: '1.5px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: '#7B1C1C', fontSize: '10px' }}>●</span> {userName || 'User'}
+                </span>
+                <Link to={dashboardLink} className="nav-sign-in" onClick={() => setMenuOpen(false)}>
+                  {userRole === 'admin' ? 'Dashboard' : 'Data Store'}
+                </Link>
                 <button onClick={handleLogout} className="btn-primary" style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                   <span>Sign Out</span>
                 </button>
@@ -63,9 +76,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        <button 
-          className="mobile-menu-btn" 
-          onClick={() => setMenuOpen(!menuOpen)} 
+        <button
+          className="mobile-menu-btn"
+          onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
         >
           {menuOpen ? (

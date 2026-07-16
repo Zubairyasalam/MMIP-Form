@@ -138,7 +138,7 @@
 /* ── Main panel ── */
 .admin-main {
   flex: 1;
-  padding: 40px;
+  padding: 24px 32px;
   overflow-y: auto;
   max-width: 1400px;
   margin: 0 auto;
@@ -149,9 +149,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 36px;
+  margin-bottom: 20px;
   border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
 }
 
 .admin-header-title-wrap h2 {
@@ -1538,4 +1538,43 @@
 .admin-layout.dark-mode .tag-auth {
   background: #581c87;
   color: #d8b4fe;
+}
+
+/* Responsive Sign Datas Log Table */
+.signdatas-table-header,
+.signdatas-row-full {
+  display: grid !important;
+  grid-template-columns: 1.2fr 1fr 1.5fr 1fr 0.8fr 1.2fr 1fr;
+  padding: 16px 24px;
+  align-items: center;
+}
+
+.signdatas-row-full {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-layout.dark-mode .signdatas-row-full {
+  border-bottom-color: #334155;
+}
+
+@media (max-width: 900px) {
+  .signdatas-table-header,
+  .signdatas-row-full {
+    grid-template-columns: 1.2fr 1fr 1.5fr 1fr 0.8fr !important;
+  }
+  .signdatas-ip-col,
+  .signdatas-browser-col {
+    display: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .signdatas-table-header,
+  .signdatas-row-full {
+    grid-template-columns: 1.2fr 1fr 0.8fr !important;
+  }
+  .signdatas-email-col,
+  .signdatas-password-col {
+    display: none !important;
+  }
 }

@@ -853,7 +853,12 @@ export default function AdminDashboard() {
       {/* Sidebar Panel */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <img src="/mcc-mrf-logo.png?v=2" alt="MCC Logo" className="admin-logo" />
+          <img 
+            src={theme === 'dark' ? "/mcc-mrf-logo-white.png?v=2" : "/mcc-mrf-logo.png?v=2"} 
+            alt="MCC Logo" 
+            className="admin-logo" 
+            style={{ transition: 'all 0.3s ease' }}
+          />
           <button
             type="button"
             className="admin-sidebar-close-btn"
@@ -1006,7 +1011,7 @@ export default function AdminDashboard() {
       <main className="admin-main">
         {/* Top Header */}
         <header className="admin-header" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button
               type="button"
               className="admin-menu-toggle-btn"
@@ -1015,6 +1020,11 @@ export default function AdminDashboard() {
             >
               ☰
             </button>
+            <img 
+              src={theme === 'dark' ? "/mcc-mrf-logo-white.png?v=2" : "/mcc-mrf-logo.png?v=2"} 
+              alt="MCC Logo" 
+              style={{ height: '64px', objectFit: 'contain', transition: 'all 0.3s ease' }} 
+            />
             <div className="admin-header-title-wrap">
               <h2>MCC-MRF Portal Admin</h2>
               <p>Madras Christian College Innovation Park System Center</p>

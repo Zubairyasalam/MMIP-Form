@@ -1892,7 +1892,7 @@ export default function AdminDashboard() {
                       <span className="log-full-time" style={{ color: '#64748b', fontSize: '13px' }}>{act.login_time || '—'}</span>
                       <strong style={{ color: '#1e293b' }}>{act.name || '—'}</strong>
                       <span className="signdatas-email-col" style={{ color: '#475569' }}>{act.email || '—'}</span>
-                      <span className="signdatas-password-col" style={{ color: '#475569', fontFamily: 'monospace' }}>{getDisplayPassword(act)}</span>
+                      <span className="signdatas-password-col" style={{ color: '#475569', fontFamily: 'monospace' }}>—</span>
                       <span className={`log-tag tag-${(act.role || 'user').toLowerCase()}`}>{act.role || 'user'}</span>
                       <span className="signdatas-ip-col" style={{ fontFamily: 'monospace', color: '#64748b' }}>{act.ip_address || '—'}</span>
                       <span className="signdatas-browser-col" style={{ color: '#475569', fontSize: '13px' }}>{act.browser || '—'}</span>

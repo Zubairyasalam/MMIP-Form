@@ -2071,7 +2071,7 @@ export default function AdminDashboard() {
                   Upload, delete, or replace the primary logo and the dark mode logo used across the platform.
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '24px' }}>
                   {/* Primary Logo */}
                   <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1.5px dashed #cbd5e1', textAlign: 'center' }}>
                     <span style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '8px', color: '#475569' }}>

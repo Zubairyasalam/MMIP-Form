@@ -847,6 +847,35 @@ export default function AdminDashboard() {
     logAction('System', 'Notifications list cleared.');
   };
 
+  // Custom logo state to trigger re-renders
+  const [logoVersion, setLogoVersion] = useState(0);
+
+  const handleLogoUpload = (e, key) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      localStorage.setItem(key, uploadEvent.target.result);
+      setLogoVersion(prev => prev + 1);
+      // Dispatch a storage event so other open pages (like Templates.jsx) automatically sync
+      window.dispatchEvent(new Event('storage'));
+      logAction('System', `Replaced platform logo: "${key === 'customLogo' ? 'Light Theme Logo' : 'Dark Theme Logo'}"`);
+      showToastMessage('Logo uploaded and replaced successfully!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoDelete = (key) => {
+    if (window.confirm(`Are you sure you want to delete the custom logo? It will fall back to the default logo.`)) {
+      localStorage.removeItem(key);
+      setLogoVersion(prev => prev + 1);
+      window.dispatchEvent(new Event('storage'));
+      logAction('System', `Deleted custom platform logo: "${key === 'customLogo' ? 'Light Theme Logo' : 'Dark Theme Logo'}"`);
+      showToastMessage('Logo deleted. Reverted to default.');
+    }
+  };
+
   return (
     <div className={`admin-layout ${theme === 'dark' ? 'dark-mode' : 'light-mode'}${sidebarOpen ? ' sidebar-active' : ''}`}>
       {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
@@ -854,7 +883,9 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <img 
-            src={theme === 'dark' ? "/mcc-mrf-logo-white.png?v=2" : "/mcc-mrf-logo.png?v=2"} 
+            src={theme === 'dark' 
+              ? (localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2") 
+              : (localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2")} 
             alt="MCC Logo" 
             className="admin-logo" 
             style={{ transition: 'all 0.3s ease' }}
@@ -1011,7 +1042,7 @@ export default function AdminDashboard() {
       <main className="admin-main">
         {/* Top Header */}
         <header className="admin-header" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               type="button"
               className="admin-menu-toggle-btn"
@@ -1020,11 +1051,6 @@ export default function AdminDashboard() {
             >
               ☰
             </button>
-            <img 
-              src={theme === 'dark' ? "/mcc-mrf-logo-white.png?v=2" : "/mcc-mrf-logo.png?v=2"} 
-              alt="MCC Logo" 
-              style={{ height: '64px', objectFit: 'contain', transition: 'all 0.3s ease' }} 
-            />
             <div className="admin-header-title-wrap">
               <h2>MCC-MRF Portal Admin</h2>
               <p>Madras Christian College Innovation Park System Center</p>
@@ -2034,6 +2060,88 @@ export default function AdminDashboard() {
                   value={profileData.joined}
                   onChange={(e) => setProfileData({ ...profileData, joined: e.target.value })}
                 />
+              </div>
+
+              {/* Logo Management Section */}
+              <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1.5px solid #cbd5e1' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                  Platform Logo Management
+                </h4>
+                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
+                  Upload, delete, or replace the primary logo and the dark mode logo used across the platform.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                  {/* Primary Logo */}
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1.5px dashed #cbd5e1', textAlign: 'center' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '8px', color: '#475569' }}>
+                      Primary Logo (Light Theme)
+                    </span>
+                    <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', background: '#ffffff', borderRadius: '6px', padding: '6px', border: '1px solid #e2e8f0' }}>
+                      <img 
+                        src={localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2"} 
+                        alt="Primary Logo" 
+                        style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} 
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <label className="action-btn view" style={{ fontSize: '11px', padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', margin: '0' }}>
+                        Replace
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={(e) => handleLogoUpload(e, 'customLogo')} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      {localStorage.getItem('customLogo') && (
+                        <button 
+                          type="button" 
+                          className="action-btn delete" 
+                          style={{ fontSize: '11px', padding: '4px 8px' }} 
+                          onClick={() => handleLogoDelete('customLogo')}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dark Theme Logo */}
+                  <div style={{ background: '#0f172a', padding: '16px', borderRadius: '12px', border: '1.5px dashed #334155', textAlign: 'center' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '8px', color: '#94a3b8' }}>
+                      Primary Logo (Dark Theme)
+                    </span>
+                    <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', background: '#1e293b', borderRadius: '6px', padding: '6px', border: '1px solid #334155' }}>
+                      <img 
+                        src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} 
+                        alt="Dark Theme Logo" 
+                        style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} 
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <label className="action-btn clone" style={{ fontSize: '11px', padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', color: 'white', background: '#3b82f6', border: 'none', margin: '0' }}>
+                        Replace
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={(e) => handleLogoUpload(e, 'customLogoWhite')} 
+                          style={{ display: 'none' }} 
+                        />
+                      </label>
+                      {localStorage.getItem('customLogoWhite') && (
+                        <button 
+                          type="button" 
+                          className="action-btn delete" 
+                          style={{ fontSize: '11px', padding: '4px 8px' }} 
+                          onClick={() => handleLogoDelete('customLogoWhite')}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>

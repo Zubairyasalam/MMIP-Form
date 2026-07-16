@@ -8,6 +8,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState('');
+  const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -17,7 +18,15 @@ export default function Navbar() {
     setUserRole(sessionStorage.getItem('userRole') || localStorage.getItem('userRole'));
     setUserName(sessionStorage.getItem('userName') || localStorage.getItem('userName') || '');
 
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleStorageChange = () => {
+      setCustomLogo(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -42,7 +51,7 @@ export default function Navbar() {
     <nav className={`navbar${scrolled ? ' scrolled' : ''}${menuOpen ? ' mobile-active' : ''}`}>
       <div className="navbar-inner">
         <a href="#" className="navbar-logo" onClick={() => setMenuOpen(false)}>
-          <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF Innovation Park" />
+          <img src={customLogo} alt="MCC-MRF Innovation Park" />
         </a>
 
         <div className={`navbar-menu${menuOpen ? ' open' : ''}`}>

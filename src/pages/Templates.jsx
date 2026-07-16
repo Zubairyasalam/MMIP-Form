@@ -11,6 +11,15 @@ export default function Templates() {
   const [allTemplates, setAllTemplates] = useState([]);
   const [tunnelUrl, setTunnelUrl] = useState('');
   const [customBaseUrl, setCustomBaseUrl] = useState('');
+  const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setCustomLogo(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
@@ -243,7 +252,7 @@ export default function Templates() {
     <div className="templates-page">
       {/* Top bar */}
       <div className="templates-topbar">
-        <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="templates-topbar-logo" />
+        <img src={customLogo} alt="MCC-MRF" className="templates-topbar-logo" />
 
         <div className="templates-search-wrap">
           <svg className="templates-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

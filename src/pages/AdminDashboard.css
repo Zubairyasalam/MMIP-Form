@@ -20,7 +20,8 @@
 }
 
 .admin-logo {
-  height: 64px;
+  max-width: 100%;
+  height: 90px;
   object-fit: contain;
   margin-bottom: 32px;
 }
@@ -1337,6 +1338,47 @@
   border-bottom: 1px solid #334155;
 }
 
+.admin-layout.dark-mode .admin-table td strong,
+.admin-layout.dark-mode .super-data-table td strong {
+  color: #f8fafc !important;
+}
+
+.admin-layout.dark-mode .admin-table td span:not(.table-tag-badge):not(.badge-visibility-public):not(.badge-visibility-private):not(.badge-visibility-visible):not(.badge-visibility-hidden),
+.admin-layout.dark-mode .super-data-table td span:not(.table-tag-badge):not(.badge-visibility-public):not(.badge-visibility-private):not(.badge-visibility-visible):not(.badge-visibility-hidden) {
+  color: #94a3b8 !important;
+}
+
+.admin-layout.dark-mode .table-tag-badge {
+  background: rgba(123, 28, 28, 0.25) !important;
+  color: #ff8a8a !important;
+  border: 1px solid rgba(255, 138, 138, 0.2) !important;
+}
+
+.admin-layout.dark-mode .font-semibold {
+  color: #cbd5e1 !important;
+}
+
+.admin-layout.dark-mode .badge-visibility-public {
+  background: rgba(29, 78, 216, 0.15) !important;
+  color: #93c5fd !important;
+  border-color: rgba(147, 197, 253, 0.3) !important;
+}
+.admin-layout.dark-mode .badge-visibility-private {
+  background: rgba(71, 85, 105, 0.2) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(203, 213, 225, 0.25) !important;
+}
+.admin-layout.dark-mode .badge-visibility-visible {
+  background: rgba(46, 125, 50, 0.15) !important;
+  color: #a7f3d0 !important;
+  border-color: rgba(167, 243, 208, 0.3) !important;
+}
+.admin-layout.dark-mode .badge-visibility-hidden {
+  background: rgba(198, 40, 40, 0.15) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(252, 165, 165, 0.3) !important;
+}
+
 .admin-layout.dark-mode .admin-table tr:hover td,
 .admin-layout.dark-mode .super-data-table tr:hover td {
   background: #273549;
@@ -1601,4 +1643,157 @@
   .signdatas-password-col {
     display: none !important;
   }
+}
+
+/* General Dark Mode Contrast Fixes for Inline / Hardcoded Text Colors */
+.admin-layout.dark-mode .overview-panel strong,
+.admin-layout.dark-mode .overview-panel span,
+.admin-layout.dark-mode .overview-panel h4,
+.admin-layout.dark-mode .overview-panel h5,
+.admin-layout.dark-mode .overview-panel p,
+.admin-layout.dark-mode .overview-panel label,
+.admin-layout.dark-mode .overview-panel div,
+.admin-layout.dark-mode .admin-modal strong,
+.admin-layout.dark-mode .admin-modal span:not(.btn-primary span),
+.admin-layout.dark-mode .admin-modal h4,
+.admin-layout.dark-mode .admin-modal h5,
+.admin-layout.dark-mode .admin-modal p,
+.admin-layout.dark-mode .admin-modal label,
+.admin-layout.dark-mode .admin-modal div,
+.admin-layout.dark-mode .admin-settings-card strong,
+.admin-layout.dark-mode .admin-settings-card span:not(.btn-primary span):not(.action-btn),
+.admin-layout.dark-mode .admin-settings-card p,
+.admin-layout.dark-mode .admin-settings-card label,
+.admin-layout.dark-mode .admin-settings-card div:not([style*="background: #ffffff"]):not([style*="background:#ffffff"]):not([style*="background: rgb(255, 255, 255)"]),
+.admin-layout.dark-mode .super-data-table strong,
+.admin-layout.dark-mode .super-data-table span:not(.table-tag-badge):not(.badge-visibility-public):not(.badge-visibility-private):not(.badge-visibility-visible):not(.badge-visibility-hidden),
+.admin-layout.dark-mode .super-data-table td,
+.admin-layout.dark-mode .admin-table strong,
+.admin-layout.dark-mode .admin-table span:not(.table-tag-badge):not(.badge-visibility-public):not(.badge-visibility-private):not(.badge-visibility-visible):not(.badge-visibility-hidden),
+.admin-layout.dark-mode .admin-table td {
+  color: #cbd5e1 !important;
+}
+
+.admin-layout.dark-mode .overview-panel h3,
+.admin-layout.dark-mode .overview-panel h4,
+.admin-layout.dark-mode .overview-panel h5,
+.admin-layout.dark-mode .admin-modal h3,
+.admin-layout.dark-mode .admin-modal h4,
+.admin-layout.dark-mode .admin-modal h5,
+.admin-layout.dark-mode .super-data-table th,
+.admin-layout.dark-mode .super-data-table td strong,
+.admin-layout.dark-mode .admin-table th,
+.admin-layout.dark-mode .admin-table td strong,
+.admin-layout.dark-mode .admin-settings-card h3,
+.admin-layout.dark-mode .admin-settings-card h4,
+.admin-layout.dark-mode .admin-settings-card h5 {
+  color: #f8fafc !important;
+}
+
+/* Settings Card & Form inputs in Dark Mode */
+.admin-layout.dark-mode .admin-settings-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.admin-layout.dark-mode .admin-settings-card div {
+  border-top-color: #334155 !important;
+  border-color: #334155 !important;
+}
+
+.admin-layout.dark-mode .pf-input,
+.admin-layout.dark-mode .admin-settings-card input {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.admin-layout.dark-mode .pf-input:focus,
+.admin-layout.dark-mode .admin-settings-card input:focus {
+  border-color: #7B1C1C !important;
+}
+
+.admin-layout.dark-mode .action-btn.view {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+
+.admin-layout.dark-mode .action-btn.view:hover {
+  background: #475569 !important;
+  color: #f8fafc !important;
+}
+
+.admin-layout.dark-mode .admin-settings-card button:not(.btn-primary):not(.action-btn):not([style*="position: absolute"]):not([style*="position:absolute"]) {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+
+.admin-layout.dark-mode .admin-settings-card button:not(.btn-primary):not(.action-btn):not([style*="position: absolute"]):not([style*="position:absolute"]):hover {
+  background: #475569 !important;
+  color: #f8fafc !important;
+}
+
+/* Ensure text inside light background logo preview cards remains dark and readable in dark mode */
+.admin-layout.dark-mode .admin-settings-card div[style*="background: #f8fafc"] span,
+.admin-layout.dark-mode .admin-settings-card div[style*="background:#f8fafc"] span,
+.admin-layout.dark-mode .admin-settings-card div[style*="background: rgb(248, 250, 252)"] span,
+.admin-layout.dark-mode .admin-settings-card div[style*="background: #f8fafc"] strong,
+.admin-layout.dark-mode .admin-settings-card div[style*="background:#f8fafc"] strong,
+.admin-layout.dark-mode .admin-settings-card div[style*="background: rgb(248, 250, 252)"] strong,
+.admin-layout.dark-mode .admin-settings-card div[style*="background: #f8fafc"] p,
+.admin-layout.dark-mode .admin-settings-card div[style*="background:#f8fafc"] p,
+.admin-layout.dark-mode .admin-settings-card div[style*="background: rgb(248, 250, 252)"] p {
+  color: #475569 !important;
+}
+
+/* Dark Mode styles for template management controls and filters */
+.admin-layout.dark-mode .tmpl-mgmt-controls {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.admin-layout.dark-mode .tmpl-search-bar input,
+.admin-layout.dark-mode .tmpl-filters-group select {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.admin-layout.dark-mode .tmpl-search-bar input:focus,
+.admin-layout.dark-mode .tmpl-filters-group select:focus {
+  border-color: #7B1C1C !important;
+}
+
+.admin-layout.dark-mode .tmpl-view-toggles {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+.admin-layout.dark-mode .view-toggle-btn {
+  color: #94a3b8 !important;
+}
+
+.admin-layout.dark-mode .view-toggle-btn.active {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+/* Force autofilled browser inputs to respect dark mode background and text color */
+.admin-layout.dark-mode input:-webkit-autofill,
+.admin-layout.dark-mode input:-webkit-autofill:hover,
+.admin-layout.dark-mode input:-webkit-autofill:focus,
+.admin-layout.dark-mode textarea:-webkit-autofill,
+.admin-layout.dark-mode textarea:-webkit-autofill:hover,
+.admin-layout.dark-mode textarea:-webkit-autofill:focus,
+.admin-layout.dark-mode select:-webkit-autofill,
+.admin-layout.dark-mode select:-webkit-autofill:hover,
+.admin-layout.dark-mode select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }

@@ -76,6 +76,7 @@ export default function AdminDashboard() {
   };
 
   // Navigation Tabs
+  const [currentUserRole, setCurrentUserRole] = useState('admin');
   const [activeMenu, setActiveMenu] = useState('overview'); // overview, users, roles, departments, forms, submissions, reports, announcements, notifications, logs, settings, profile
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(true); // Collapsible sub-menu for User Management
@@ -361,13 +362,14 @@ export default function AdminDashboard() {
     const name = sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'MCC Administrator';
     const joined = sessionStorage.getItem('userJoined') || localStorage.getItem('userJoined') || '2025-01-10';
 
+    setCurrentUserRole(role);
     setOriginalEmail(email);
     setProfileData(prev => ({
       ...prev,
       email: email,
       name: name,
       joined: joined,
-      role: 'Admin'
+      role: role === 'superadmin' ? 'Super Admin' : 'Admin'
     }));
   }, []);
 
@@ -910,31 +912,33 @@ export default function AdminDashboard() {
             Dashboard
           </button>
 
-          {/* User Management Collapsible Dropdown */}
-          <div className="admin-menu-dropdown-wrapper">
-            <button
-              className="admin-nav-item dropdown-toggle"
-              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-            >
-              User Management <span className="dropdown-arrow">{userDropdownOpen ? '▼' : '▶'}</span>
-            </button>
-            {userDropdownOpen && (
-              <div className="admin-dropdown-submenu">
-                <button
-                  className={`submenu-item${activeMenu === 'users' ? ' active' : ''}`}
-                  onClick={() => { setActiveMenu('users'); setSidebarOpen(false); }}
-                >
-                  • All Users
-                </button>
-                <button
-                  className={`submenu-item${activeMenu === 'roles' ? ' active' : ''}`}
-                  onClick={() => { setActiveMenu('roles'); setSidebarOpen(false); }}
-                >
-                  • Roles & Permissions
-                </button>
-              </div>
-            )}
-          </div>
+          {/* User Management Collapsible Dropdown (Super Admin Only) */}
+          {currentUserRole === 'superadmin' && (
+            <div className="admin-menu-dropdown-wrapper">
+              <button
+                className={`admin-nav-item dropdown-toggle${(activeMenu === 'users' || activeMenu === 'roles') ? ' active' : ''}`}
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              >
+                User Management <span className="dropdown-arrow">{userDropdownOpen ? '▼' : '▶'}</span>
+              </button>
+              {userDropdownOpen && (
+                <div className="admin-dropdown-submenu">
+                  <button
+                    className={`submenu-item${activeMenu === 'users' ? ' active' : ''}`}
+                    onClick={() => { setActiveMenu('users'); setSidebarOpen(false); }}
+                  >
+                    • All Users
+                  </button>
+                  <button
+                    className={`submenu-item${activeMenu === 'roles' ? ' active' : ''}`}
+                    onClick={() => { setActiveMenu('roles'); setSidebarOpen(false); }}
+                  >
+                    • Roles & Permissions
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* All Submissions */}
           <button
@@ -984,29 +988,35 @@ export default function AdminDashboard() {
             Notifications
           </button>
 
-          {/* Audit Logs */}
-          <button
-            className={`admin-nav-item${activeMenu === 'logs' ? ' active' : ''}`}
-            onClick={() => { setActiveMenu('logs'); setSidebarOpen(false); }}
-          >
-            Audit Logs
-          </button>
+          {/* Audit Logs (Super Admin Only) */}
+          {currentUserRole === 'superadmin' && (
+            <button
+              className={`admin-nav-item${activeMenu === 'logs' ? ' active' : ''}`}
+              onClick={() => { setActiveMenu('logs'); setSidebarOpen(false); }}
+            >
+              Audit Logs
+            </button>
+          )}
 
-          {/* Sign Datas */}
-          <button
-            className={`admin-nav-item${activeMenu === 'signdatas' ? ' active' : ''}`}
-            onClick={() => { setActiveMenu('signdatas'); setSidebarOpen(false); }}
-          >
-            Sign Datas
-          </button>
+          {/* Sign Datas (Super Admin Only) */}
+          {currentUserRole === 'superadmin' && (
+            <button
+              className={`admin-nav-item${activeMenu === 'signdatas' ? ' active' : ''}`}
+              onClick={() => { setActiveMenu('signdatas'); setSidebarOpen(false); }}
+            >
+              Sign Datas
+            </button>
+          )}
 
-          {/* System Settings */}
-          <button
-            className={`admin-nav-item${activeMenu === 'settings' ? ' active' : ''}`}
-            onClick={() => { setActiveMenu('settings'); setSidebarOpen(false); }}
-          >
-            System Settings
-          </button>
+          {/* System Settings (Super Admin Only) */}
+          {currentUserRole === 'superadmin' && (
+            <button
+              className={`admin-nav-item${activeMenu === 'settings' ? ' active' : ''}`}
+              onClick={() => { setActiveMenu('settings'); setSidebarOpen(false); }}
+            >
+              System Settings
+            </button>
+          )}
 
           {/* Profile */}
           <button
@@ -1053,7 +1063,7 @@ export default function AdminDashboard() {
               ☰
             </button>
             <div className="admin-header-title-wrap">
-              <h2>MCC-MRF Portal Admin</h2>
+              <h2>{currentUserRole === 'superadmin' ? 'MCC-MRF Portal Super Admin' : 'MCC-MRF Portal Admin'}</h2>
               <p>Madras Christian College Innovation Park System Center</p>
             </div>
           </div>

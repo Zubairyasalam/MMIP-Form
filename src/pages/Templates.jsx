@@ -23,7 +23,7 @@ export default function Templates() {
 
   // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
-    return customBaseUrl || tunnelUrl || window.location.origin;
+    return customBaseUrl || window.location.origin;
   };
 
   const isLocalhost = () => {
@@ -125,15 +125,6 @@ export default function Templates() {
     } else {
       setUserRole(localStorage.getItem('userRole') || 'user');
     }
-
-    fetch('/tunnel.json')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.url) {
-          setTunnelUrl(data.url);
-        }
-      })
-      .catch(() => { });
 
     const loadTemplates = () => {
       const defaultForms = TEMPLATES.map((t, idx) => ({

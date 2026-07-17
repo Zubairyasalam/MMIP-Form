@@ -22,11 +22,23 @@ const DEFAULT_ACCOUNTS = [
     last_login_at: '',
     last_logout_at: '',
     account_status: 'Active'
+  },
+  {
+    id: 'usr-default-superadmin',
+    name: 'Super Admin',
+    email: 'superadmin@mcc.edu.in',
+    password: 'superadmin123',
+    role: 'superadmin',
+    created_at: '2026-06-12 10:05:00',
+    last_login_at: '',
+    last_logout_at: '',
+    account_status: 'Active'
   }
 ];
 
 export default function Auth({ portalType }) {
   const navigate = useNavigate();
+  const isAdminOrSuperAdmin = portalType === 'admin' || portalType === 'superadmin';
 
   // Mode: 'signin' or 'signup'
   const [authMode, setAuthMode] = useState('signin');
@@ -92,7 +104,7 @@ export default function Auth({ portalType }) {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (isLoggedIn) {
       const userRole = localStorage.getItem('userRole') || 'user';
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'superadmin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/templates');
@@ -284,7 +296,7 @@ export default function Auth({ portalType }) {
           localStorage.removeItem('redirectUrl');
           navigate(redirect);
         } else {
-          if (targetUser.role === 'admin') {
+          if (targetUser.role === 'admin' || targetUser.role === 'superadmin') {
             navigate('/admin');
           } else {
             navigate('/my-forms');
@@ -396,12 +408,12 @@ export default function Auth({ portalType }) {
         <div className="auth-brand-panel">
           <img src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
           <div className="auth-welcome-text">
-            <h2>{portalType === 'admin' ? 'Admin Portal' : 'Madras Christian College'}</h2>
+            <h2>{isAdminOrSuperAdmin ? (portalType === 'superadmin' ? 'Super Admin Portal' : 'Admin Portal') : 'Madras Christian College'}</h2>
             <h3 style={{ opacity: 0.9, fontWeight: '600', fontSize: '18px', marginTop: '6px' }}>
-              {portalType === 'admin' ? 'MMIP Management Platform' : 'MRF Innovation Park'}
+              {isAdminOrSuperAdmin ? 'MMIP Management Platform' : 'MRF Innovation Park'}
             </h3>
             <p style={{ marginTop: '16px', lineHeight: '1.6' }}>
-              {portalType === 'admin'
+              {isAdminOrSuperAdmin
                 ? 'Access the MCC-MRF Innovation Park Admin Portal to manage form templates, view response sheets, and configure platform settings.'
                 : 'Create your account to browse form templates, build customized forms, and manage survey responses through the MMIP platform.'}
             </p>
@@ -419,13 +431,13 @@ export default function Auth({ portalType }) {
             {authMode === 'forgot' ? (
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <h2 style={{ color: '#0f172a', fontSize: '20px', fontWeight: '800' }}>
-                  🔑 Reset Account Password
+                  🔑 Reset Password
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px' }}>
                   {forgotStep === 1 ? 'Enter your registered email address to verify your account.' : 'Verify the code and enter your new password.'}
                 </p>
               </div>
-            ) : (!portalType || portalType !== 'admin') ? (
+            ) : (!portalType || (portalType !== 'admin' && portalType !== 'superadmin')) ? (
               <div className="auth-tabs" style={{ display: 'flex', borderBottom: '2.5px solid #f1f5f9', marginBottom: '24px', gap: '16px' }}>
                 <button
                   type="button"
@@ -447,7 +459,7 @@ export default function Auth({ portalType }) {
             ) : (
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <h2 style={{ color: '#0f172a', fontSize: '20px', fontWeight: '800' }}>
-                  {portalType === 'admin' ? '⚙️ Admin Portal Sign In' : '🛡️ Super Admin Sign In'}
+                  {portalType === 'superadmin' ? '🛡️ Super Admin Portal Sign In' : '⚙️ Admin Portal Sign In'}
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px' }}>
                   Please enter your institutional credentials to log in.
@@ -667,27 +679,86 @@ export default function Auth({ portalType }) {
               </form>
             )}
 
+            {!isAdminOrSuperAdmin && (
+              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
+                  Are you an Admin?{' '}
+                  <span
+                    onClick={() => navigate('/admin/login')}
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Go to Admin Portal
+                  </span>
+                </p>
+                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
+                  Are you a Super Admin?{' '}
+                  <span
+                    onClick={() => navigate('/super-admin/login')}
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Go to Super Admin Portal
+                  </span>
+                </p>
+              </div>
+            )}
+
             {portalType === 'admin' && (
-              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => {
                     setEmail('admin@mcc.edu.in');
                     setPassword('admin123');
                   }}
-                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '12px', width: '100%' }}
+                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '4px', width: '100%' }}
                 >
                   ⚡ Auto-fill Demo Admin Credentials
                 </button>
-                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
-                  Not an admin?{' '}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px', fontSize: '13.5px' }}>
                   <span
                     onClick={() => navigate('/auth')}
                     style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
                   >
-                    Go to User Portal
+                    User Portal
                   </span>
-                </p>
+                  <span style={{ color: '#cbd5e1' }}>|</span>
+                  <span
+                    onClick={() => navigate('/super-admin/login')}
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Super Admin Portal
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {portalType === 'superadmin' && (
+              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('superadmin@mcc.edu.in');
+                    setPassword('superadmin123');
+                  }}
+                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '4px', width: '100%' }}
+                >
+                  ⚡ Auto-fill Demo Super Admin Credentials
+                </button>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px', fontSize: '13.5px' }}>
+                  <span
+                    onClick={() => navigate('/auth')}
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    User Portal
+                  </span>
+                  <span style={{ color: '#cbd5e1' }}>|</span>
+                  <span
+                    onClick={() => navigate('/admin/login')}
+                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Admin Portal
+                  </span>
+                </div>
               </div>
             )}
 

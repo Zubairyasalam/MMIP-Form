@@ -1522,7 +1522,7 @@ export default function FormBuilder() {
   const [tunnelUrl, setTunnelUrl] = useState('');
 
   const getOrigin = () => {
-    return tunnelUrl || window.location.origin;
+    return window.location.origin;
   };
 
   const handleDownloadQR = async (title) => {
@@ -1613,15 +1613,6 @@ export default function FormBuilder() {
     if (!loggedIn) {
       navigate('/auth?mode=login');
     }
-
-    fetch('/tunnel.json')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.url) {
-          setTunnelUrl(data.url);
-        }
-      })
-      .catch(() => { });
   }, [navigate]);
 
   const state = location.state || {};

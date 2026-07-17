@@ -45,7 +45,7 @@ export default function Navbar() {
     window.location.href = '/';
   };
 
-  const dashboardLink = userRole === 'admin' ? '/admin/dashboard' : '/my-forms';
+  const dashboardLink = (userRole === 'admin' || userRole === 'superadmin') ? '/admin/dashboard' : '/my-forms';
 
   return (
     <nav className={`navbar${scrolled ? ' scrolled' : ''}${menuOpen ? ' mobile-active' : ''}`}>
@@ -68,7 +68,7 @@ export default function Navbar() {
                   <span style={{ color: '#7B1C1C', fontSize: '10px' }}>●</span> {userName || 'User'}
                 </span>
                 <Link to={dashboardLink} className="nav-sign-in" onClick={() => setMenuOpen(false)}>
-                  {userRole === 'admin' ? 'Dashboard' : 'Data Store'}
+                  {(userRole === 'admin' || userRole === 'superadmin') ? 'Dashboard' : 'Data Store'}
                 </Link>
                 <button onClick={handleLogout} className="btn-primary" style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                   <span>Sign Out</span>

@@ -12,10 +12,7 @@ import Auth from './pages/Auth';
 // Role-Based Router Protection Guard
 function ProtectedRoute({ children, allowedRoles }) {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-  let userRole = localStorage.getItem('userRole') || '';
-  if (userRole === 'superadmin') {
-    userRole = 'admin';
-  }
+  const userRole = localStorage.getItem('userRole') || '';
 
   if (!isLoggedIn) {
     localStorage.setItem('redirectUrl', window.location.pathname);
@@ -27,8 +24,8 @@ function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // If not authorized, redirect standard users to templates, admins to admin dashboard
-    if (userRole === 'admin') {
+    // If not authorized, redirect standard users to templates, admins/superadmins to dashboard
+    if (userRole === 'admin' || userRole === 'superadmin') {
       return <Navigate to="/admin/dashboard" replace />;
     }
     return <Navigate to="/templates" replace />;
@@ -38,10 +35,6 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 function App() {
-  // Migrate legacy superadmin session in localStorage to admin role automatically
-  if (localStorage.getItem('userRole') === 'superadmin') {
-    localStorage.setItem('userRole', 'admin');
-  }
 
   return (
     <Routes>
@@ -69,12 +62,12 @@ function App() {
 
       {/* Dedicated Admin Login */}
       <Route path="/admin/login" element={<Auth portalType="admin" />} />
-      <Route path="/super-admin/login" element={<Navigate to="/admin/login" replace />} />
+      <Route path="/super-admin/login" element={<Auth portalType="superadmin" />} />
 
       {/* Admin Dashboard Paths */}
       <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/admin/dashboard" element={
-        <ProtectedRoute allowedRoles={['admin']}>
+        <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
           <AdminDashboard />
         </ProtectedRoute>
       } />

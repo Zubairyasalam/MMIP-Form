@@ -478,10 +478,10 @@ export default function AdminFormManagement({ onLogAction }) {
               <div key={tmpl.id} className="template-card">
                 <div className={`template-card-preview ${isDynamic ? '' : tmpl.bg}`} style={{ position: 'relative', ...(isDynamic ? dynamicBannerStyle : {}) }}>
                   <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
-                    <span className="tmpl-badge-status" style={{ background: tmpl.visibility === 'public' ? '#3b82f6' : '#64748b', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textTransform: 'none' }}>
+                    <span className={`badge-visibility-${tmpl.visibility === 'public' ? 'public' : 'private'}`} style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                       {tmpl.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
                     </span>
-                    <span className="tmpl-badge-status" style={{ background: !tmpl.is_hidden ? '#22c55e' : '#ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', textTransform: 'none' }}>
+                    <span className={`badge-visibility-${!tmpl.is_hidden ? 'visible' : 'hidden'}`} style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                       {!tmpl.is_hidden ? '👁 Visible' : '🚫 Hidden'}
                     </span>
                   </div>
@@ -561,11 +561,11 @@ export default function AdminFormManagement({ onLogAction }) {
                   </td>
                   <td className="font-semibold">{tmpl.questions?.length || 0}</td>
                   <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: tmpl.visibility === 'public' ? '#3b82f6' : '#64748b', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span className={`badge-visibility-${tmpl.visibility === 'public' ? 'public' : 'private'}`}>
                         {tmpl.visibility === 'public' ? '🌍 Public' : '🔒 Private'}
                       </span>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: !tmpl.is_hidden ? '#22c55e' : '#ef4444', whiteSpace: 'nowrap' }}>
+                      <span className={`badge-visibility-${!tmpl.is_hidden ? 'visible' : 'hidden'}`}>
                         {!tmpl.is_hidden ? '👁 Visible' : '🚫 Hidden'}
                       </span>
                     </div>

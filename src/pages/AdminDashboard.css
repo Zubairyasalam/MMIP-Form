@@ -409,9 +409,13 @@
 
 .tag-system { background: #eff6ff; color: #1d4ed8; }
 .tag-form { background: #fdf2f2; color: #7B1C1C; }
-.tag-admin { background: #f0fdf4; color: #166534; }
+.tag-admin { background: #e8f5e9; color: #2e7d32; border: 1.5px solid rgba(46, 125, 50, 0.15); }
 .tag-setting { background: #fffbeb; color: #b45309; }
 .tag-auth { background: #faf5ff; color: #6b21a8; }
+.tag-user { background: #f1f5f9; color: #475569; border: 1.5px solid rgba(71, 85, 105, 0.15); }
+.tag-faculty { background: #e0f2fe; color: #0369a1; border: 1.5px solid rgba(3, 105, 161, 0.15); }
+.tag-head { background: #fae8ff; color: #86198f; border: 1.5px solid rgba(134, 25, 143, 0.15); }
+.tag-student { background: #fff7ed; color: #c2410c; border: 1.5px solid rgba(194, 65, 12, 0.15); }
 
 .log-text {
   color: #334155;
@@ -1538,6 +1542,26 @@
 .admin-layout.dark-mode .tag-auth {
   background: #581c87;
   color: #d8b4fe;
+}
+
+.admin-layout.dark-mode .tag-user {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.admin-layout.dark-mode .tag-faculty {
+  background: #0c4a6e;
+  color: #bae6fd;
+}
+
+.admin-layout.dark-mode .tag-head {
+  background: #701a75;
+  color: #f5d0fe;
+}
+
+.admin-layout.dark-mode .tag-student {
+  background: #7c2d12;
+  color: #ffedd5;
 }
 
 /* Responsive Sign Datas Log Table */

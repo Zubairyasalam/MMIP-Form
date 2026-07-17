@@ -102,6 +102,7 @@ export default function AdminDashboard() {
   const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loginActivity, setLoginActivity] = useState([]);
+  const [visiblePasswords, setVisiblePasswords] = useState({});
 
   const handleDownloadSubCSV = (sub) => {
     const headers = ['Question', 'Answer'];
@@ -1865,7 +1866,7 @@ export default function AdminDashboard() {
         {activeMenu === 'signdatas' && (
           <div className="admin-tab-content anim-fade-in">
             <div className="tab-section-header">
-              <h3>User Sign Datas / Logins Log</h3>
+              <h3>User Sign-In Logs & Session Activity</h3>
               <button
                 className="admin-btn-danger"
                 onClick={() => {
@@ -1875,72 +1876,52 @@ export default function AdminDashboard() {
                   }
                 }}
               >
-                Clear Sign Datas
+                Clear Sign-In Logs
               </button>
             </div>
 
-            <div className="logs-panel-full">
-              <div className="signdatas-table-header" style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', fontWeight: '700', color: '#475569' }}>
-                <span>Login Time</span>
-                <span>Name</span>
-                <span className="signdatas-email-col">Email</span>
-                <span className="signdatas-password-col">Password</span>
-                <span>Role</span>
-                <span className="signdatas-ip-col">IP Address</span>
-                <span className="signdatas-browser-col">Browser</span>
-              </div>
-              <div className="logs-list-scrollable" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                {(() => {
-                  const hashPasswordLocal = (password) => {
-                    let hash = 0;
-                    for (let i = 0; i < password.length; i++) {
-                      hash = (hash << 5) - hash + password.charCodeAt(i);
-                      hash = hash & hash;
-                    }
-                    return 'hash_' + Math.abs(hash).toString(16);
-                  };
-
-                  const getDisplayPassword = (act) => {
-                    if (act.password && act.password !== '—') return act.password;
-                    const targetUser = users.find(u => (u.email || '').trim().toLowerCase() === (act.email || '').trim().toLowerCase());
-                    if (!targetUser) return '—';
-                    if (targetUser.plain_password) return targetUser.plain_password;
-                    const pw = targetUser.password;
-                    if (!pw) return '—';
-                    if (!pw.startsWith('hash_')) return pw;
-
-                    const username = act.email.split('@')[0].toLowerCase();
-                    const candidates = [
-                      'admin123', 'password', '123456', '12345678', 'mcc123', 'mcc-mrf',
-                      username, username + '123', username + '1234', username + '@123',
-                      'raghul123', 'zain123', 'zubi123', 'zubairya123', 'raghul', 'zain', 'zubairya', 'zubi9043', 'zubi'
-                    ];
-                    for (const c of candidates) {
-                      if (hashPasswordLocal(c) === pw) {
-                        return c;
-                      }
-                    }
-                    return '—';
-                  };
-
-                  return loginActivity.map((act, index) => (
-                    <div key={index} className="signdatas-row-full" style={{ alignItems: 'center' }}>
-                      <span className="log-full-time" style={{ color: '#64748b', fontSize: '13px' }}>{act.login_time || '—'}</span>
-                      <strong style={{ color: '#1e293b' }}>{act.name || '—'}</strong>
-                      <span className="signdatas-email-col" style={{ color: '#475569' }}>{act.email || '—'}</span>
-                      <span className="signdatas-password-col" style={{ color: '#475569', fontFamily: 'monospace' }}>—</span>
-                      <span className={`log-tag tag-${(act.role || 'user').toLowerCase()}`}>{act.role || 'user'}</span>
-                      <span className="signdatas-ip-col" style={{ fontFamily: 'monospace', color: '#64748b' }}>{act.ip_address || '—'}</span>
-                      <span className="signdatas-browser-col" style={{ color: '#475569', fontSize: '13px' }}>{act.browser || '—'}</span>
-                    </div>
-                  ));
-                })()}
-                {loginActivity.length === 0 && (
-                  <div className="text-center" style={{ padding: '64px', color: '#94a3b8', textAlign: 'center' }}>
-                    No sign-in data logs available.
-                  </div>
-                )}
-              </div>
+            <div className="super-table-container">
+              <table className="super-data-table">
+                <thead>
+                  <tr>
+                    <th>Login Time</th>
+                    <th>Name</th>
+                    <th>Email Address</th>
+                    <th>Password</th>
+                    <th>Role</th>
+                    <th>IP Address</th>
+                    <th>Browser / User Agent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loginActivity.map((act, index) => (
+                    <tr key={index}>
+                      <td style={{ color: '#64748b', fontSize: '13px' }}>{act.login_time || '—'}</td>
+                      <td>
+                        <strong style={{ color: '#1e293b' }}>{act.name || '—'}</strong>
+                      </td>
+                      <td style={{ color: '#475569' }}>{act.email || '—'}</td>
+                      <td style={{ color: '#64748b', fontFamily: 'monospace' }}>—</td>
+                      <td>
+                        <span className={`log-tag tag-${(act.role || 'user').toLowerCase()}`}>
+                          {act.role || 'user'}
+                        </span>
+                      </td>
+                      <td style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '13px' }}>{act.ip_address || '—'}</td>
+                      <td style={{ color: '#475569', fontSize: '13px', whiteSpace: 'normal', maxWidth: '280px', lineBreak: 'anywhere' }}>
+                        {act.browser || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  {loginActivity.length === 0 && (
+                    <tr>
+                      <td colSpan="7" style={{ padding: '64px', color: '#94a3b8', textAlign: 'center' }}>
+                        No sign-in data logs available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

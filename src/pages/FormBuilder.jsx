@@ -32,6 +32,12 @@ function makeQ(q) {
   return { ...q, id: nextId++, cardType: q.cardType || 'question' };
 }
 
+const stripHtml = (html) => {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || "";
+};
+
 function RichTextToolbar({ onFormat }) {
   const tools = [
     { cmd: 'bold', icon: <strong style={{ fontSize: '13px', fontFamily: 'Georgia, serif' }}>B</strong>, title: 'Bold' },
@@ -2042,7 +2048,7 @@ export default function FormBuilder() {
           <div className="fb-title-area">
             <input
               className="fb-form-title-input"
-              value={formTitle}
+              value={stripHtml(formTitle)}
               onChange={e => setFormTitle(e.target.value)}
               id="fb-title-topbar"
               style={{ '--acc': accent }}

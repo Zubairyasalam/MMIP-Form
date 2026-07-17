@@ -150,7 +150,7 @@ export default function PublishedForm() {
       id: genId,
       name: submitterName,
       email: submitterEmail,
-      form: formConfig.name,
+      form: stripHtml(formConfig.name),
       creator_id: formConfig.creator_id || 'guest',
       date: new Date().toLocaleString(),
       status: 'Pending Review',

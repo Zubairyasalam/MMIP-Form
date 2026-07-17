@@ -13,6 +13,12 @@ export default function MyForms() {
   const [selectedSubmissionDetails, setSelectedSubmissionDetails] = useState(null);
   const navigate = useNavigate();
 
+  const stripHtml = (html) => {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
   useEffect(() => {
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
@@ -58,8 +64,17 @@ export default function MyForms() {
   };
 
   const handleEdit = (form) => {
-    localStorage.setItem('editingFormId', form.id);
-    navigate('/form-builder');
+    navigate('/form-builder', {
+      state: {
+        id: form.id,
+        templateName: form.name,
+        richName: form.richName || form.name,
+        questions: form.questions || [],
+        theme: form.theme,
+        headerImage: form.headerImage,
+        bg: form.bg,
+      }
+    });
   };
 
   const handleClone = (form) => {
@@ -75,7 +90,7 @@ export default function MyForms() {
   };
 
   const handleDelete = (id, name) => {
-    if (window.confirm(`Are you sure you want to permanently delete "${name}"?`)) {
+    if (window.confirm(`Are you sure you want to permanently delete "${stripHtml(name)}"?`)) {
       const updated = myForms.filter(f => f.id !== id);
       saveForms(updated);
     }
@@ -163,7 +178,7 @@ export default function MyForms() {
                     theme = TEMPLATE_THEMES['maroon-bg'];
                   }
 
-                  const formName = tmpl.name || tmpl.title || 'Untitled Form';
+                  const formName = stripHtml(tmpl.name || tmpl.title || 'Untitled Form');
                   const formSubs = getSubmissionsForForm(formName);
 
                   return (

@@ -1726,7 +1726,7 @@ export default function FormBuilder() {
       },
     ];
 
-  const [formTitle, setFormTitle] = useState(state.templateName || 'Untitled form');
+  const [formTitle, setFormTitle] = useState(state.richName || state.templateName || 'Untitled form');
   const [formDesc, setFormDesc] = useState('Form description');
   const [questions, setQuestions] = useState(initQuestions);
   const [focusedId, setFocusedId] = useState(initQuestions[0]?.id);
@@ -1886,7 +1886,8 @@ export default function FormBuilder() {
   };
 
   const handlePublish = () => {
-    const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const plainTitle = stripHtml(formTitle);
+    const slug = plainTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const formId = state.id || slug || `form-${Date.now()}`;
     const currentUserId = localStorage.getItem('userId') || 'guest';
     const storageKey = `customForms_${currentUserId}`;
@@ -1895,7 +1896,8 @@ export default function FormBuilder() {
 
     const newForm = {
       id: formId,
-      name: formTitle,
+      name: stripHtml(formTitle) || 'Untitled Form',
+      richName: formTitle,
       desc: formDesc,
       tag: existingForm?.tag || 'Custom Form',
       fields: `${questions.filter(q => q.cardType === 'question').length} fields`,

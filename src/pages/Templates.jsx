@@ -8,6 +8,7 @@ export default function Templates() {
   const [selectedTmplQr, setSelectedTmplQr] = useState(null);
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('');
+  const [userName, setUserName] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
   const [tunnelUrl, setTunnelUrl] = useState('');
   const [customBaseUrl, setCustomBaseUrl] = useState('');
@@ -124,6 +125,7 @@ export default function Templates() {
       navigate('/auth?mode=login');
     } else {
       setUserRole(localStorage.getItem('userRole') || 'user');
+      setUserName(sessionStorage.getItem('userName') || localStorage.getItem('userName') || '');
     }
 
     const loadTemplates = () => {
@@ -258,7 +260,12 @@ export default function Templates() {
           />
         </div>
 
-        <div className="templates-topbar-right" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="templates-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {userName && (
+            <span className="navbar-username" style={{ color: '#475569', fontWeight: '700', fontSize: '13.5px', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 14px', borderRadius: '20px', border: '1.5px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#7B1C1C', fontSize: '10px' }}>●</span> {userName}
+            </span>
+          )}
           <Link
             to="/"
             style={{

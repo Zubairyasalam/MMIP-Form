@@ -21,9 +21,9 @@
 
 .admin-logo {
   max-width: 100%;
-  height: 90px;
+  height: 120px;
   object-fit: contain;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .admin-nav-links {
@@ -166,7 +166,8 @@
 .admin-header-title-wrap p {
   margin: 0;
   color: #64748b;
-  font-size: 14.5px;
+  font-size: 17.5px;
+  font-weight: 500;
 }
 
 .admin-profile-badge {
@@ -291,6 +292,33 @@
   font-weight: 850;
   color: #0f172a;
   margin-bottom: 24px;
+}
+
+/* Templates Usage Analytics Styles */
+.analytics-sub-heading {
+  font-size: 13.5px !important;
+  margin-bottom: 12px !important;
+  color: #475569;
+  font-weight: 700;
+}
+
+.analytics-ranking-item {
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.analytics-ranking-item:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.analytics-ranking-name {
+  font-size: 13px;
+  color: #1e293b;
 }
 
 .controls-grid {
@@ -1290,6 +1318,24 @@
   color: #cbd5e1;
 }
 
+/* Dark Mode Overrides for Analytics */
+.admin-layout.dark-mode .analytics-sub-heading {
+  color: #94a3b8 !important;
+}
+
+.admin-layout.dark-mode .analytics-ranking-item {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.admin-layout.dark-mode .analytics-ranking-item:hover {
+  background: #1e293b;
+}
+
+.admin-layout.dark-mode .analytics-ranking-name {
+  color: #f8fafc;
+}
+
 .admin-layout.dark-mode .control-action-btn {
   background: #334155;
   color: #f8fafc;
@@ -1796,4 +1842,36 @@
   -webkit-text-fill-color: #f8fafc !important;
   -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark Mode Overrides for Status Badges */
+.admin-layout.dark-mode .status-badge.active,
+.admin-layout.dark-mode .status-badge.approved {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+.admin-layout.dark-mode .status-badge.inactive {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.admin-layout.dark-mode .status-badge.draft {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+}
+
+.admin-layout.dark-mode .status-badge.suspended {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.admin-layout.dark-mode .status-badge.pending-review {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.admin-layout.dark-mode .status-badge.completed {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
 }

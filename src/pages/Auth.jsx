@@ -406,7 +406,7 @@ export default function Auth({ portalType }) {
 
         {/* Left Branding Panel */}
         <div className="auth-brand-panel">
-          <img src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} alt="MCC-MRF" className="auth-logo" style={{ height: '54px', objectFit: 'contain', marginBottom: '24px' }} />
+          <img src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} alt="MCC-MRF" className="auth-logo" style={{ height: '100px', objectFit: 'contain', marginBottom: '24px' }} />
           <div className="auth-welcome-text">
             <h2>{isAdminOrSuperAdmin ? (portalType === 'superadmin' ? 'Super Admin Portal' : 'Admin Portal') : 'Madras Christian College'}</h2>
             <h3 style={{ opacity: 0.9, fontWeight: '600', fontSize: '18px', marginTop: '6px' }}>
@@ -679,28 +679,7 @@ export default function Auth({ portalType }) {
               </form>
             )}
 
-            {!isAdminOrSuperAdmin && (
-              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
-                  Are you an Admin?{' '}
-                  <span
-                    onClick={() => navigate('/admin/login')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Go to Admin Portal
-                  </span>
-                </p>
-                <p style={{ fontSize: '13.5px', color: '#64748b' }}>
-                  Are you a Super Admin?{' '}
-                  <span
-                    onClick={() => navigate('/super-admin/login')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Go to Super Admin Portal
-                  </span>
-                </p>
-              </div>
-            )}
+
 
             {portalType === 'admin' && (
               <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

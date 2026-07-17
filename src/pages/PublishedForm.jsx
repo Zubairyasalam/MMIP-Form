@@ -13,6 +13,11 @@ export default function PublishedForm() {
   const [submissionId, setSubmissionId] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
 
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '');
+  };
+
   useEffect(() => {
 
     // 1. Check custom forms across all user workspaces
@@ -92,7 +97,7 @@ export default function PublishedForm() {
 
     // Look for name-like or email-like fields
     formConfig.questions.forEach((q, idx) => {
-      const qText = q.question.toLowerCase();
+      const qText = stripHtml(q.question).toLowerCase();
       const val = answers[idx];
       if (val) {
         if (qText.includes('name') || qText.includes('investigator') || qText.includes('applicant') || qText.includes('student')) {
@@ -113,7 +118,7 @@ export default function PublishedForm() {
     formConfig.questions.forEach((q, idx) => {
       if (q.cardType === 'question' || !q.cardType) {
         mappedAnswers.push({
-          q: q.question,
+          q: stripHtml(q.question),
           a: Array.isArray(answers[idx]) ? answers[idx].join(', ') : String(answers[idx] || '')
         });
       }
@@ -211,14 +216,10 @@ export default function PublishedForm() {
                 }} />
               )}
 
-              <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }}>
-                {formConfig.name}
-              </div>
+              <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }} dangerouslySetInnerHTML={{ __html: formConfig.name }} />
 
               {formConfig.desc && (
-                <div style={{ padding: '0 24px', fontSize: '13.5px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
-                  {formConfig.desc}
-                </div>
+                <div style={{ padding: '0 24px', fontSize: '13.5px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: formConfig.desc }} />
               )}
 
               <div className="pf-grid">
@@ -228,8 +229,8 @@ export default function PublishedForm() {
                   if (q.cardType === 'title-desc') {
                     return (
                       <div key={idx} className="pf-field full pf-section-header">
-                        <div className="pf-section-title">{q.question}</div>
-                        {q.description && <div className="pf-section-desc">{q.description}</div>}
+                        <div className="pf-section-title" dangerouslySetInnerHTML={{ __html: q.question }} />
+                        {q.description && <div className="pf-section-desc" dangerouslySetInnerHTML={{ __html: q.description }} />}
                       </div>
                     );
                   }
@@ -237,8 +238,8 @@ export default function PublishedForm() {
                   if (q.cardType === 'image') {
                     return (
                       <div key={idx} className="pf-field full pf-image-block">
-                        {q.question && <div className="pf-image-title">{q.question}</div>}
-                        {q.mediaUrl && <img src={q.mediaUrl} alt={q.question} className="pf-image-img" />}
+                        {q.question && <div className="pf-image-title" dangerouslySetInnerHTML={{ __html: q.question }} />}
+                        {q.mediaUrl && <img src={q.mediaUrl} alt={stripHtml(q.question)} className="pf-image-img" />}
                       </div>
                     );
                   }
@@ -246,7 +247,7 @@ export default function PublishedForm() {
                   if (q.cardType === 'video') {
                     return (
                       <div key={idx} className="pf-field full pf-video-block">
-                        {q.question && <div className="pf-video-title">{q.question}</div>}
+                        {q.question && <div className="pf-video-title" dangerouslySetInnerHTML={{ __html: q.question }} />}
                         {q.mediaUrl && (
                           <iframe
                             src={q.mediaUrl}
@@ -264,13 +265,12 @@ export default function PublishedForm() {
 
                   return (
                     <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`}>
-                      <label className="pf-label" style={{ marginBottom: q.description ? '4px' : '8px' }}>
-                        {q.question} {q.required && <span style={{ color: '#ef4444' }}>*</span>}
+                      <label className="pf-label" style={{ marginBottom: q.description ? '4px' : '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span dangerouslySetInnerHTML={{ __html: q.question }} />
+                        {q.required && <span style={{ color: '#ef4444' }}>*</span>}
                       </label>
                       {q.description && (
-                        <div className="pf-question-desc" style={{ fontSize: '12.5px', color: '#000000', marginTop: '-2px', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
-                          {q.description}
-                        </div>
+                        <div className="pf-question-desc" style={{ fontSize: '12.5px', color: '#000000', marginTop: '-2px', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }} dangerouslySetInnerHTML={{ __html: q.description }} />
                       )}
 
                       {q.type === 'short' && (

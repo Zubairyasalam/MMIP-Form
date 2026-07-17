@@ -39,18 +39,24 @@ function RichTextToolbar({ onFormat }) {
     { cmd: 'underline', icon: <span style={{ textDecoration: 'underline', fontSize: '13px' }}>U</span>, title: 'Underline' },
     { cmd: 'link', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>, title: 'Link' },
     { cmd: 'strikethrough', icon: <span style={{ textDecoration: 'line-through', fontSize: '13px' }}>S</span>, title: 'Strikethrough' },
+    { cmd: 'fontSize', value: '2', icon: <span style={{ fontSize: '11px', fontWeight: '500' }}>12</span>, title: 'Font Size 12px' },
+    { cmd: 'fontSize', value: '3', icon: <span style={{ fontSize: '13px', fontWeight: '500' }}>16</span>, title: 'Font Size 16px (Normal)' },
+    { cmd: 'fontSize', value: '4', icon: <span style={{ fontSize: '14px', fontWeight: 'bold' }}>20</span>, title: 'Font Size 20px' },
+    { cmd: 'fontSize', value: '5', icon: <span style={{ fontSize: '16px', fontWeight: 'bold' }}>24</span>, title: 'Font Size 24px' },
+    { cmd: 'fontSize', value: '6', icon: <span style={{ fontSize: '18px', fontWeight: 'bold' }}>32</span>, title: 'Font Size 32px' },
+    { cmd: 'removeFormat', icon: <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>Tx</span>, title: 'Clear Formatting' },
   ];
 
   return (
     <div style={{ display: 'flex', gap: '2px', padding: '4px 6px', background: '#f8f8f8', borderRadius: '6px', border: '1px solid #e0e0e0', alignItems: 'center', width: 'fit-content', marginBottom: '6px' }}>
-      {tools.map(({ cmd, icon, title }) => (
+      {tools.map(({ cmd, value, icon, title }, idx) => (
         <button
-          key={cmd}
+          key={idx}
           type="button"
           title={title}
           onMouseDown={(e) => {
             e.preventDefault();
-            onFormat(cmd);
+            onFormat(cmd, value);
           }}
           style={{
             background: 'none',
@@ -1205,15 +1211,24 @@ function QuestionCard({
 }) {
   const toggleRequired = () => onChange({ ...q, required: !q.required });
   const questionInputRef = useRef(null);
+  const descInputRef = useRef(null);
   const savedRangeRef = useRef(null);
 
   useEffect(() => {
-    if (questionInputRef.current) {
-      if (questionInputRef.current.innerText !== (q.question || '')) {
-        questionInputRef.current.innerText = q.question || '';
+    if (questionInputRef.current && document.activeElement !== questionInputRef.current) {
+      if (questionInputRef.current.innerHTML !== (q.question || '')) {
+        questionInputRef.current.innerHTML = q.question || '';
       }
     }
   }, [q.question]);
+
+  useEffect(() => {
+    if (descInputRef.current && document.activeElement !== descInputRef.current) {
+      if (descInputRef.current.innerHTML !== (q.description || '')) {
+        descInputRef.current.innerHTML = q.description || '';
+      }
+    }
+  }, [q.description]);
 
   const saveSelection = () => {
     const sel = window.getSelection();
@@ -1222,23 +1237,27 @@ function QuestionCard({
     }
   };
 
-  const restoreSelection = () => {
-    const sel = window.getSelection();
-    if (savedRangeRef.current && sel) {
-      sel.removeAllRanges();
-      sel.addRange(savedRangeRef.current);
-    }
-  };
 
-  const handleFormat = (cmd) => {
-    restoreSelection();
+
+  const handleFormat = (cmd, val = null) => {
     if (cmd === 'link') {
       const url = prompt('Enter URL:');
       if (url) document.execCommand('createLink', false, url);
+    } else if (cmd === 'fontSize') {
+      document.execCommand('fontSize', false, val);
     } else {
       document.execCommand(cmd, false, null);
     }
-    questionInputRef.current?.focus();
+    
+    // Save current values to state
+    const newQ = { ...q };
+    if (questionInputRef.current) {
+      newQ.question = questionInputRef.current.innerHTML;
+    }
+    if (descInputRef.current) {
+      newQ.description = descInputRef.current.innerHTML;
+    }
+    onChange(newQ);
   };
 
   return (
@@ -1256,7 +1275,7 @@ function QuestionCard({
             suppressContentEditableWarning
             className="fb-question-input"
             style={{ '--acc': accent, outline: 'none', cursor: 'text', flex: 1 }}
-            onInput={e => onChange({ ...q, question: e.currentTarget.innerText })}
+            onInput={e => onChange({ ...q, question: e.currentTarget.innerHTML })}
             onBlur={saveSelection}
             onKeyUp={saveSelection}
             onMouseUp={saveSelection}
@@ -1287,12 +1306,16 @@ function QuestionCard({
       </div>
 
       {(focused || q.description) && (
-        <input
-          type="text"
+        <div
+          ref={descInputRef}
+          contentEditable
+          suppressContentEditableWarning
           className="fb-question-desc-input"
-          value={q.description || ''}
-          placeholder="Description (optional)"
-          onChange={e => onChange({ ...q, description: e.target.value })}
+          data-placeholder="Description (optional)"
+          onInput={e => onChange({ ...q, description: e.currentTarget.innerHTML })}
+          onBlur={saveSelection}
+          onKeyUp={saveSelection}
+          onMouseUp={saveSelection}
           style={{
             border: 'none',
             borderBottom: '1px dashed #e2e8f0',
@@ -1303,7 +1326,9 @@ function QuestionCard({
             marginBottom: '10px',
             padding: '4px 0',
             outline: 'none',
-            fontFamily: 'Inter, sans-serif'
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'text',
+            minHeight: '20px'
           }}
         />
       )}
@@ -1364,6 +1389,55 @@ function QuestionCard({
 // ── Custom Blocks ──
 
 function TitleDescCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelete }) {
+  const titleRef = useRef(null);
+  const descRef = useRef(null);
+  const savedRangeRef = useRef(null);
+
+  useEffect(() => {
+    if (titleRef.current && document.activeElement !== titleRef.current) {
+      if (titleRef.current.innerHTML !== (q.question || '')) {
+        titleRef.current.innerHTML = q.question || '';
+      }
+    }
+  }, [q.question]);
+
+  useEffect(() => {
+    if (descRef.current && document.activeElement !== descRef.current) {
+      if (descRef.current.innerHTML !== (q.description || '')) {
+        descRef.current.innerHTML = q.description || '';
+      }
+    }
+  }, [q.description]);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0);
+    }
+  };
+
+
+
+  const handleFormat = (cmd, val = null) => {
+    if (cmd === 'link') {
+      const url = prompt('Enter URL:');
+      if (url) document.execCommand('createLink', false, url);
+    } else if (cmd === 'fontSize') {
+      document.execCommand('fontSize', false, val);
+    } else {
+      document.execCommand(cmd, false, null);
+    }
+    
+    const newQ = { ...q };
+    if (titleRef.current) {
+      newQ.question = titleRef.current.innerHTML;
+    }
+    if (descRef.current) {
+      newQ.description = descRef.current.innerHTML;
+    }
+    onChange(newQ);
+  };
+
   return (
     <div
       className={`fb-card fb-section-title-card${focused ? ' focused' : ''}`}
@@ -1371,21 +1445,35 @@ function TitleDescCard({ q, focused, accent, onFocus, onChange, onDuplicate, onD
       onClick={onFocus}
       id={`section-title-card-${q.id}`}
     >
-      <input
+      <div
+        ref={titleRef}
+        contentEditable
+        suppressContentEditableWarning
         className="fb-section-title-input"
-        value={q.question}
-        placeholder="Section Title"
-        style={{ '--acc': accent }}
-        onChange={e => onChange({ ...q, question: e.target.value })}
+        data-placeholder="Section Title"
+        style={{ '--acc': accent, outline: 'none', cursor: 'text' }}
+        onInput={e => onChange({ ...q, question: e.currentTarget.innerHTML })}
+        onBlur={saveSelection}
+        onKeyUp={saveSelection}
+        onMouseUp={saveSelection}
       />
-      <textarea
+      <div
+        ref={descRef}
+        contentEditable
+        suppressContentEditableWarning
         className="fb-section-desc-input"
-        value={q.description || ''}
-        placeholder="Description (optional)"
-        style={{ '--acc': accent }}
-        rows={1}
-        onChange={e => onChange({ ...q, description: e.target.value })}
+        data-placeholder="Description (optional)"
+        style={{ '--acc': accent, outline: 'none', cursor: 'text', minHeight: '20px' }}
+        onInput={e => onChange({ ...q, description: e.currentTarget.innerHTML })}
+        onBlur={saveSelection}
+        onKeyUp={saveSelection}
+        onMouseUp={saveSelection}
       />
+      {focused && (
+        <div style={{ padding: '4px 0 6px 0' }}>
+          <RichTextToolbar onFormat={handleFormat} />
+        </div>
+      )}
       {focused && (
         <div className="fb-question-bottom" style={{ borderTop: 'none', paddingTop: 0 }}>
           <button className="fb-q-action-btn" title="Duplicate" onClick={onDuplicate}>⧉</button>
@@ -1652,6 +1740,53 @@ export default function FormBuilder() {
   const [collectEmail, setCollectEmail] = useState('do-not');
   const [headerImage, setHeaderImage] = useState(state.headerImage || '/form-header.png');
   const headerImageInputRef = useRef(null);
+  const mainTitleRef = useRef(null);
+  const mainDescRef = useRef(null);
+  const savedMainRangeRef = useRef(null);
+
+  useEffect(() => {
+    if (mainTitleRef.current && document.activeElement !== mainTitleRef.current) {
+      if (mainTitleRef.current.innerHTML !== (formTitle || '')) {
+        mainTitleRef.current.innerHTML = formTitle || '';
+      }
+    }
+  }, [formTitle]);
+
+  useEffect(() => {
+    if (mainDescRef.current && document.activeElement !== mainDescRef.current) {
+      if (mainDescRef.current.innerHTML !== (formDesc || '')) {
+        mainDescRef.current.innerHTML = formDesc || '';
+      }
+    }
+  }, [formDesc]);
+
+  const saveMainSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedMainRangeRef.current = sel.getRangeAt(0);
+    }
+  };
+
+
+
+  const handleFormatMain = (cmd, val = null) => {
+    if (cmd === 'link') {
+      const url = prompt('Enter URL:');
+      if (url) document.execCommand('createLink', false, url);
+    } else if (cmd === 'fontSize') {
+      document.execCommand('fontSize', false, val);
+    } else {
+      document.execCommand(cmd, false, null);
+    }
+    
+    // Save current values to state
+    if (mainTitleRef.current) {
+      setFormTitle(mainTitleRef.current.innerHTML);
+    }
+    if (mainDescRef.current) {
+      setFormDesc(mainDescRef.current.innerHTML);
+    }
+  };
 
   const handleHeaderImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -1991,21 +2126,37 @@ export default function FormBuilder() {
                     </div>
                   </div>
                   <div className="fb-title-card-inner">
-                    <input
+                    <div
+                      ref={mainTitleRef}
+                      contentEditable
+                      suppressContentEditableWarning
                       className="fb-main-title-input"
-                      value={formTitle}
-                      onChange={e => setFormTitle(e.target.value)}
-                      placeholder="Form title"
+                      style={{ outline: 'none', cursor: 'text' }}
+                      onInput={e => setFormTitle(e.currentTarget.innerHTML)}
+                      onBlur={saveMainSelection}
+                      onKeyUp={saveMainSelection}
+                      onMouseUp={saveMainSelection}
+                      data-placeholder="Form title"
                       id="fb-main-title"
                     />
-                    <textarea
+                    <div
+                      ref={mainDescRef}
+                      contentEditable
+                      suppressContentEditableWarning
                       className="fb-main-desc-input"
-                      value={formDesc}
-                      onChange={e => setFormDesc(e.target.value)}
-                      placeholder="Form description"
-                      rows={1}
+                      style={{ outline: 'none', cursor: 'text', minHeight: '30px' }}
+                      onInput={e => setFormDesc(e.currentTarget.innerHTML)}
+                      onBlur={saveMainSelection}
+                      onKeyUp={saveMainSelection}
+                      onMouseUp={saveMainSelection}
+                      data-placeholder="Form description"
                       id="fb-main-desc"
                     />
+                    {focusedId === 'title' && (
+                      <div style={{ padding: '6px 0 0 0' }}>
+                        <RichTextToolbar onFormat={handleFormatMain} />
+                      </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' }}>
                       <button
                         type="button"

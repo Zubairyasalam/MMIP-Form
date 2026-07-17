@@ -788,8 +788,8 @@ export default function AdminFormManagement({ onLogAction }) {
                         <div key={idx} className="builder-field-row">
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <strong style={{ fontSize: '13px', color: '#334155' }}>
-                                {q.question} {q.required && <span style={{ color: '#ef4444', marginLeft: '2px' }}>*</span>}
+                              <strong style={{ fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span dangerouslySetInnerHTML={{ __html: q.question }} /> {q.required && <span style={{ color: '#ef4444', marginLeft: '2px' }}>*</span>}
                               </strong>
                               <span className="field-type-pill">{q.type}</span>
                               {q.required && <span className="field-required-pill">Required</span>}

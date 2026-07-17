@@ -1063,8 +1063,8 @@ export default function AdminDashboard() {
               ☰
             </button>
             <div className="admin-header-title-wrap">
-              <h2>{currentUserRole === 'superadmin' ? 'MCC-MRF Portal Super Admin' : 'MCC-MRF Portal Admin'}</h2>
-              <p>Madras Christian College Innovation Park System Center</p>
+              <h2>{currentUserRole === 'superadmin' ? 'MCC - MRF Innovation Park (Super Admin)' : 'MCC - MRF Innovation Park'}</h2>
+              <p>Madras Christian College</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -1691,12 +1691,12 @@ export default function AdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '16px' }}>
                   {/* Left Column: Usage Frequency List */}
                   <div>
-                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>Popular Templates Ranking</h4>
+                    <h4 className="analytics-sub-heading">Popular Templates Ranking</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {getTemplatesRanking().map((item, idx) => (
-                        <div key={idx} style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={idx} className="analytics-ranking-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <strong style={{ fontSize: '13px', color: '#1e293b' }}>{item.name}</strong>
+                            <strong className="analytics-ranking-name">{item.name}</strong>
                           </div>
                           <span style={{ background: '#7B1C1C', color: 'white', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', fontSize: '11px' }}>
                             {item.count} uses
@@ -1711,7 +1711,7 @@ export default function AdminDashboard() {
 
                   {/* Right Column: Detailed Usage Log Map */}
                   <div>
-                    <h4 style={{ fontSize: '13.5px', marginBottom: '12px', color: '#475569', fontWeight: '700' }}>User Template Selections Audit Map</h4>
+                    <h4 className="analytics-sub-heading">User Template Selections Audit Map</h4>
                     <div className="super-table-container" style={{ margin: 0, maxHeight: '250px', overflowY: 'auto' }}>
                       <table className="super-data-table" style={{ fontSize: '12px' }}>
                         <thead>

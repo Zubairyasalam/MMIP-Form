@@ -1398,40 +1398,84 @@ function LocationPickerComponent({ q, accent, value, onChange }) {
           setLoading(false);
           onChange(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
         },
-        () => {
+        (err) => {
           setLoading(false);
-          onChange("12.919799, 80.122858 (Madras Christian College)");
-        }
+          console.warn('Geolocation failed:', err.message);
+          onChange("12.919799, 80.122858");
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
       setLoading(false);
-      onChange("12.919799, 80.122858 (Madras Christian College)");
+      onChange("12.919799, 80.122858");
     }
   };
 
+  const mapQuery = value ? value.replace(/\s*\(.*?\)/g, '') : '';
+
   return (
-    <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center', width: '100%' }}>
-      <input
-        type="text"
-        className="pf-input"
-        style={{ flex: 1, margin: 0 }}
-        placeholder="Latitude, Longitude or Address"
-        required={q.required}
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-      />
-      <button
-        type="button"
-        onClick={getLoc}
-        disabled={loading}
-        style={{
-          padding: '8px 14px', background: '#f1f5f9', color: '#475569',
-          border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px',
-          fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
-        }}
-      >
-        📍 {loading ? 'Locating...' : 'Get Location'}
-      </button>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+        <input
+          type="text"
+          className="pf-input"
+          style={{ flex: 1, margin: 0 }}
+          placeholder="Latitude, Longitude or Address"
+          required={q.required}
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={getLoc}
+          disabled={loading}
+          style={{
+            padding: '10px 16px',
+            background: accent,
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s'
+          }}
+        >
+          📍 {loading ? 'Locating...' : 'Get Location'}
+        </button>
+      </div>
+
+      {value && (
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600' }}>
+              📍 Selected Location: <strong style={{ color: '#0f172a' }}>{value}</strong>
+            </span>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: '12px', fontWeight: '700', color: accent, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
+              Open in Google Maps ↗
+            </a>
+          </div>
+          <iframe
+            width="100%"
+            height="180"
+            frameBorder="0"
+            scrolling="no"
+            marginHeight="0"
+            marginWidth="0"
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
+            style={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+          />
+        </div>
+      )}
     </div>
   );
 }

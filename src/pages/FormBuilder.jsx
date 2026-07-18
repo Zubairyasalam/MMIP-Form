@@ -1171,23 +1171,51 @@ function VideoUploadEditor({ q, accent, videoUploads, setVideoUploads }) {
 }
 
 function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) {
-  const val = locationInputs?.[q.id] || { address: '', coords: { lat: 12.9224, lng: 80.1226 }, set: false };
+  const val = locationInputs?.[q.id] || { address: '', coords: { lat: 12.9229, lng: 80.1221 }, set: false };
   const [searching, setSearching] = useState(false);
 
   const pinCoordinates = () => {
     setSearching(true);
-    setTimeout(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setSearching(false);
+          setLocationInputs(prev => ({
+            ...prev,
+            [q.id]: {
+              address: `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`,
+              coords: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+              set: true
+            }
+          }));
+        },
+        () => {
+          setSearching(false);
+          setLocationInputs(prev => ({
+            ...prev,
+            [q.id]: {
+              address: 'Madras Christian College (MCC), Chennai',
+              coords: { lat: 12.9229, lng: 80.1221 },
+              set: true
+            }
+          }));
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
       setSearching(false);
       setLocationInputs(prev => ({
         ...prev,
         [q.id]: {
-          address: 'Madras Christian College (MCC) Incubation Center, Chennai',
+          address: 'Madras Christian College (MCC), Chennai',
           coords: { lat: 12.9229, lng: 80.1221 },
           set: true
         }
       }));
-    }, 700);
+    }
   };
+
+  const mapQuery = val.address || `${val.coords.lat},${val.coords.lng}`;
 
   return (
     <div className="fb-answer-area">
@@ -1197,7 +1225,7 @@ function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) 
             type="text"
             value={val.address}
             onChange={e => setLocationInputs(prev => ({ ...prev, [q.id]: { ...val, address: e.target.value, set: true } }))}
-            placeholder="Enter address or venue name..."
+            placeholder="Enter address or GPS coordinates..."
             style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
           />
           <button
@@ -1215,17 +1243,16 @@ function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) 
               <span>Latitude: {val.coords.lat.toFixed(6)}</span>
               <span>Longitude: {val.coords.lng.toFixed(6)}</span>
             </div>
-            <div style={{ width: '100%', height: '140px', borderRadius: '6px', background: '#e3eaef', position: 'relative', overflow: 'hidden', backgroundImage: 'radial-gradient(circle, #bcd0db 20%, transparent 20%), radial-gradient(circle, #bcd0db 20%, transparent 20%)', backgroundSize: '16px 16px', backgroundPosition: '0 0, 8px 8px' }}>
-              <div style={{ position: 'absolute', top: '40px', left: 0, right: 0, height: '12px', background: 'white', opacity: 0.6 }} />
-              <div style={{ position: 'absolute', top: 0, bottom: 0, left: '80px', width: '12px', background: 'white', opacity: 0.6 }} />
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50% 50% 50% 0', background: '#ff3b30', transform: 'rotate(-45deg)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #ff3b30', position: 'absolute', top: '-5px', left: '-5px', animation: 'fb-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
-              </div>
-              <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(255,255,255,0.85)', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '800', color: '#444', fontFamily: 'Inter, sans-serif' }}>
-                MCC CAMPUS MAP
-              </div>
-            </div>
+            <iframe
+              width="100%"
+              height="140"
+              frameBorder="0"
+              scrolling="no"
+              marginHeight="0"
+              marginWidth="0"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
+              style={{ borderRadius: '6px', border: '1px solid #e2e8f0' }}
+            />
           </div>
         )}
       </div>

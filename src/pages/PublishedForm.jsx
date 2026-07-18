@@ -297,23 +297,42 @@ export default function PublishedForm() {
                     return (
                       <div key={idx} className="pf-field full pf-image-block">
                         {q.question && <div className="pf-image-title" dangerouslySetInnerHTML={{ __html: q.question }} />}
+                        {q.description && <div className="pf-image-desc" style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '12px', fontFamily: 'Inter, sans-serif' }} dangerouslySetInnerHTML={{ __html: q.description }} />}
                         {q.mediaUrl && <img src={q.mediaUrl} alt={stripHtml(q.question)} className="pf-image-img" />}
                       </div>
                     );
                   }
 
                   if (q.cardType === 'video') {
+                    const isEmbed = q.mediaUrl && q.mediaUrl.startsWith('https://www.youtube.com');
                     return (
                       <div key={idx} className="pf-field full pf-video-block">
                         {q.question && <div className="pf-video-title" dangerouslySetInnerHTML={{ __html: q.question }} />}
+                        {q.description && <div className="pf-video-desc" style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '12px', fontFamily: 'Inter, sans-serif' }} dangerouslySetInnerHTML={{ __html: q.description }} />}
                         {q.mediaUrl && (
-                          <iframe
-                            src={q.mediaUrl}
-                            title="Form Video"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="pf-video-iframe"
-                          />
+                          isEmbed ? (
+                            <iframe
+                              src={q.mediaUrl}
+                              title="Form Video"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="pf-video-iframe"
+                            />
+                          ) : (
+                            <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '13.5px', fontWeight: '700' }}>
+                                <span>🎥</span> {q.mediaUrl}
+                              </div>
+                              <div style={{ width: '100%', height: '180px', borderRadius: '6px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '600' }}>
+                                  Video Loaded
+                                </div>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px solid white' }}>
+                                  <span style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}>▶</span>
+                                </div>
+                              </div>
+                            </div>
+                          )
                         )}
                       </div>
                     );

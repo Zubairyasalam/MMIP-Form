@@ -1526,16 +1526,16 @@ function TitleDescCard({ q, focused, accent, onFocus, onChange, onDuplicate, onD
 }
 
 function ImageCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelete }) {
-  const [urlInput, setUrlInput] = useState('');
-  const handleUpload = () => {
-    // Mock image file upload
-    const mockImages = [
-      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80'
-    ];
-    const randomImg = mockImages[Math.floor(Math.random() * mockImages.length)];
-    onChange({ ...q, mediaUrl: randomImg });
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onChange({ ...q, mediaUrl: ev.target.result });
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -1546,23 +1546,46 @@ function ImageCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
       id={`image-card-${q.id}`}
     >
       <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleImageUpload}
+      />
+      <input
         className="fb-image-title-input"
-        value={q.question}
+        value={q.question || ''}
         placeholder="Image Title"
         style={{ '--acc': accent }}
         onChange={e => onChange({ ...q, question: e.target.value })}
       />
+      <input
+        className="fb-image-desc-input"
+        value={q.description || ''}
+        placeholder="Description (optional)"
+        style={{
+          border: 'none',
+          outline: 'none',
+          width: '100%',
+          fontSize: '13px',
+          color: '#64748b',
+          marginTop: '6px',
+          marginBottom: '12px',
+          fontFamily: 'Inter, sans-serif'
+        }}
+        onChange={e => onChange({ ...q, description: e.target.value })}
+      />
 
       {q.mediaUrl ? (
-        <div className="fb-image-preview-container">
+        <div className="fb-image-preview-container" style={{ position: 'relative' }}>
           <img src={q.mediaUrl} alt={q.question || 'Form Image'} />
           <button className="fb-image-remove-btn" onClick={() => onChange({ ...q, mediaUrl: null })}>✕</button>
         </div>
       ) : (
-        <div className="fb-image-uploader" onClick={handleUpload} style={{ '--acc': accent }}>
+        <div className="fb-image-uploader" onClick={() => fileInputRef.current?.click()} style={{ '--acc': accent }}>
           <span className="fb-image-uploader-icon">🖼️</span>
-          <div className="fb-image-uploader-text">Click to Upload / Choose an Image</div>
-          <div className="fb-image-uploader-sub">Supports JPEG, PNG, WEBP (Mock file load)</div>
+          <div className="fb-image-uploader-text">Click to Upload Image</div>
+          <div className="fb-image-uploader-sub">Supports JPEG, PNG, WEBP</div>
         </div>
       )}
 
@@ -1577,17 +1600,28 @@ function ImageCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
 }
 
 function VideoCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelete }) {
-  const [url, setUrl] = useState(q.mediaUrl || '');
+  const [url, setUrl] = useState(q.mediaUrl && (q.mediaUrl.startsWith('http') || q.mediaUrl.startsWith('data:')) ? q.mediaUrl : '');
+  const [activeMode, setActiveMode] = useState(q.mediaType || 'url'); // 'url' or 'upload'
+  const fileInputRef = useRef(null);
+
   const applyVideo = () => {
-    // Extract video ID from youtube URL
-    let videoId = 'dQw4w9WgXcQ'; // Default Rick Roll
+    if (!url) return;
+    let videoId = 'dQw4w9WgXcQ';
     if (url.includes('v=')) {
       videoId = url.split('v=')[1].split('&')[0];
     } else if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1].split('?')[0];
     }
-    onChange({ ...q, mediaUrl: `https://www.youtube.com/embed/${videoId}` });
+    onChange({ ...q, mediaUrl: `https://www.youtube.com/embed/${videoId}`, mediaType: 'url' });
   };
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    onChange({ ...q, mediaUrl: file.name, mediaType: 'upload' });
+  };
+
+  const isEmbed = q.mediaUrl && q.mediaUrl.startsWith('https://www.youtube.com');
 
   return (
     <div
@@ -1597,41 +1631,132 @@ function VideoCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
       id={`video-card-${q.id}`}
     >
       <input
+        type="file"
+        ref={fileInputRef}
+        accept="video/*"
+        style={{ display: 'none' }}
+        onChange={handleVideoUpload}
+      />
+      <input
         className="fb-video-title-input"
-        value={q.question}
+        value={q.question || ''}
         placeholder="Video Title"
         style={{ '--acc': accent }}
         onChange={e => onChange({ ...q, question: e.target.value })}
       />
+      <input
+        className="fb-video-desc-input"
+        value={q.description || ''}
+        placeholder="Description (optional)"
+        style={{
+          border: 'none',
+          outline: 'none',
+          width: '100%',
+          fontSize: '13px',
+          color: '#64748b',
+          marginTop: '6px',
+          marginBottom: '12px',
+          fontFamily: 'Inter, sans-serif'
+        }}
+        onChange={e => onChange({ ...q, description: e.target.value })}
+      />
 
       {q.mediaUrl ? (
-        <div className="fb-video-player-container">
-          <iframe
-            src={q.mediaUrl}
-            title="Form Video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="fb-video-player-container" style={{ position: 'relative' }}>
+          {isEmbed ? (
+            <iframe
+              src={q.mediaUrl}
+              title="Form Video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div style={{ border: '1.5px solid #27c93f', borderRadius: '8px', background: '#e8f8ec', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e7e34', fontSize: '13.5px', fontWeight: '700' }}>
+                <span>🎥</span> {q.mediaUrl}
+              </div>
+              <div style={{ width: '100%', height: '140px', borderRadius: '6px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '600' }}>
+                  Video Loaded
+                </div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px solid white' }}>
+                  <span style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}>▶</span>
+                </div>
+              </div>
+            </div>
+          )}
           {focused && (
             <button
               className="fb-image-remove-btn"
               style={{ position: 'absolute', top: 10, right: 10 }}
-              onClick={() => { setUrl(''); onChange({ ...q, mediaUrl: null }); }}
+              onClick={() => { setUrl(''); onChange({ ...q, mediaUrl: null, mediaType: null }); }}
             >
               ✕
             </button>
           )}
         </div>
       ) : (
-        <div className="fb-video-input-row">
-          <input
-            className="fb-video-url-input"
-            value={url}
-            placeholder="Paste Video URL"
-            style={{ '--acc': accent }}
-            onChange={e => setUrl(e.target.value)}
-          />
-          <button className="fb-video-btn" onClick={applyVideo} style={{ background: accent }}>Add Video</button>
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '16px', background: '#f8fafc' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setActiveMode('url')}
+              style={{
+                flex: 1,
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '700',
+                borderRadius: '6px',
+                border: activeMode === 'url' ? `1.5px solid ${accent}` : '1.5px solid #cbd5e1',
+                background: activeMode === 'url' ? `${accent}10` : 'white',
+                color: activeMode === 'url' ? accent : '#475569',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              🔗 Paste Video URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMode('upload')}
+              style={{
+                flex: 1,
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '700',
+                borderRadius: '6px',
+                border: activeMode === 'upload' ? `1.5px solid ${accent}` : '1.5px solid #cbd5e1',
+                background: activeMode === 'upload' ? `${accent}10` : 'white',
+                color: activeMode === 'upload' ? accent : '#475569',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              📤 Upload Video File
+            </button>
+          </div>
+
+          {activeMode === 'url' ? (
+            <div className="fb-video-input-row" style={{ display: 'flex', gap: '8px' }}>
+              <input
+                className="fb-video-url-input"
+                value={url}
+                placeholder="Paste Video URL (YouTube)"
+                style={{ flex: 1, border: '1px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', fontSize: '13px', outline: 'none' }}
+                onChange={e => setUrl(e.target.value)}
+              />
+              <button className="fb-video-btn" onClick={applyVideo} style={{ background: accent, border: 'none', color: 'white', cursor: 'pointer', borderRadius: '6px', padding: '8px 16px', fontWeight: '700' }}>Add Video</button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{ padding: '20px', border: '1.5px dashed rgba(123, 28, 28, 0.25)', borderRadius: '8px', background: 'rgba(123, 28, 28, 0.02)', textAlign: 'center', color: '#666', fontSize: '12.5px', cursor: 'pointer' }}
+            >
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '6px' }}>🎥</span>
+              <div style={{ fontWeight: '600', color: '#7B1C1C' }}>Click to Choose Video File</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Supports MP4, MOV, etc.</div>
+            </div>
+          )}
         </div>
       )}
 

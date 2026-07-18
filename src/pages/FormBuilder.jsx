@@ -1980,6 +1980,7 @@ export default function FormBuilder() {
       existing.unshift(newForm);
     }
     localStorage.setItem(storageKey, JSON.stringify(existing));
+    window.dispatchEvent(new Event('storage'));
     
     if (showModal) {
       setShowSuccess(true);

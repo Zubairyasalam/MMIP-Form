@@ -683,17 +683,7 @@ export default function Auth({ portalType }) {
 
             {portalType === 'admin' && (
               <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin@mcc.edu.in');
-                    setPassword('admin123');
-                  }}
-                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '4px', width: '100%' }}
-                >
-                  ⚡ Auto-fill Demo Admin Credentials
-                </button>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px', fontSize: '13.5px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '13.5px' }}>
                   <span
                     onClick={() => navigate('/auth')}
                     style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
@@ -713,17 +703,7 @@ export default function Auth({ portalType }) {
 
             {portalType === 'superadmin' && (
               <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('superadmin@mcc.edu.in');
-                    setPassword('superadmin123');
-                  }}
-                  style={{ background: '#f8fafc', border: '1px dashed #7B1C1C', color: '#7B1C1C', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', marginBottom: '4px', width: '100%' }}
-                >
-                  ⚡ Auto-fill Demo Super Admin Credentials
-                </button>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px', fontSize: '13.5px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '13.5px' }}>
                   <span
                     onClick={() => navigate('/auth')}
                     style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}

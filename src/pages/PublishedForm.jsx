@@ -85,6 +85,22 @@ export default function PublishedForm() {
 
     setFormConfig(config);
 
+    // Automatically import/save this custom form to the current user's local workspace key if not already present,
+    // so it shows up in their templates and my forms list.
+    if (config && config.id && !config.id.startsWith('default-') && !TEMPLATES.some(t => t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === config.id)) {
+      try {
+        const currentUserKey = `customForms_${currentUserId}`;
+        const userSavedForms = JSON.parse(localStorage.getItem(currentUserKey) || '[]');
+        if (!userSavedForms.some(f => f.id === config.id)) {
+          userSavedForms.unshift(config);
+          localStorage.setItem(currentUserKey, JSON.stringify(userSavedForms));
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch (e) {
+        console.error('Error importing custom form to templates:', e);
+      }
+    }
+
     // Initialize answers state
     setAnswers(prev => {
       const initialAnswers = { ...prev };

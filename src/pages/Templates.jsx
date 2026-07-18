@@ -35,7 +35,7 @@ export default function Templates() {
 
   // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
-    return customBaseUrl || tunnelUrl || window.location.origin;
+    return customBaseUrl || window.location.origin;
   };
 
   const isLocalhost = () => {

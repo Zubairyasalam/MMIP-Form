@@ -1628,7 +1628,7 @@ export default function FormBuilder() {
   }, []);
 
   const getOrigin = () => {
-    return customBaseUrl || tunnelUrl || window.location.origin;
+    return customBaseUrl || window.location.origin;
   };
 
   const handleDownloadQR = async (title) => {

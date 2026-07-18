@@ -1319,62 +1319,49 @@ function VoiceInputComponent({ q, accent, value, onChange }) {
 }
 
 function VideoUploadComponent({ q, accent, value, onChange }) {
-  const [url, setUrl] = useState(value || '');
-
-  const applyVideo = () => {
-    onChange(url);
-  };
-
-  const getEmbedUrl = (val) => {
-    if (!val) return null;
-    let videoId = null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = val.match(regExp);
-    if (match && match[2].length === 11) {
-      videoId = match[2];
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  };
-
-  const embedUrl = getEmbedUrl(value);
-
   return (
     <div style={{ width: '100%', marginTop: '6px' }}>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-        <input
-          type="text"
-          className="pf-input"
-          style={{ flex: 1, margin: 0 }}
-          placeholder="Paste YouTube Video URL (e.g., https://youtu.be/...)"
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-        />
-        <button
-          type="button"
-          onClick={applyVideo}
-          style={{ padding: '8px 14px', background: accent, color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
-        >
-          Add
-        </button>
-      </div>
-      {value && (
-        <div style={{ marginTop: '8px', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', background: '#f8fafc' }}>
-          {embedUrl ? (
-            <iframe
-              width="100%"
-              height="200"
-              src={embedUrl}
-              title="YouTube video player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ borderRadius: '6px' }}
-            />
-          ) : (
-            <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <input
+        type="file"
+        accept="video/*"
+        id={`video-input-${q.id}`}
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            onChange(e.target.files[0].name);
+          }
+        }}
+      />
+      {value ? (
+        <div style={{ border: '1.5px solid #27c93f', borderRadius: '8px', background: '#e8f8ec', padding: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e7e34', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
               <span>🎥</span> {value}
             </div>
-          )}
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ width: '100%', height: '140px', borderRadius: '6px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '600' }}>
+              Video Loaded
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px solid white' }}>
+              <span style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}>▶</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => document.getElementById(`video-input-${q.id}`).click()}
+          style={{ padding: '20px', border: '1.5px dashed rgba(123, 28, 28, 0.25)', borderRadius: '8px', background: 'rgba(123, 28, 28, 0.02)', textAlign: 'center', color: '#666', fontSize: '12.5px', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+        >
+          <span style={{ fontSize: '24px', display: 'block', marginBottom: '6px' }}>🎥</span>
+          Click to upload video file (MP4, MOV, etc.)
         </div>
       )}
     </div>

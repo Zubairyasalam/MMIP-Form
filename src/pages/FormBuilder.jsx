@@ -2688,7 +2688,7 @@ export default function FormBuilder() {
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <a
-                  href={`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  href={`${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{
@@ -2703,13 +2703,13 @@ export default function FormBuilder() {
                     width: '0'
                   }}
                 >
-                  {`${getOrigin()}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
+                  {`${window.location.origin}/form/${formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form'}`}
                 </a>
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <button
                     onClick={() => {
                       const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                      const link = `${getOrigin()}/form/${slug}`;
+                      const link = `${window.location.origin}/form/${slug}`;
                       navigator.clipboard.writeText(link);
                       alert('Link copied to clipboard!');
                     }}
@@ -2720,7 +2720,7 @@ export default function FormBuilder() {
                   <button
                     onClick={() => {
                       const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
-                      const link = `${getOrigin()}/form/${slug}`;
+                      const link = `${window.location.origin}/form/${slug}`;
                       handleShareLink(formTitle, link);
                     }}
                     style={{ background: accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}

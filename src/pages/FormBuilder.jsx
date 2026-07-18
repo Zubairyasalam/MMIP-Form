@@ -162,8 +162,10 @@ function SignaturePad({ accent }) {
 }
 
 function AnswerArea({
-  q, accent, onChange, uploadedFiles, setUploadedFiles, rollInputs, setRollInputs, budgets, setBudgets,
-  teams, setTeams, colors, setColors, deadlines, setDeadlines,
+  q, accent, onChange, uploadedFiles, setUploadedFiles, rollInputs, setRollInputs,
+  numberInputs, setNumberInputs, dateInputs, setDateInputs,
+  timeInputs, setTimeInputs, scaleInputs, setScaleInputs,
+  budgets, setBudgets, teams, setTeams, colors, setColors, deadlines, setDeadlines,
   aiTexts, setAiTexts, voiceInputs, setVoiceInputs, videoUploads, setVideoUploads,
   locationInputs, setLocationInputs
 }) {
@@ -202,8 +204,9 @@ function AnswerArea({
       <div className="fb-answer-area">
         <input
           type="number"
-          disabled
           placeholder="Number answer..."
+          value={numberInputs[q.id] || ''}
+          onChange={(e) => setNumberInputs(prev => ({ ...prev, [q.id]: e.target.value }))}
           style={{
             width: '100%',
             maxWidth: '200px',
@@ -212,7 +215,7 @@ function AnswerArea({
             borderBottom: '2px solid #aaa',
             borderRadius: '4px 4px 0 0',
             fontSize: '13.5px',
-            color: '#888',
+            color: '#111',
             background: 'transparent',
             outline: 'none'
           }}
@@ -310,6 +313,8 @@ function AnswerArea({
         <input
           type="date"
           className="fb-date-input-field"
+          value={dateInputs[q.id] || ''}
+          onChange={(e) => setDateInputs(prev => ({ ...prev, [q.id]: e.target.value }))}
           style={{
             padding: '10px 14px',
             borderRadius: '8px',
@@ -332,6 +337,8 @@ function AnswerArea({
         <input
           type="time"
           className="fb-time-input-field"
+          value={timeInputs[q.id] || ''}
+          onChange={(e) => setTimeInputs(prev => ({ ...prev, [q.id]: e.target.value }))}
           style={{
             padding: '10px 14px',
             borderRadius: '8px',
@@ -348,18 +355,36 @@ function AnswerArea({
       </div>
     );
   }
-  if (q.type === 'scale') return (
-    <div className="fb-answer-area">
-      <div className="fb-scale-row">
-        {[1, 2, 3, 4, 5].map(n => (
-          <div className="fb-scale-item" key={n}>
-            <div className="fb-scale-radio" style={{ borderColor: accent }} />
-            <span>{n}</span>
-          </div>
-        ))}
+  if (q.type === 'scale') {
+    const val = scaleInputs[q.id];
+    return (
+      <div className="fb-answer-area">
+        <div className="fb-scale-row">
+          {[1, 2, 3, 4, 5].map(n => {
+            const isSelected = val === String(n);
+            return (
+              <div
+                className="fb-scale-item"
+                key={n}
+                onClick={() => setScaleInputs(prev => ({ ...prev, [q.id]: String(n) }))}
+                style={{ cursor: 'pointer' }}
+              >
+                <div
+                  className="fb-scale-radio"
+                  style={{
+                    borderColor: accent,
+                    background: isSelected ? accent : 'transparent',
+                    boxShadow: isSelected ? 'inset 0 0 0 3px white' : 'none'
+                  }}
+                />
+                <span>{n}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
   if (q.type === 'file') {
     const fileName = uploadedFiles?.[q.id];
     return (
@@ -1210,8 +1235,10 @@ function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) 
 
 function QuestionCard({
   q, focused, accent, onFocus, onChange, onDuplicate, onDelete,
-  uploadedFiles, setUploadedFiles, rollInputs, setRollInputs, budgets, setBudgets,
-  teams, setTeams, colors, setColors, deadlines, setDeadlines,
+  uploadedFiles, setUploadedFiles, rollInputs, setRollInputs,
+  numberInputs, setNumberInputs, dateInputs, setDateInputs,
+  timeInputs, setTimeInputs, scaleInputs, setScaleInputs,
+  budgets, setBudgets, teams, setTeams, colors, setColors, deadlines, setDeadlines,
   aiTexts, setAiTexts, voiceInputs, setVoiceInputs, videoUploads, setVideoUploads,
   locationInputs, setLocationInputs
 }) {
@@ -1353,6 +1380,14 @@ function QuestionCard({
         setUploadedFiles={setUploadedFiles}
         rollInputs={rollInputs}
         setRollInputs={setRollInputs}
+        numberInputs={numberInputs}
+        setNumberInputs={setNumberInputs}
+        dateInputs={dateInputs}
+        setDateInputs={setDateInputs}
+        timeInputs={timeInputs}
+        setTimeInputs={setTimeInputs}
+        scaleInputs={scaleInputs}
+        setScaleInputs={setScaleInputs}
         budgets={budgets}
         setBudgets={setBudgets}
         teams={teams}
@@ -1748,6 +1783,10 @@ export default function FormBuilder() {
   const [showImport, setShowImport] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [rollInputs, setRollInputs] = useState({});
+  const [numberInputs, setNumberInputs] = useState({});
+  const [dateInputs, setDateInputs] = useState({});
+  const [timeInputs, setTimeInputs] = useState({});
+  const [scaleInputs, setScaleInputs] = useState({});
   const [budgets, setBudgets] = useState({});
   const [teams, setTeams] = useState({});
   const [colors, setColors] = useState({});
@@ -2271,6 +2310,14 @@ export default function FormBuilder() {
                   setUploadedFiles,
                   rollInputs,
                   setRollInputs,
+                  numberInputs,
+                  setNumberInputs,
+                  dateInputs,
+                  setDateInputs,
+                  timeInputs,
+                  setTimeInputs,
+                  scaleInputs,
+                  setScaleInputs,
                   budgets,
                   setBudgets,
                   teams,

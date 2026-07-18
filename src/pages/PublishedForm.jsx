@@ -18,8 +18,7 @@ export default function PublishedForm() {
     return html.replace(/<[^>]*>/g, '');
   };
 
-  useEffect(() => {
-
+  const loadFormConfig = () => {
     // 1. Check custom forms across all user workspaces, prioritizing current user
     const loggedInUserId = localStorage.getItem('userId') || 'guest';
     const primaryKey = `customForms_${loggedInUserId}`;
@@ -59,6 +58,9 @@ export default function PublishedForm() {
         return slug === formId;
       });
     }
+    console.log('[DEBUG PublishedForm] formId:', formId);
+    console.log('[DEBUG PublishedForm] customForms:', customForms);
+    console.log('[DEBUG PublishedForm] Matched config:', config);
 
     // 3. Fallback for 'innovation-grant' specifically
     if (!config && formId === 'innovation-grant') {
@@ -82,11 +84,30 @@ export default function PublishedForm() {
     setFormConfig(config);
 
     // Initialize answers state
-    const initialAnswers = {};
-    config.questions.forEach((q, idx) => {
-      initialAnswers[idx] = q.type === 'checkbox' ? [] : '';
+    setAnswers(prev => {
+      const initialAnswers = { ...prev };
+      config.questions.forEach((q, idx) => {
+        if (initialAnswers[idx] === undefined) {
+          initialAnswers[idx] = q.type === 'checkbox' ? [] : '';
+        }
+      });
+      return initialAnswers;
     });
-    setAnswers(initialAnswers);
+  };
+
+  useEffect(() => {
+    loadFormConfig();
+
+    const handleStorageChange = (e) => {
+      if (e.key && e.key.startsWith('customForms_')) {
+        loadFormConfig();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [formId]);
 
   const handleSubmit = (e) => {
@@ -326,17 +347,23 @@ export default function PublishedForm() {
                       )}
 
                       {q.type === 'multiple' && (
-                        <select
-                          className="pf-select"
-                          required={q.required}
-                          value={value || ''}
-                          onChange={e => setAnswers({ ...answers, [idx]: e.target.value })}
-                        >
-                          <option value="">Select an option</option>
-                          {q.options.map((opt, oIdx) => (
-                            <option key={oIdx} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+                          {q.options.map((opt, oIdx) => {
+                            const isSelected = value === opt;
+                            return (
+                              <label key={oIdx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', color: '#334155', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                                <input
+                                  type="radio"
+                                  name={`question-${idx}`}
+                                  checked={isSelected}
+                                  onChange={() => setAnswers({ ...answers, [idx]: opt })}
+                                  style={{ accentColor: theme.accent, width: '18px', height: '18px', cursor: 'pointer' }}
+                                />
+                                {opt}
+                              </label>
+                            );
+                          })}
+                        </div>
                       )}
 
                       {q.type === 'dropdown' && (

@@ -20,15 +20,34 @@ export default function PublishedForm() {
 
   useEffect(() => {
 
-    // 1. Check custom forms across all user workspaces
+    // 1. Check custom forms across all user workspaces, prioritizing current user
+    const loggedInUserId = localStorage.getItem('userId') || 'guest';
+    const primaryKey = `customForms_${loggedInUserId}`;
     let customForms = [];
+
+    // Load from current user first
+    try {
+      const primarySaved = localStorage.getItem(primaryKey);
+      if (primarySaved) {
+        const parsed = JSON.parse(primarySaved);
+        if (Array.isArray(parsed)) {
+          customForms = [...parsed];
+        }
+      }
+    } catch (e) {}
+
+    // Load other workspaces as backup, avoiding duplicate IDs
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('customForms_')) {
+      if (key && key.startsWith('customForms_') && key !== primaryKey) {
         try {
           const parsed = JSON.parse(localStorage.getItem(key));
           if (Array.isArray(parsed)) {
-            customForms = [...customForms, ...parsed];
+            parsed.forEach(p => {
+              if (!customForms.some(f => f.id === p.id)) {
+                customForms.push(p);
+              }
+            });
           }
         } catch (e) {}
       }

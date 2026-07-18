@@ -631,7 +631,8 @@
 /* ── Submit Card ── */
 .fb-submit-card {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   padding: 16px 0;
   margin-top: 12px;
 }
@@ -656,6 +657,28 @@
 }
 
 .fb-main-submit-btn:active {
+  transform: translateY(0);
+}
+
+.fb-main-next-btn {
+  padding: 14px 40px;
+  background: white;
+  border: 2px solid;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.fb-main-next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  background: #fafafa;
+}
+
+.fb-main-next-btn:active {
   transform: translateY(0);
 }
 

@@ -11,8 +11,19 @@ export default function Templates() {
   const [userName, setUserName] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
   const [tunnelUrl, setTunnelUrl] = useState('');
-  const [customBaseUrl, setCustomBaseUrl] = useState('');
+  const [customBaseUrl, setCustomBaseUrl] = useState(localStorage.getItem('customBaseUrl') || '');
   const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
+
+  useEffect(() => {
+    fetch('/tunnel.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.url) {
+          setTunnelUrl(data.url);
+        }
+      })
+      .catch(err => console.error('Error loading tunnel URL:', err));
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -24,7 +35,7 @@ export default function Templates() {
 
   // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
-    return customBaseUrl || window.location.origin;
+    return customBaseUrl || tunnelUrl || window.location.origin;
   };
 
   const isLocalhost = () => {
@@ -448,7 +459,11 @@ export default function Templates() {
                     type="text"
                     placeholder="e.g. http://192.168.1.5:5173"
                     value={customBaseUrl || tunnelUrl}
-                    onChange={e => setCustomBaseUrl(e.target.value.trim().replace(/\/$/, ''))}
+                    onChange={e => {
+                      const val = e.target.value.trim().replace(/\/$/, '');
+                      setCustomBaseUrl(val);
+                      localStorage.setItem('customBaseUrl', val);
+                    }}
                     style={{ flex: 1, border: '1px solid #86efac', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', color: '#0f172a', fontWeight: '500', outline: 'none', fontFamily: 'Inter, sans-serif', background: 'white' }}
                   />
                 </div>

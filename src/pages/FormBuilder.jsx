@@ -1614,9 +1614,21 @@ export default function FormBuilder() {
   const location = useLocation();
   const navigate = useNavigate();
   const [tunnelUrl, setTunnelUrl] = useState('');
+  const [customBaseUrl, setCustomBaseUrl] = useState(localStorage.getItem('customBaseUrl') || '');
+
+  useEffect(() => {
+    fetch('/tunnel.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.url) {
+          setTunnelUrl(data.url);
+        }
+      })
+      .catch(err => console.error('Error loading tunnel URL in FormBuilder:', err));
+  }, []);
 
   const getOrigin = () => {
-    return window.location.origin;
+    return customBaseUrl || tunnelUrl || window.location.origin;
   };
 
   const handleDownloadQR = async (title) => {
@@ -1732,6 +1744,7 @@ export default function FormBuilder() {
   const [focusedId, setFocusedId] = useState(initQuestions[0]?.id);
   const [activeTab, setActiveTab] = useState('Questions');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [rollInputs, setRollInputs] = useState({});
@@ -1885,10 +1898,10 @@ export default function FormBuilder() {
     setMockResponses([]);
   };
 
-  const handlePublish = () => {
+  const handlePublish = (showModal = true) => {
     const plainTitle = stripHtml(formTitle);
     const slug = plainTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const formId = state.id || slug || `form-${Date.now()}`;
+    const formId = (state.id && !state.id.startsWith('default-')) ? state.id : (slug || `form-${Date.now()}`);
     const currentUserId = localStorage.getItem('userId') || 'guest';
     const storageKey = `customForms_${currentUserId}`;
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
@@ -1928,7 +1941,15 @@ export default function FormBuilder() {
       existing.unshift(newForm);
     }
     localStorage.setItem(storageKey, JSON.stringify(existing));
-    setShowSuccess(true);
+    
+    if (showModal) {
+      setShowSuccess(true);
+    } else {
+      setShowSaveToast(true);
+      setTimeout(() => {
+        setShowSaveToast(false);
+      }, 3000);
+    }
   };
 
   const insertCard = (newCard) => {
@@ -2288,10 +2309,18 @@ export default function FormBuilder() {
                 <button
                   className="fb-main-submit-btn"
                   style={{ background: accent }}
-                  onClick={handlePublish}
+                  onClick={() => handlePublish(false)}
                   id="fb-submit-publish-btn"
                 >
                   Save Form
+                </button>
+                <button
+                  className="fb-main-next-btn"
+                  style={{ borderColor: accent, color: accent }}
+                  onClick={() => handlePublish(true)}
+                  id="fb-next-btn"
+                >
+                  Next →
                 </button>
               </div>
             </div>
@@ -2553,6 +2582,43 @@ export default function FormBuilder() {
         >
           +
         </button>
+      )}
+
+      {/* Toast Notification for Save Only */}
+      {showSaveToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '32px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1e293b',
+          color: '#ffffff',
+          padding: '14px 28px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)',
+          zIndex: 3000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '14px',
+          fontWeight: '600',
+          animation: 'fadeIn 0.2s ease-out',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <span style={{
+            background: '#10b981',
+            color: '#ffffff',
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px'
+          }}>✓</span>
+          Form saved successfully!
+        </div>
       )}
 
       {/* ── Success Modal ── */}

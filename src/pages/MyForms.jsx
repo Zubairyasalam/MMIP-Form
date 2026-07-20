@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { TEMPLATE_THEMES } from '../data/templates';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { getForms, saveForm, deleteForm, getResponses, deleteResponse } from '../utils/db';
 import './Templates.css'; // Reusing existing card styles
+
 
 export default function MyForms() {
   const [search, setSearch] = useState('');
@@ -33,33 +35,24 @@ export default function MyForms() {
   }, [navigate]);
 
   const loadForms = () => {
-    const currentUserId = localStorage.getItem('userId') || 'guest';
-    const storageKey = `customForms_${currentUserId}`;
-    const saved = localStorage.getItem(storageKey);
-    let existing = [];
-    try {
-      existing = saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      existing = [];
-    }
-    setMyForms(existing);
+    getForms().then(forms => {
+      const currentUserId = localStorage.getItem('userId') || 'guest';
+      const filtered = forms.filter(f =>
+        f.created_by === currentUserId ||
+        f.creator_id === currentUserId ||
+        (f.visibility === 'public' && !f.is_hidden)
+      );
+      setMyForms(filtered);
+    });
 
-    // Load Submissions
-    const allSubsSaved = localStorage.getItem('formSubmissions');
-    let allSubs = [];
-    try {
-      allSubs = allSubsSaved ? JSON.parse(allSubsSaved) : [];
-    } catch (e) {
-      allSubs = [];
-    }
-    setAllSubmissions(allSubs);
+    getResponses().then(subs => {
+      setAllSubmissions(subs);
+    });
   };
 
   const saveForms = (updatedForms) => {
-    const currentUserId = localStorage.getItem('userId') || 'guest';
-    const storageKey = `customForms_${currentUserId}`;
     setMyForms(updatedForms);
-    localStorage.setItem(storageKey, JSON.stringify(updatedForms));
+    updatedForms.forEach(f => saveForm(f));
     window.dispatchEvent(new Event('storage'));
   };
 
@@ -83,24 +76,30 @@ export default function MyForms() {
       id: `clone-${Date.now()}`,
       name: `${form.name} (Copy)`,
       created: new Date().toLocaleDateString(),
-      creator_id: localStorage.getItem('userId') || 'guest'
+      creator_id: localStorage.getItem('userId') || 'guest',
+      created_by: localStorage.getItem('userId') || 'guest',
+      updatedAt: Date.now()
     };
-    const updated = [cloned, ...myForms];
-    saveForms(updated);
+    saveForm(cloned).then(() => {
+      loadForms();
+      window.dispatchEvent(new Event('storage'));
+    });
   };
 
   const handleDelete = (id, name) => {
     if (window.confirm(`Are you sure you want to permanently delete "${stripHtml(name)}"?`)) {
-      const updated = myForms.filter(f => f.id !== id);
-      saveForms(updated);
+      deleteForm(id).then(() => {
+        loadForms();
+        window.dispatchEvent(new Event('storage'));
+      });
     }
   };
 
   const handleDeleteSubmission = (subId) => {
     if (window.confirm('Are you sure you want to permanently delete this response?')) {
-      const updated = allSubmissions.filter(s => s.id !== subId);
-      localStorage.setItem('formSubmissions', JSON.stringify(updated));
-      setAllSubmissions(updated);
+      deleteResponse(subId).then(() => {
+        loadForms();
+      });
     }
   };
 

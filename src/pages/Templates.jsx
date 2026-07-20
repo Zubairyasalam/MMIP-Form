@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
+import { getForms } from '../utils/db';
 import './Templates.css';
 
 export default function Templates() {
@@ -139,7 +140,7 @@ export default function Templates() {
       setUserName(sessionStorage.getItem('userName') || localStorage.getItem('userName') || '');
     }
 
-    const loadTemplates = () => {
+    const loadTemplates = async () => {
       const defaultForms = TEMPLATES.map((t, idx) => ({
         id: `default-${idx + 1}`,
         name: t.name,
@@ -155,23 +156,13 @@ export default function Templates() {
       }));
 
       const currentUserId = localStorage.getItem('userId') || 'guest';
-      let existing = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('customForms_')) {
-          try {
-            const parsed = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(parsed)) {
-              parsed.forEach(p => {
-                if (!existing.some(e => e.id === p.id)) {
-                  existing.push(p);
-                }
-              });
-            }
-          } catch (e) {}
-        }
-      }
+      // Load all forms from the unified database (backend or global localStorage)
+      const allForms = await getForms();
 
+      // Start with custom/saved forms
+      let existing = [...allForms];
+
+      // Add default forms that don't already exist
       defaultForms.forEach(df => {
         const exists = existing.find(e => e.id === df.id);
         if (!exists) {
@@ -193,13 +184,11 @@ export default function Templates() {
         created_by: cf.created_by || cf.creator_id || 'System'
       }));
 
-      // Filter based on User Dashboard visibility rules:
-      // Only display templates where: Visibility = Public AND Hidden = No AND Status = Active
-      // Private templates are visible only to the creator admin
+      // Filter based on User Dashboard visibility rules
       const visibleTemplates = mapped.filter(t => {
         const creatorId = t.created_by || t.creator_id || 'System';
-        
-        // Hide if status is not Active (Draft / Inactive templates are hidden from users)
+
+        // Hide if status is not Active
         if (t.status !== 'Active') return false;
 
         // Hide if is_hidden is true
@@ -240,9 +229,12 @@ export default function Templates() {
 
     navigate('/form-builder', {
       state: {
+        id: tmpl.id,
         templateName: tmpl.name,
+        richName: tmpl.richName || tmpl.name,
         questions: tmpl.questions,
         theme: TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'],
+        desc: tmpl.desc || '',
       }
     });
   };

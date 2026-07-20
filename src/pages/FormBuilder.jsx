@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { TEMPLATES } from '../data/templates';
+import { saveForm, getForms } from '../utils/db';
 import './FormBuilder.css';
 
 const TYPES = [
@@ -35,7 +36,19 @@ function makeQ(q) {
 const stripHtml = (html) => {
   if (!html) return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || "";
+  // Replace non-breaking spaces (\u00A0) and other Unicode whitespace with regular spaces
+  return (doc.body.textContent || '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').trim();
+};
+
+// Convert a title to a URL-safe slug, stripping HTML entities and non-ASCII chars
+const toSlug = (text) => {
+  return text
+    .toLowerCase()
+    .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\xa0]/g, ' ') // non-breaking spaces → space
+    .replace(/[^a-z0-9\s-]/g, '')                           // remove non-ascii/special chars
+    .trim()
+    .replace(/[\s-]+/g, '-')                                // spaces/hyphens → single dash
+    .replace(/^-+|-+$/g, '');                               // trim leading/trailing dashes
 };
 
 function RichTextToolbar({ onFormat }) {
@@ -1926,9 +1939,12 @@ export default function FormBuilder() {
     ];
 
   const [formTitle, setFormTitle] = useState(state.richName || state.templateName || 'Untitled form');
-  const [formDesc, setFormDesc] = useState('Form description');
+  const [formDesc, setFormDesc] = useState(state.desc || 'Form description');
   const [questions, setQuestions] = useState(initQuestions);
   const [focusedId, setFocusedId] = useState(initQuestions[0]?.id);
+  const [savedFormId, setSavedFormId] = useState(state.id || null);
+  // Ref to track metadata from the last-saved version (tag, bg, visibility, creator, etc.)
+  const existingMetaRef = useRef(null);
   const [activeTab, setActiveTab] = useState('Questions');
   const [showSuccess, setShowSuccess] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -1953,6 +1969,34 @@ export default function FormBuilder() {
   const mainTitleRef = useRef(null);
   const mainDescRef = useRef(null);
   const savedMainRangeRef = useRef(null);
+
+  // On mount: if editing an existing template (state.id), load latest saved version from db
+  useEffect(() => {
+    if (!state.id) return;
+    getForms().then(allForms => {
+      const saved = allForms.find(f => f.id === state.id);
+      if (saved) {
+        // Store existing metadata so handlePublish can preserve it
+        existingMetaRef.current = saved;
+        // Load latest title & desc from DB (overrides navigation state)
+        if (saved.richName || saved.name) {
+          setFormTitle(saved.richName || saved.name);
+          if (mainTitleRef.current) mainTitleRef.current.innerHTML = saved.richName || saved.name;
+        }
+        if (saved.desc) {
+          setFormDesc(saved.desc);
+          if (mainDescRef.current) mainDescRef.current.innerHTML = saved.desc;
+        }
+        if (saved.headerImage) {
+          setHeaderImage(saved.headerImage);
+        }
+        if (saved.questions && saved.questions.length > 0) {
+          setQuestions(saved.questions.map(makeQ));
+        }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (mainTitleRef.current && document.activeElement !== mainTitleRef.current) {
@@ -2089,23 +2133,32 @@ export default function FormBuilder() {
     setMockResponses([]);
   };
 
-  const handlePublish = (showModal = true) => {
+  const handlePublish = async (showModal = true) => {
     const plainTitle = stripHtml(formTitle);
-    const slug = plainTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const formId = (state.id && !state.id.startsWith('default-')) ? state.id : (slug || `form-${Date.now()}`);
-    const currentUserId = localStorage.getItem('userId') || 'guest';
-    const storageKey = `customForms_${currentUserId}`;
-    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    const existingForm = existing.find(f => f.id === formId);
+    const slug = toSlug(plainTitle) || `form-${Date.now()}`;
+    // Preserve original id (including default-X) so we overwrite, not duplicate
+    const formId = savedFormId || state.id || slug;
+
+    // Load the latest version from DB to preserve existing metadata (tag, bg, visibility, etc.)
+    let existingMeta = existingMetaRef.current;
+    if (!existingMeta) {
+      try {
+        const allForms = await getForms();
+        existingMeta = allForms.find(f => f.id === formId) || null;
+      } catch (e) {
+        existingMeta = null;
+      }
+    }
 
     const newForm = {
+      // Spread existing metadata first so we don't lose tag, bg, visibility, created, creator etc.
+      ...(existingMeta || {}),
+      // Then overwrite only the editable fields
       id: formId,
       name: stripHtml(formTitle) || 'Untitled Form',
       richName: formTitle,
       desc: formDesc,
-      tag: existingForm?.tag || 'Custom Form',
-      fields: `${questions.filter(q => q.cardType === 'question').length} fields`,
-      bg: existingForm?.bg || 'maroon-bg',
+      fields: `${questions.filter(q => q.cardType === 'question' || !q.cardType).length} fields`,
       theme: theme,
       headerImage: headerImage,
       questions: questions.map(q => ({
@@ -2117,31 +2170,39 @@ export default function FormBuilder() {
         options: q.options || [],
         required: q.required || false
       })),
-      created: existingForm?.created || new Date().toLocaleDateString(),
-      creator: existingForm?.creator || localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'Administrator',
-      creator_id: existingForm?.creator_id || localStorage.getItem('userId') || 'guest',
-      visibility: existingForm?.visibility || 'public',
-      is_hidden: existingForm?.is_hidden !== undefined ? existingForm.is_hidden : false,
-      created_by: existingForm?.created_by || existingForm?.creator_id || localStorage.getItem('userId') || 'guest'
+      // Preserve or set metadata
+      tag: existingMeta?.tag || 'Custom Form',
+      bg: existingMeta?.bg || 'maroon-bg',
+      status: existingMeta?.status || 'Active',
+      visibility: existingMeta?.visibility || 'public',
+      is_hidden: existingMeta?.is_hidden !== undefined ? existingMeta.is_hidden : false,
+      created: existingMeta?.created || new Date().toLocaleDateString(),
+      creator: existingMeta?.creator || localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'Administrator',
+      creator_id: existingMeta?.creator_id || localStorage.getItem('userId') || 'guest',
+      created_by: existingMeta?.created_by || existingMeta?.creator_id || localStorage.getItem('userId') || 'guest',
+      updatedAt: Date.now()
     };
 
-    const index = existing.findIndex(f => f.id === formId);
-    if (index > -1) {
-      existing[index] = newForm;
-    } else {
-      existing.unshift(newForm);
-    }
-    localStorage.setItem(storageKey, JSON.stringify(existing));
-    window.dispatchEvent(new Event('storage'));
-    
-    if (showModal) {
-      setShowSuccess(true);
-    } else {
-      setShowSaveToast(true);
-      setTimeout(() => {
-        setShowSaveToast(false);
-      }, 3000);
-    }
+    // Keep ref in sync for subsequent saves in the same session
+    existingMetaRef.current = newForm;
+
+    saveForm(newForm)
+      .then(() => {
+        setSavedFormId(formId);
+        window.dispatchEvent(new Event('storage'));
+        if (showModal) {
+          setShowSuccess(true);
+        } else {
+          setShowSaveToast(true);
+          setTimeout(() => {
+            setShowSaveToast(false);
+          }, 3000);
+        }
+      })
+      .catch(e => {
+        console.error('Error saving form:', e);
+        alert('Failed to save form. Please try again.');
+      });
   };
 
   const insertCard = (newCard) => {

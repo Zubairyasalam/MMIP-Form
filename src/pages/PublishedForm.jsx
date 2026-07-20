@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TEMPLATES } from '../data/templates';
+import { getForms, saveResponse } from '../utils/db';
 import './PublishedForm.css';
 
 export default function PublishedForm() {
   const { formId } = useParams();
   const navigate = useNavigate();
 
-  const [formConfig, setFormConfig] = useState(null);
+  const [formConfig, setFormConfig] = useState(undefined);
   const [answers, setAnswers] = useState({});
   const [otherTexts, setOtherTexts] = useState({});
   const [dropdownOtherSelected, setDropdownOtherSelected] = useState({});
@@ -17,66 +18,53 @@ export default function PublishedForm() {
 
   const stripHtml = (html) => {
     if (!html) return '';
-    return html.replace(/<[^>]*>/g, '');
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return (doc.body.textContent || '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').trim();
   };
 
-  const loadFormConfig = () => {
-    // 1. Check custom forms across all user workspaces, prioritizing current user
-    const loggedInUserId = localStorage.getItem('userId') || 'guest';
-    const primaryKey = `customForms_${loggedInUserId}`;
-    let customForms = [];
+  // Same slug function as FormBuilder to ensure consistent URL matching
+  const toSlug = (text) => {
+    return (text || '')
+      .toLowerCase()
+      .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\xa0]/g, ' ')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/[\s-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
 
-    // Load from current user first
-    try {
-      const primarySaved = localStorage.getItem(primaryKey);
-      if (primarySaved) {
-        const parsed = JSON.parse(primarySaved);
-        if (Array.isArray(parsed)) {
-          customForms = [...parsed];
-        }
-      }
-    } catch (e) {}
+  const loadFormConfig = async () => {
+    // 1. Load all forms from the unified database
+    const allForms = await getForms();
+    const currentUserId = localStorage.getItem('userId') || 'guest';
 
-    // Load other workspaces as backup, avoiding duplicate IDs
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('customForms_') && key !== primaryKey) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(parsed)) {
-            parsed.forEach(p => {
-              if (!customForms.some(f => f.id === p.id)) {
-                customForms.push(p);
-              }
-            });
-          }
-        } catch (e) {}
-      }
-    }
-    let config = customForms.find(f => f.id === formId);
+    // 2. Try to find the form by direct ID match
+    let config = allForms.find(f => f.id === formId);
+
+    // 3. If not found by ID, try slug match against saved form names
     if (!config) {
-      config = TEMPLATES.find(t => {
-        const slug = t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        return slug === formId;
-      });
+      config = allForms.find(f => toSlug(stripHtml(f.name || f.richName || '')) === formId);
     }
-    console.log('[DEBUG PublishedForm] formId:', formId);
-    console.log('[DEBUG PublishedForm] customForms:', customForms);
-    console.log('[DEBUG PublishedForm] Matched config:', config);
 
-    // 3. Fallback for 'innovation-grant' specifically
+    // 4. Try matching against built-in TEMPLATES by slug
+    if (!config) {
+      const tmpl = TEMPLATES.find(t => toSlug(t.name) === formId);
+      if (tmpl) config = tmpl;
+    }
+
+    // 5. Fallback for 'innovation-grant' specifically
     if (!config && formId === 'innovation-grant') {
       config = TEMPLATES.find(t => t.name === 'Innovation Grant Application');
     }
 
-    // 4. Default fallback if nothing matches
+    // 6. If still not found, show a not found message (don't silently load a wrong form)
     if (!config) {
-      config = TEMPLATES[0]; // fallback to first template
+      setFormConfig(null);
+      setAccessDenied(false);
+      return;
     }
 
-    const currentUserId = localStorage.getItem('userId') || 'guest';
     const creatorId = config.created_by || config.creator_id || 'System';
-
     if (config.visibility === 'private' && creatorId !== currentUserId) {
       setAccessDenied(true);
     } else {
@@ -84,22 +72,6 @@ export default function PublishedForm() {
     }
 
     setFormConfig(config);
-
-    // Automatically import/save this custom form to the current user's local workspace key if not already present,
-    // so it shows up in their templates and my forms list.
-    if (config && config.id && !config.id.startsWith('default-') && !TEMPLATES.some(t => t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === config.id)) {
-      try {
-        const currentUserKey = `customForms_${currentUserId}`;
-        const userSavedForms = JSON.parse(localStorage.getItem(currentUserKey) || '[]');
-        if (!userSavedForms.some(f => f.id === config.id)) {
-          userSavedForms.unshift(config);
-          localStorage.setItem(currentUserKey, JSON.stringify(userSavedForms));
-          window.dispatchEvent(new Event('storage'));
-        }
-      } catch (e) {
-        console.error('Error importing custom form to templates:', e);
-      }
-    }
 
     // Initialize answers state
     setAnswers(prev => {
@@ -116,10 +88,8 @@ export default function PublishedForm() {
   useEffect(() => {
     loadFormConfig();
 
-    const handleStorageChange = (e) => {
-      if (e.key && e.key.startsWith('customForms_')) {
-        loadFormConfig();
-      }
+    const handleStorageChange = () => {
+      loadFormConfig();
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -182,26 +152,8 @@ export default function PublishedForm() {
       }
     });
 
-    // Create a unique submission ID
-    const existing = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-    let maxNum = 5;
-    existing.forEach(sub => {
-      const idStr = sub.id ? sub.id.toString() : '';
-      if (idStr.startsWith('MMIP-')) {
-        const numStr = idStr.replace('MMIP-', '');
-        const num = parseInt(numStr, 10);
-        if (!isNaN(num) && num > maxNum) {
-          maxNum = num;
-        }
-      } else {
-        const num = parseInt(idStr.replace(/\D/g, ''), 10);
-        if (!isNaN(num) && num > maxNum) {
-          maxNum = num;
-        }
-      }
-    });
-    const nextNum = maxNum + 1;
-    const genId = `MMIP-${nextNum < 10 ? '0' + nextNum : nextNum}`;
+    // Save the submission via unified db
+    const genId = `MMIP-${String(Date.now()).slice(-6)}`;
     setSubmissionId(genId);
 
     const newSubmission = {
@@ -209,22 +161,36 @@ export default function PublishedForm() {
       name: submitterName,
       email: submitterEmail,
       form: stripHtml(formConfig.name),
+      formId: formConfig.id,
       creator_id: formConfig.creator_id || 'guest',
       date: new Date().toLocaleString(),
       status: 'Pending Review',
       answers: mappedAnswers
     };
 
-    existing.unshift(newSubmission);
-    localStorage.setItem('formSubmissions', JSON.stringify(existing));
-
+    saveResponse(newSubmission);
     setSubmitted(true);
   };
 
-  if (!formConfig) {
+  if (formConfig === undefined) {
     return (
       <div style={{ padding: '80px 20px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
         <h2>Loading Form...</h2>
+      </div>
+    );
+  }
+
+  if (formConfig === null) {
+    return (
+      <div style={{ padding: '80px 20px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ fontSize: '64px', marginBottom: '16px' }}>😕</div>
+        <h2 style={{ color: '#7B1C1C', marginBottom: '12px' }}>Form Not Found</h2>
+        <p style={{ color: '#64748b', marginBottom: '24px' }}>
+          The form you are looking for does not exist or the link may be incorrect.
+        </p>
+        <Link to="/templates" style={{ display: 'inline-block', padding: '10px 24px', background: '#7B1C1C', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
+          Browse Templates
+        </Link>
       </div>
     );
   }

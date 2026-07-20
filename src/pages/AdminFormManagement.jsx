@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
+import { getForms, saveForm, deleteForm } from '../utils/db';
 import './AdminFormManagement.css';
 
 export default function AdminFormManagement({ onLogAction }) {
@@ -90,7 +91,7 @@ export default function AdminFormManagement({ onLogAction }) {
     'Healthcare', 'Events', 'Grant Application', 'Custom'
   ];
 
-  // Load from localStorage, merging any new built-in templates
+  // Load from unified database
   useEffect(() => {
     const defaultForms = TEMPLATES.map((t, idx) => ({
       id: `default-${idx + 1}`,
@@ -109,64 +110,32 @@ export default function AdminFormManagement({ onLogAction }) {
       created_by: 'System'
     }));
 
-    let existing = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('customForms_')) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(parsed)) {
-            existing = [...existing, ...parsed];
-          }
-        } catch (e) {}
-      }
-    }
+    getForms().then(existing => {
+      // Add default forms not already saved
+      defaultForms.forEach(df => {
+        if (!existing.some(e => e.id === df.id)) {
+          existing.push(df);
+        }
+      });
 
-    // Migrate any existing custom forms to include the new visibility settings safely
-    existing = existing.map(f => ({
-      ...f,
-      visibility: f.visibility || 'public',
-      is_hidden: f.is_hidden !== undefined ? f.is_hidden : (f.status === 'Hidden'),
-      created_by: f.created_by || f.creator_id || 'System'
-    }));
+      // Migrate visibility settings
+      const migrated = existing.map(f => ({
+        ...f,
+        visibility: f.visibility || 'public',
+        is_hidden: f.is_hidden !== undefined ? f.is_hidden : (f.status === 'Hidden'),
+        created_by: f.created_by || f.creator_id || 'System'
+      }));
 
-    defaultForms.forEach(df => {
-      const exists = existing.find(e => e.id === df.id);
-      if (!exists) {
-        existing.push(df);
-      }
+      setForms(migrated);
     });
-
-    setForms(existing);
   }, []);
 
-  // Save to localStorage
+  // Save to unified database
   const saveForms = (updatedForms) => {
     setForms(updatedForms);
-    
-    // Group forms by creator_id
-    const formsByUser = {};
-    updatedForms.forEach(f => {
-      const currentAdminId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || 'guest';
-      const cid = f.created_by === 'System' || f.creator_id === 'System' ? 'System' : (f.created_by || f.creator_id || currentAdminId);
-      if (!formsByUser[cid]) formsByUser[cid] = [];
-      formsByUser[cid].push(f);
-    });
-
-    // Update existing user keys
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('customForms_')) {
-        const cid = key.replace('customForms_', '');
-        localStorage.setItem(key, JSON.stringify(formsByUser[cid] || []));
-      }
-    }
-    // Create new keys if needed
-    Object.keys(formsByUser).forEach(cid => {
-      localStorage.setItem(`customForms_${cid}`, JSON.stringify(formsByUser[cid]));
-    });
-
-    // Dispatch a storage event so other open pages (like Templates.jsx) automatically sync
+    // Save each form via the unified db layer
+    updatedForms.forEach(f => saveForm(f));
+    // Dispatch a storage event so other open pages sync
     window.dispatchEvent(new Event('storage'));
   };
 
@@ -214,7 +183,9 @@ export default function AdminFormManagement({ onLogAction }) {
   const handleDeleteForm = (id, name) => {
     if (window.confirm(`Are you sure you want to permanently delete the template: "${name}"? This action cannot be undone.`)) {
       const updated = forms.filter(f => f.id !== id);
-      saveForms(updated);
+      setForms(updated);
+      deleteForm(id);
+      window.dispatchEvent(new Event('storage'));
       triggerLog(`Deleted form template: "${name}"`);
     }
   };

@@ -1,0 +1,309 @@
+{
+  "forms": [
+    {
+      "id": "default-8",
+      "name": "Project Submission Form",
+      "richName": "Project Submission Form",
+      "desc": "Submit final year projects with documentation.",
+      "fields": "8 fields",
+      "theme": {
+        "banner": "linear-gradient(90deg, #057a55, #10b981, #34d399)",
+        "accent": "#057a55",
+        "label": "Green"
+      },
+      "headerImage": "/form-header.png",
+      "questions": [
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "zubairya Project Title",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Team Leader Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Team Members (comma separated)",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Guide Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Project Category",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Web Application",
+            "Mobile App",
+            "Hardware",
+            "AI/ML",
+            "IoT",
+            "Other"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Project Description",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Technologies / Tools Used",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "date",
+          "question": "Project Completion Date",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        }
+      ],
+      "tag": "Custom Form",
+      "bg": "maroon-bg",
+      "status": "Active",
+      "visibility": "public",
+      "is_hidden": false,
+      "created": "20/7/2026",
+      "creator": "MCC Administrator",
+      "creator_id": "usr-default-admin",
+      "created_by": "usr-default-admin",
+      "updatedAt": 1784544576061
+    },
+    {
+      "id": "default-7",
+      "name": "Course Feedback Survey",
+      "richName": "Course Feedback Survey",
+      "desc": "End-of-semester feedback form for students.",
+      "fields": "7 fields",
+      "theme": {
+        "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
+        "accent": "#7B1C1C",
+        "label": "Maroon"
+      },
+      "headerImage": "/form-header.png",
+      "questions": [
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Course Name &amp; Code",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "scale",
+          "question": "Overall course satisfaction (1–5)",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "scale",
+          "question": "Relevance of course content (1–5)",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Preferred learning material",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Textbooks",
+            "Slides",
+            "Videos",
+            "Practical Sessions"
+          ],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Difficulty level of the course",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Very Easy",
+            "Easy",
+            "Moderate",
+            "Difficult",
+            "Very Difficult"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "What did you like most about the course?",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "What should be improved?",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        }
+      ],
+      "tag": "Custom Form",
+      "bg": "maroon-bg",
+      "status": "Active",
+      "visibility": "public",
+      "is_hidden": false,
+      "created": "20/7/2026",
+      "creator": "priya",
+      "creator_id": "usr-1784538800552",
+      "created_by": "usr-1784538800552",
+      "updatedAt": 1784544545528
+    },
+    {
+      "id": "default-5",
+      "name": "zzzzz Event Registration",
+      "richName": "&nbsp;zzzzz Event Registration",
+      "desc": "Register participants for seminars, hackathons, and events.",
+      "fields": "7 fields",
+      "theme": {
+        "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
+        "accent": "#7B1C1C",
+        "label": "Maroon"
+      },
+      "headerImage": "/form-header.png",
+      "questions": [
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "zubairya Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Email Address",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Institution / College Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Event you are registering for",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Annual Hackathon",
+            "Innovation Summit",
+            "Research Symposium",
+            "Guest Lecture"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Participation Mode",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "In-Person",
+            "Online"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "checkbox",
+          "question": "Dietary Preference (if applicable)",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Vegetarian",
+            "Non-Vegetarian",
+            "Vegan",
+            "No Preference"
+          ],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Any special requirements or questions",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        }
+      ],
+      "tag": "Custom Form",
+      "bg": "maroon-bg",
+      "status": "Active",
+      "visibility": "public",
+      "is_hidden": false,
+      "created": "20/7/2026",
+      "creator": "MCC Administrator",
+      "creator_id": "usr-default-admin",
+      "created_by": "usr-default-admin",
+      "updatedAt": 1784544377020
+    }
+  ],
+  "responses": []
+}

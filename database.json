@@ -1,6 +1,126 @@
 {
   "forms": [
     {
+      "id": "default-3",
+      "name": "Research Proposal Form",
+      "richName": "Research Proposal Form",
+      "desc": "Submit research proposals with objectives and methodology.",
+      "fields": "10 fields",
+      "theme": {
+        "banner": "linear-gradient(90deg, #ea580c, #f97316, #fdba74)",
+        "accent": "#ea580c",
+        "label": "Orange"
+      },
+      "headerImage": "/form-header.png",
+      "questions": [
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "zubaira Researcher Full Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Guide / Supervisor Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Department",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Research Title",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Problem Statement",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Literature Review Summary",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Research Methodology",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Type of Research",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Experimental",
+            "Theoretical",
+            "Computational",
+            "Mixed Methods"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Expected Outcomes",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Duration (in months)",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        }
+      ],
+      "tag": "Custom Form",
+      "bg": "maroon-bg",
+      "status": "Active",
+      "visibility": "public",
+      "is_hidden": false,
+      "created": "20/7/2026",
+      "creator": "anto",
+      "creator_id": "usr-1784544847752",
+      "created_by": "usr-1784544847752",
+      "updatedAt": 1784544868652
+    },
+    {
       "id": "default-8",
       "name": "Project Submission Form",
       "richName": "Project Submission Form",

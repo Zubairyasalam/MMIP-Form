@@ -4,6 +4,17 @@ import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
 import { getForms } from '../utils/db';
 import './Templates.css';
 
+// Must match toSlug in FormBuilder and PublishedForm for consistent URL resolution
+const toSlug = (text) => {
+  return (text || '')
+    .toLowerCase()
+    .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\xa0]/g, ' ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 export default function Templates() {
   const [search, setSearch] = useState('');
   const [selectedTmplQr, setSelectedTmplQr] = useState(null);
@@ -48,8 +59,8 @@ export default function Templates() {
     setSelectedTmplQr(tmpl);
   };
 
-  const handleDownloadQR = async (name) => {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+  const handleDownloadQR = async (name, id) => {
+    const slug = id || toSlug(name);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
       `${getOrigin()}/form/${slug}`
     )}&color=000000`;
@@ -88,11 +99,11 @@ export default function Templates() {
     }
   };
 
-  const handleShareQR = async (title, qrUrl) => {
+  const handleShareQR = async (title, id, qrUrl) => {
     try {
       const response = await fetch(qrUrl.replace('size=180x180', 'size=500x500'));
       const blob = await response.blob();
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const slug = id || toSlug(title);
       const file = new File([blob], `${slug}-qr-code.png`, { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -115,7 +126,7 @@ export default function Templates() {
       }
     } catch (e) {
       console.error(e);
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'form';
+      const slug = id || toSlug(title);
       const formUrl = `${getOrigin()}/form/${slug}`;
       if (navigator.share) {
         await navigator.share({
@@ -478,7 +489,7 @@ export default function Templates() {
               }}>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                    `${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                    `${getOrigin()}/form/${selectedTmplQr.id}`
                   )}&color=000000`}
                   alt="Registration QR Code"
                   style={{ width: '180px', height: '180px', display: 'block' }}
@@ -486,7 +497,7 @@ export default function Templates() {
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                 <button
-                  onClick={() => handleDownloadQR(selectedTmplQr.name)}
+                  onClick={() => handleDownloadQR(selectedTmplQr.name, selectedTmplQr.id)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -515,9 +526,9 @@ export default function Templates() {
                 <button
                   onClick={() => {
                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                      `${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`
+                      `${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`
                     )}&color=000000`;
-                    handleShareQR(selectedTmplQr.name, qrUrl);
+                    handleShareQR(selectedTmplQr.name, selectedTmplQr.id, qrUrl);
                   }}
                   style={{
                     display: 'flex',
@@ -556,14 +567,13 @@ export default function Templates() {
                 <input
                   type="text"
                   readOnly
-                  value={`${getOrigin()}/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                  value={`${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif', width: '0' }}
                 />
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <button
                     onClick={() => {
-                      const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                      const link = `${getOrigin()}/form/${slug}`;
+                      const link = `${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
                       navigator.clipboard.writeText(link);
                       alert('Link copied to clipboard!');
                     }}
@@ -573,8 +583,7 @@ export default function Templates() {
                   </button>
                   <button
                     onClick={() => {
-                      const slug = selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                      const link = `${getOrigin()}/form/${slug}`;
+                      const link = `${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
                       handleShareLink(selectedTmplQr.name, link);
                     }}
                     style={{ background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -600,7 +609,7 @@ export default function Templates() {
                 Close View
               </button>
               <a
-                href={`/form/${selectedTmplQr.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}
+                href={`/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{

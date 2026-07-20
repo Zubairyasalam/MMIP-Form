@@ -1,22 +1,138 @@
 {
   "forms": [
     {
-      "id": "default-3",
-      "name": "Research Proposal Form",
-      "richName": "Research Proposal Form",
-      "desc": "Submit research proposals with objectives and methodology.",
-      "fields": "10 fields",
+      "id": "default-6",
+      "name": "Internship Application",
+      "richName": "Internship Application",
+      "desc": "Let students apply for internship positions easily.",
+      "fields": "9 fields",
       "theme": {
-        "banner": "linear-gradient(90deg, #ea580c, #f97316, #fdba74)",
-        "accent": "#ea580c",
-        "label": "Orange"
+        "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
+        "accent": "#7B1C1C",
+        "label": "Maroon"
       },
       "headerImage": "/form-header.png",
       "questions": [
         {
           "cardType": "question",
           "type": "short",
-          "question": "zubaira Researcher Full Name",
+          "question": "Full Name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Email",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Phone Number",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Internship Domain",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Software Development",
+            "Data Science",
+            "Marketing",
+            "Design",
+            "Research"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Current CGPA",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Why are you interested in this internship?",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "paragraph",
+          "question": "Relevant Skills and Experience",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
+        },
+        {
+          "cardType": "question",
+          "type": "multiple",
+          "question": "Availability",
+          "description": "",
+          "mediaUrl": null,
+          "options": [
+            "Full-time (8 hrs/day)",
+            "Part-time (4 hrs/day)",
+            "Weekends only"
+          ],
+          "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "date",
+          "question": "Available from",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": true
+        }
+      ],
+      "tag": "Custom Form",
+      "bg": "maroon-bg",
+      "status": "Active",
+      "visibility": "public",
+      "is_hidden": false,
+      "created": "20/7/2026",
+      "creator": "MCC Administrator",
+      "creator_id": "usr-default-admin",
+      "created_by": "usr-default-admin",
+      "updatedAt": 1784545879053
+    },
+    {
+      "id": "default-3",
+      "name": "Research Proposal Form",
+      "richName": "Research Proposal Form",
+      "desc": "Submit research proposals with objectives and methodology.",
+      "fields": "10 fields",
+      "theme": {
+        "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
+        "accent": "#7B1C1C",
+        "label": "Maroon"
+      },
+      "headerImage": "/form-header.png",
+      "questions": [
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "Researcher Full Name",
           "description": "",
           "mediaUrl": null,
           "options": [],
@@ -118,7 +234,7 @@
       "creator": "anto",
       "creator_id": "usr-1784544847752",
       "created_by": "usr-1784544847752",
-      "updatedAt": 1784544868652
+      "updatedAt": 1784545766310
     },
     {
       "id": "default-8",

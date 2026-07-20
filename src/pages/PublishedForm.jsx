@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { TEMPLATES } from '../data/templates';
-import { getForms, saveResponse } from '../utils/db';
+import { getForms, saveResponse, getResponses } from '../utils/db';
 import './PublishedForm.css';
 
 export default function PublishedForm() {
@@ -98,7 +98,7 @@ export default function PublishedForm() {
     };
   }, [formId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate required fields
@@ -152,8 +152,18 @@ export default function PublishedForm() {
       }
     });
 
-    // Save the submission via unified db
-    const genId = `MMIP-${String(Date.now()).slice(-6)}`;
+    // Save the submission via unified db — use sequential ID
+    const allResponses = await getResponses();
+    let maxNum = 12; // default responses are MMIP-01 to MMIP-12
+    allResponses.forEach(r => {
+      const match = r.id && r.id.match(/^MMIP-0*(\d+)$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    const nextNum = maxNum + 1;
+    const genId = `MMIP-${String(nextNum).padStart(2, '0')}`;
     setSubmissionId(genId);
 
     const newSubmission = {

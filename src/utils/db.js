@@ -142,23 +142,24 @@ export async function getResponses() {
 export async function saveResponse(response) {
   if (!response) return;
 
-  // 1. Add to local cache (avoid duplicates by id)
+  // 1. Add/Update in local cache (avoid duplicates by id)
   let localSubs = [];
   try {
     localSubs = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]');
   } catch { localSubs = []; }
 
-  if (response.id && localSubs.some(s => s.id === response.id)) {
-    // already saved, skip
+  const idx = localSubs.findIndex(s => s.id === response.id);
+  if (idx > -1) {
+    localSubs[idx] = response;
   } else {
     localSubs.unshift(response);
-    localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs));
   }
+  localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs));
 
-  // 2. Sync to backend
+  // 2. Sync to backend (PUT for upsert)
   try {
-    await fetch(`${API_URL}/responses`, {
-      method: 'POST',
+    await fetch(`${API_URL}/responses/${encodeURIComponent(response.id)}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(response)
     });

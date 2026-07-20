@@ -5,7 +5,7 @@
       "name": "Internship Application",
       "richName": "Internship Application",
       "desc": "Let students apply for internship positions easily.",
-      "fields": "9 fields",
+      "fields": "4 fields",
       "theme": {
         "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
         "accent": "#7B1C1C",
@@ -26,15 +26,6 @@
           "cardType": "question",
           "type": "short",
           "question": "Email",
-          "description": "",
-          "mediaUrl": null,
-          "options": [],
-          "required": true
-        },
-        {
-          "cardType": "question",
-          "type": "short",
-          "question": "Phone Number",
           "description": "",
           "mediaUrl": null,
           "options": [],
@@ -63,46 +54,6 @@
           "mediaUrl": null,
           "options": [],
           "required": true
-        },
-        {
-          "cardType": "question",
-          "type": "paragraph",
-          "question": "Why are you interested in this internship?",
-          "description": "",
-          "mediaUrl": null,
-          "options": [],
-          "required": true
-        },
-        {
-          "cardType": "question",
-          "type": "paragraph",
-          "question": "Relevant Skills and Experience",
-          "description": "",
-          "mediaUrl": null,
-          "options": [],
-          "required": false
-        },
-        {
-          "cardType": "question",
-          "type": "multiple",
-          "question": "Availability",
-          "description": "",
-          "mediaUrl": null,
-          "options": [
-            "Full-time (8 hrs/day)",
-            "Part-time (4 hrs/day)",
-            "Weekends only"
-          ],
-          "required": true
-        },
-        {
-          "cardType": "question",
-          "type": "date",
-          "question": "Available from",
-          "description": "",
-          "mediaUrl": null,
-          "options": [],
-          "required": true
         }
       ],
       "tag": "Custom Form",
@@ -114,7 +65,7 @@
       "creator": "MCC Administrator",
       "creator_id": "usr-default-admin",
       "created_by": "usr-default-admin",
-      "updatedAt": 1784545879053
+      "updatedAt": 1784563238411
     },
     {
       "id": "default-3",
@@ -541,5 +492,146 @@
       "updatedAt": 1784544377020
     }
   ],
-  "responses": []
+  "responses": [
+    {
+      "id": "MMIP-17",
+      "name": "KHAN",
+      "email": "KHAN@GMAIL.COM",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 10:00:22 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "KHAN"
+        },
+        {
+          "q": "Email",
+          "a": "KHAN@GMAIL.COM"
+        },
+        {
+          "q": "Internship Domain",
+          "a": "Software Development"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "i999"
+        }
+      ]
+    },
+    {
+      "id": "MMIP-16",
+      "name": "ZAIFZA",
+      "email": "zaifa@ghmial",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 9:59:40 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "ZAIFZA"
+        },
+        {
+          "q": "Email",
+          "a": "zaifa@ghmial"
+        },
+        {
+          "q": "Internship Domain",
+          "a": "Design"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "3.3"
+        }
+      ]
+    },
+    {
+      "id": "MMIP-15",
+      "name": "short",
+      "email": "short",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 9:32:26 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "short"
+        },
+        {
+          "q": "Email",
+          "a": "short"
+        },
+        {
+          "q": "Internship Domain",
+          "a": "Software Development"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "short"
+        }
+      ]
+    },
+    {
+      "id": "MMIP-14",
+      "name": "short",
+      "email": "short",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 9:30:19 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "short"
+        },
+        {
+          "q": "Email",
+          "a": "short"
+        },
+        {
+          "q": "Internship Domain",
+          "a": "Software Development"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "short"
+        }
+      ]
+    },
+    {
+      "id": "MMIP-13",
+      "name": "ZUBAIRYA",
+      "email": "zubairyasalamkhan213@gmail.com",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 9:29:02 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "ZUBAIRYA"
+        },
+        {
+          "q": "Email",
+          "a": "zubairyasalamkhan213@gmail.com"
+        },
+        {
+          "q": "Internship Domain",
+          "a": "Software Development"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "3.2"
+        }
+      ]
+    }
+  ]
 }

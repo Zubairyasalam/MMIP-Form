@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
-import { getForms, saveForm, deleteForm } from '../utils/db';
+import { getForms, saveForm, deleteForm, getResponses } from '../utils/db';
 import './AdminFormManagement.css';
 
 export default function AdminFormManagement({ onLogAction }) {
@@ -28,9 +28,9 @@ export default function AdminFormManagement({ onLogAction }) {
     downloadAnchor.remove();
   };
 
-  const handleDownloadSubmissions = (form) => {
-    const allSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-    const formSubs = allSubs.filter(s => s.formId === form.id || s.formName === form.name);
+  const handleDownloadSubmissions = async (form) => {
+    const allSubs = await getResponses();
+    const formSubs = allSubs.filter(s => s.formId === form.id || s.formName === form.name || s.form === form.name);
 
     if (formSubs.length === 0) {
       alert(`No submissions found for the form "${form.name}".`);

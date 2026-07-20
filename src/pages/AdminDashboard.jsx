@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
+import { getForms, getResponses, saveResponse, deleteResponse } from '../utils/db';
 
 const hashPassword = (password) => {
   let hash = 0;
@@ -428,67 +429,71 @@ export default function AdminDashboard() {
     setDepartments(deptList);
 
     // 3. Load Forms
-    let customForms = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('customForms_')) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(parsed)) {
-            customForms = [...customForms, ...parsed];
-          }
-        } catch (e) { }
-      }
-    }
+    getForms().then(dbForms => {
+      const mappedCustom = dbForms.map(cf => ({
+        id: cf.id,
+        title: cf.name || cf.title || 'Untitled Form',
+        status: cf.status || 'Active',
+        created: cf.created || new Date().toLocaleDateString(),
+        creator: cf.creator || 'Admin'
+      }));
 
-    const mappedCustom = customForms.map(cf => ({
-      id: cf.id,
-      title: cf.name || cf.title || 'Untitled Form',
-      status: 'Active',
-      created: cf.created || new Date().toLocaleDateString(),
-      creator: cf.creator || 'Admin'
-    }));
+      const defaultForms = [
+        { id: '1', title: 'Innovation Grant Application', status: 'Active', created: '2026-06-12', creator: 'Dr. Jane Cooper' },
+        { id: '2', title: 'Student Course Feedback', status: 'Active', created: '2026-06-18', creator: 'Prof. John Smith' },
+        { id: '3', title: 'MCC Alumni Survey 2026', status: 'Draft', created: '2026-07-01', creator: 'Admin Team' },
+        { id: '4', title: 'Workshop Registration Form', status: 'Inactive', created: '2026-05-24', creator: 'Dept of Chemistry' },
+        { id: '5', title: 'Faculty Research Proposal', status: 'Active', created: '2026-06-29', creator: 'Dr. Sarah Connor' }
+      ];
 
-    const defaultForms = [
-      { id: '1', title: 'Innovation Grant Application', status: 'Active', created: '2026-06-12', creator: 'Dr. Jane Cooper' },
-      { id: '2', title: 'Student Course Feedback', status: 'Active', created: '2026-06-18', creator: 'Prof. John Smith' },
-      { id: '3', title: 'MCC Alumni Survey 2026', status: 'Draft', created: '2026-07-01', creator: 'Admin Team' },
-      { id: '4', title: 'Workshop Registration Form', status: 'Inactive', created: '2026-05-24', creator: 'Dept of Chemistry' },
-      { id: '5', title: 'Faculty Research Proposal', status: 'Active', created: '2026-06-29', creator: 'Dr. Sarah Connor' }
-    ];
+      const uniqueCustom = mappedCustom.filter(cf => !defaultForms.some(df => df.id === cf.id));
+      const combinedForms = [...defaultForms, ...uniqueCustom];
+      setForms(combinedForms);
 
-    const uniqueCustom = mappedCustom.filter(cf => !defaultForms.some(df => df.id === cf.id));
-    const combinedForms = [...defaultForms, ...uniqueCustom];
-    setForms(combinedForms);
+      setStats(prev => ({
+        ...prev,
+        totalForms: combinedForms.length
+      }));
+    });
 
     // 4. Load Submissions
-    const localSubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-    let sanitized = false;
-    const sortedSubs = [...localSubs].reverse();
-    let nextSeq = 6;
-    const sanitizedLocalSubs = sortedSubs.map(s => {
-      const expectedId = `MMIP-${nextSeq < 10 ? '0' + nextSeq : nextSeq}`;
-      let updatedItem = s;
-      if (s.id !== expectedId) {
-        sanitized = true;
-        updatedItem = { ...s, id: expectedId };
-      }
-      nextSeq++;
-      return updatedItem;
-    }).reverse();
-    if (sanitized) {
-      localStorage.setItem('formSubmissions', JSON.stringify(sanitizedLocalSubs));
-    }
+    getResponses().then(async (dbSubs) => {
+      const legacySubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+      const updatedDbSubs = [...dbSubs];
 
-    const defaultSubs = [
-      { id: 'MMIP-05', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
-      { id: 'MMIP-04', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
-      { id: 'MMIP-03', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
-      { id: 'MMIP-02', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
-      { id: 'MMIP-01', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
-    ];
-    const combinedSubmissions = [...sanitizedLocalSubs, ...defaultSubs];
-    setSubmissions(combinedSubmissions);
+      if (legacySubs.length > 0) {
+        for (const sub of legacySubs) {
+          if (!updatedDbSubs.some(s => s.id === sub.id)) {
+            await saveResponse(sub);
+            updatedDbSubs.push(sub);
+          }
+        }
+        localStorage.removeItem('formSubmissions');
+      }
+
+      const defaultSubs = [
+        { id: 'MMIP-05', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
+        { id: 'MMIP-04', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
+        { id: 'MMIP-03', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
+        { id: 'MMIP-02', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
+        { id: 'MMIP-01', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
+      ];
+
+      const mergedSubs = [...updatedDbSubs];
+      defaultSubs.forEach(df => {
+        if (!mergedSubs.some(m => m.id === df.id)) {
+          mergedSubs.push(df);
+        }
+      });
+
+      mergedSubs.sort((a, b) => b.id.localeCompare(a.id));
+
+      setSubmissions(mergedSubs);
+      setStats(prev => ({
+        ...prev,
+        totalSubmissions: mergedSubs.length
+      }));
+    });
 
     // 5. Load Announcements
     const savedAnnouncements = localStorage.getItem('appAnnouncements');
@@ -545,10 +550,13 @@ export default function AdminDashboard() {
     const combinedLogs = [...logList, ...loginLogs].sort((a, b) => new Date(b.time) - new Date(a.time));
     setLogs(combinedLogs);
 
-    // Compute Stats
+    // Compute Stats (using cache or defaults initially, updated dynamically by async loaders)
+    const cachedFormsCount = JSON.parse(localStorage.getItem('global_customForms') || '[]').length + 5;
+    const cachedSubsCount = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]').length + 5;
+
     setStats({
-      totalSubmissions: combinedSubmissions.length,
-      totalForms: combinedForms.length,
+      totalSubmissions: cachedSubsCount,
+      totalForms: cachedFormsCount,
       activeAdminsCount: userList.filter(u => (u.status === 'Active' || u.account_status === 'Active') && u.role === 'admin').length,
       totalUsersCount: userList.length,
       activeAnnouncements: announcementList.length
@@ -635,11 +643,12 @@ export default function AdminDashboard() {
   // CRUD Submission Management
   const handleDeleteSubmission = (id, name) => {
     triggerConfirm(`Are you sure you want to delete submission ${id} from ${name}?`, () => {
-      const updated = submissions.filter(s => s.id !== id);
-      setSubmissions(updated);
-      localStorage.setItem('formSubmissions', JSON.stringify(updated));
-      logAction('Form', `Deleted form submission: ${id} by ${name}.`);
-      showToastMessage(`Deleted submission ${id} by ${name}.`);
+      deleteResponse(id).then(() => {
+        const updated = submissions.filter(s => s.id !== id);
+        setSubmissions(updated);
+        logAction('Form', `Deleted form submission: ${id} by ${name}.`);
+        showToastMessage(`Deleted submission ${id} by ${name}.`);
+      });
     });
   };
 
@@ -650,12 +659,14 @@ export default function AdminDashboard() {
 
   const handleSubEditSubmit = (e) => {
     e.preventDefault();
-    const updated = submissions.map(s => s.id === editingSub.id ? { ...s, ...subEditData } : s);
-    setSubmissions(updated);
-    localStorage.setItem('formSubmissions', JSON.stringify(updated));
-    logAction('Form', `Updated details & status for submission ${editingSub.id}.`);
-    showToastMessage(`Updated submission ${editingSub.id}.`);
-    setEditingSub(null);
+    const updatedSub = { ...editingSub, ...subEditData };
+    saveResponse(updatedSub).then(() => {
+      const updated = submissions.map(s => s.id === editingSub.id ? updatedSub : s);
+      setSubmissions(updated);
+      logAction('Form', `Updated details & status for submission ${editingSub.id}.`);
+      showToastMessage(`Updated submission ${editingSub.id}.`);
+      setEditingSub(null);
+    });
   };
 
   // CRUD Department Management

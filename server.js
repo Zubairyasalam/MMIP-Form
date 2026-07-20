@@ -102,6 +102,22 @@ app.delete('/api/responses/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// Update or create a response (upsert)
+app.put('/api/responses/:id', (req, res) => {
+  const { id } = req.params;
+  const response = req.body;
+  const db = readDb();
+  if (!db.responses) db.responses = [];
+  const idx = db.responses.findIndex(s => s.id === id || s.response_id === id);
+  if (idx > -1) {
+    db.responses[idx] = response;
+  } else {
+    db.responses.unshift(response);
+  }
+  writeDb(db);
+  res.json({ success: true, response });
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Database backend server is running on http://localhost:5000`);

@@ -15,6 +15,7 @@ const TYPES = [
   { value: 'time', label: '🕐 Time' },
   { value: 'scale', label: '📊 Linear scale' },
   { value: 'file', label: '📁 File upload (PDF/Proposals)' },
+  { value: 'image_upload', label: '🖼️ Image Upload (JPEG/PNG)' },
   { value: 'roll', label: '🆔 MCC Roll No / Staff Code' },
   { value: 'signature', label: '✍️ Digital Signature Pad' },
   { value: 'budget', label: '💰 Budget Breakdown Table' },
@@ -22,7 +23,8 @@ const TYPES = [
   { value: 'color', label: '🎨 Color Picker' },
   { value: 'deadline', label: '⏰ Deadline Reminder' },
   { value: 'ai_assist', label: '🤖 AI Assistant' },
-  { value: 'voice', label: '🎙️ Voice Input' },
+  { value: 'voice', label: '🗣️ Voice Dictation (Speech-to-Text)' },
+  { value: 'audio_record', label: '🎙️ Audio Voice Recording (Voice Note)' },
   { value: 'video', label: '🎥 Video Upload' },
   { value: 'location', label: '📍 Location Picker' },
 ];
@@ -445,6 +447,56 @@ function AnswerArea({
       </div>
     );
   }
+  if (q.type === 'image_upload') {
+    const val = uploadedFiles?.[q.id] || '';
+    return (
+      <div className="fb-answer-area">
+        <input
+          type="file"
+          accept="image/*"
+          id={`img-upload-${q.id}`}
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                setUploadedFiles(prev => ({ ...prev, [q.id]: ev.target.result }));
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+        />
+        {val ? (
+          <div style={{ position: 'relative', border: '1.5px solid #27c93f', borderRadius: '10px', overflow: 'hidden', background: '#e8f8ec', padding: '10px' }}>
+            <img src={val} alt="Uploaded" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+            <button
+              type="button"
+              onClick={() => {
+                setUploadedFiles(prev => {
+                  const copy = { ...prev };
+                  delete copy[q.id];
+                  return copy;
+                });
+              }}
+              style={{ position: 'absolute', top: '10px', right: '10px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}
+              title="Remove image"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div
+            onClick={() => document.getElementById(`img-upload-${q.id}`).click()}
+            style={{ padding: '24px', border: '2px dashed #cbd5e1', borderRadius: '10px', background: '#f8fafc', textAlign: 'center', color: '#64748b', fontSize: '13.5px', cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: '28px', display: 'block', marginBottom: '6px' }}>🖼️</span>
+            Click to upload image or <strong>browse files</strong> (JPEG, PNG, WEBP)
+          </div>
+        )}
+      </div>
+    );
+  }
   if (q.type === 'roll') {
     const val = rollInputs?.[q.id] || '';
     const isValid = /^\d{2}-[A-Za-z]{2,3}-\d{3}$/.test(val) || (val.length >= 4 && /^[a-zA-Z0-9]+$/.test(val));
@@ -584,7 +636,10 @@ function AnswerArea({
     return <AiAssistantEditor q={q} accent={accent} aiTexts={aiTexts} setAiTexts={setAiTexts} />;
   }
   if (q.type === 'voice') {
-    return <VoiceInputEditor q={q} accent={accent} voiceInputs={voiceInputs} setVoiceInputs={setVoiceInputs} />;
+    return <VoiceDictationEditor q={q} accent={accent} voiceInputs={voiceInputs} setVoiceInputs={setVoiceInputs} />;
+  }
+  if (q.type === 'audio_record') {
+    return <AudioRecordingEditor q={q} accent={accent} voiceInputs={voiceInputs} setVoiceInputs={setVoiceInputs} />;
   }
   if (q.type === 'video') {
     return <VideoUploadEditor q={q} accent={accent} videoUploads={videoUploads} setVideoUploads={setVideoUploads} />;
@@ -1031,51 +1086,62 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
   );
 }
 
-function VoiceInputEditor({ q, accent, voiceInputs, setVoiceInputs }) {
-  const val = voiceInputs?.[q.id] || { text: '', isRecording: false };
-  const [recState, setRecState] = useState(false);
+function VoiceDictationEditor({ q, accent, voiceInputs, setVoiceInputs }) {
+  const rawVal = voiceInputs?.[q.id];
+  const textVal = (typeof rawVal === 'string' ? rawVal : (rawVal?.text || '')).replace(/Voice_Note_[\d\.\w]+/gi, '').trim();
+  const [isDictating, setIsDictating] = useState(false);
+  const recognitionRef = useRef(null);
 
-  const toggleRecording = () => {
-    if (recState) {
-      setRecState(false);
-      setVoiceInputs(prev => ({ ...prev, [q.id]: { ...val, isRecording: false } }));
-    } else {
-      setRecState(true);
-      setVoiceInputs(prev => ({ ...prev, [q.id]: { ...val, isRecording: true } }));
+  const startDictation = () => {
+    if (isDictating) {
+      setIsDictating(false);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) { }
+      }
+      return;
+    }
 
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
+    setIsDictating(true);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         recognition.lang = 'en-US';
 
+        let baseText = textVal;
         recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setVoiceInputs(prev => ({
-            ...prev,
-            [q.id]: { text: val.text ? val.text + " " + transcript : transcript, isRecording: false }
-          }));
+          let currentTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          const updated = baseText ? baseText + ' ' + currentTranscript : currentTranscript;
+          setVoiceInputs(prev => ({ ...prev, [q.id]: { text: updated, isRecording: true } }));
         };
 
-        recognition.onerror = () => {
-          simulateVoiceTyping();
+        recognition.onerror = (e) => {
+          console.log("Speech recognition notice:", e);
+          simulateSpeechTyping();
         };
 
         recognition.onend = () => {
-          setRecState(false);
+          setIsDictating(false);
         };
 
         recognition.start();
-      } else {
-        simulateVoiceTyping();
+        return;
+      } catch (e) {
+        console.error(e);
       }
     }
+    simulateSpeechTyping();
   };
 
-  const simulateVoiceTyping = () => {
-    let phrase = "Madras Christian College student proposal seeks funding for clean-energy battery systems inside campus labs.";
-    let current = "";
+  const simulateSpeechTyping = () => {
+    let phrase = "Madras Christian College proposal for smart campus student project management.";
+    let current = textVal ? textVal + ' ' : '';
     let i = 0;
     const interval = setInterval(() => {
       if (i < phrase.length) {
@@ -1087,46 +1153,297 @@ function VoiceInputEditor({ q, accent, voiceInputs, setVoiceInputs }) {
         i += 3;
       } else {
         clearInterval(interval);
-        setRecState(false);
+        setIsDictating(false);
         setVoiceInputs(prev => ({
           ...prev,
-          [q.id]: { text: phrase, isRecording: false }
+          [q.id]: { text: current, isRecording: false }
         }));
       }
-    }, 60);
+    }, 50);
   };
 
   return (
     <div className="fb-answer-area">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            🗣️ Voice Dictation (Speech-to-Text Typing)
+          </span>
+          {isDictating && (
+            <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: '800', background: '#fef2f2', padding: '3px 10px', borderRadius: '12px', border: '1px solid #fca5a5' }}>
+              🔴 LISTENING TO YOUR VOICE... SPEAK NOW!
+            </span>
+          )}
+        </div>
+
         <textarea
-          value={val.text}
-          onChange={e => setVoiceInputs(prev => ({ ...prev, [q.id]: { ...val, text: e.target.value } }))}
-          placeholder="Click mic to start voice description recording..."
-          style={{ width: '100%', height: '100px', padding: '12px', border: '1.5px solid #e0e0e0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', resize: 'vertical', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
+          value={textVal}
+          onChange={e => setVoiceInputs(prev => ({ ...prev, [q.id]: { text: e.target.value, isRecording: false } }))}
+          placeholder="Click 'Start Voice Dictation' below and speak into your microphone to type text here..."
+          style={{ width: '100%', height: '95px', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', resize: 'vertical', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
         />
+
         <button
           type="button"
-          onClick={toggleRecording}
+          onClick={startDictation}
           style={{
             alignSelf: 'flex-start',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '8px 16px',
-            background: val.isRecording ? '#ff3b30' : '#f0f0f0',
-            color: val.isRecording ? 'white' : '#333',
-            border: val.isRecording ? 'none' : '1.5px solid #ccc',
+            padding: '9px 18px',
+            background: isDictating ? '#ef4444' : accent,
+            color: 'white',
+            border: 'none',
             borderRadius: '20px',
-            fontSize: '12px',
+            fontSize: '12.5px',
             fontWeight: '700',
             cursor: 'pointer',
-            animation: val.isRecording ? 'fb-pulse 1.5s infinite' : 'none',
-            transition: 'all 0.2s'
+            boxShadow: isDictating ? '0 0 10px rgba(239,68,68,0.4)' : '0 2px 6px rgba(0,0,0,0.1)',
+            animation: isDictating ? 'fb-pulse 1.2s infinite' : 'none'
           }}
         >
-          <span>{val.isRecording ? '🔴 Recording... Tap to Stop' : '🎙️ Record Project Description'}</span>
+          <span>{isDictating ? '🔴 Dictating... Tap to Stop' : '🗣️ Start Voice Dictation'}</span>
         </button>
+      </div>
+    </div>
+  );
+}
+
+function AudioRecordingEditor({ q, accent, voiceInputs, setVoiceInputs }) {
+  const val = voiceInputs?.[q.id] || { text: '', isRecording: false, duration: '00:15', audioUrl: null };
+  const [recState, setRecState] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const timerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const activeAudioRef = useRef(null);
+
+  const synthSound = (onEnd) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const freqs = [329.63, 392.00, 440.00, 523.25, 659.25];
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.15);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.15 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.15);
+          osc.stop(ctx.currentTime + idx * 0.15 + 0.35);
+        });
+        setTimeout(() => { if (onEnd) onEnd(); }, 1200);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setTimeout(() => { if (onEnd) onEnd(); }, 1200);
+  };
+
+  const playAudioNote = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+      if (activeAudioRef.current) {
+        try { activeAudioRef.current.pause(); } catch (e) { }
+      }
+      return;
+    }
+
+    setIsPlaying(true);
+    if (val.audioUrl && val.audioUrl.startsWith('data:audio')) {
+      try {
+        const audio = new Audio(val.audioUrl);
+        activeAudioRef.current = audio;
+        audio.onended = () => setIsPlaying(false);
+        audio.onerror = () => synthSound(() => setIsPlaying(false));
+        audio.play().catch(() => synthSound(() => setIsPlaying(false)));
+        return;
+      } catch (e) {
+        synthSound(() => setIsPlaying(false));
+        return;
+      }
+    }
+    synthSound(() => setIsPlaying(false));
+  };
+
+  const startRecording = async () => {
+    setRecState(true);
+    setSeconds(0);
+    audioChunksRef.current = [];
+    timerRef.current = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+        mediaRecorder.start();
+      }
+    } catch (e) {
+      console.log("Microphone notice:", e);
+    }
+
+    setVoiceInputs(prev => ({ ...prev, [q.id]: { text: 'Recording...', isRecording: true, duration: '00:00', audioUrl: null } }));
+  };
+
+  const stopRecording = () => {
+    setRecState(false);
+    clearInterval(timerRef.current);
+    const formatted = `00:${String(seconds).padStart(2, '0')}`;
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64Audio = reader.result;
+          setVoiceInputs(prev => ({
+            ...prev,
+            [q.id]: { text: `Voice_Note_${Date.now()}.webm`, isRecording: false, duration: formatted || '00:15', audioUrl: base64Audio }
+          }));
+        };
+        if (mediaRecorderRef.current.stream) {
+          mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+        }
+      };
+      mediaRecorderRef.current.stop();
+    } else {
+      setVoiceInputs(prev => ({
+        ...prev,
+        [q.id]: { text: `Voice_Note_${Date.now()}.mp3`, isRecording: false, duration: formatted || '00:15', audioUrl: null }
+      }));
+    }
+  };
+
+  const deleteRecording = () => {
+    if (activeAudioRef.current) {
+      try { activeAudioRef.current.pause(); } catch (e) { }
+    }
+    setIsPlaying(false);
+    setRecState(false);
+    setSeconds(0);
+    setVoiceInputs(prev => {
+      const copy = { ...prev };
+      delete copy[q.id];
+      return copy;
+    });
+  };
+
+  return (
+    <div className="fb-answer-area">
+      <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '18px 22px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            🎙️ Audio Voice Recording (Voice Note)
+          </span>
+          {recState && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: '700', fontSize: '13px', background: '#fef2f2', padding: '4px 12px', borderRadius: '20px', border: '1px solid #fca5a5' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', animation: 'fb-pulse 1s infinite' }} />
+              Recording Audio (00:{String(seconds).padStart(2, '0')})
+            </span>
+          )}
+        </div>
+
+        {!recState && !val.text && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '20px', background: '#ffffff', borderRadius: '10px', border: '1.5px dashed #cbd5e1' }}>
+            <button
+              type="button"
+              onClick={startRecording}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '30px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              🎙️ Tap to Record Audio Note
+            </button>
+            <span style={{ fontSize: '12.5px', color: '#64748b' }}>Respondents can record audio notes directly from their microphone</span>
+          </div>
+        )}
+
+        {recState && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', padding: '20px', background: '#ffffff', borderRadius: '10px', border: '1.5px solid #fca5a5' }}>
+            <div style={{ fontSize: '26px', fontWeight: '800', color: '#ef4444', fontFamily: 'monospace' }}>
+              ⏱️ 00:{String(seconds).padStart(2, '0')}
+            </div>
+            <button
+              type="button"
+              onClick={stopRecording}
+              style={{
+                background: '#0f172a',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 24px',
+                borderRadius: '20px',
+                fontWeight: '700',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              ⏹️ Stop & Save Voice Recording
+            </button>
+          </div>
+        )}
+
+        {!recState && val.text && (
+          <div style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: isPlaying ? '#ffebeb' : '#f1f5f9', border: isPlaying ? '1.5px solid #ef4444' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                {isPlaying ? '🔊' : '🎵'}
+              </div>
+              <div>
+                <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#0f172a' }}>
+                  {val.text}
+                </div>
+                <div style={{ fontSize: '12px', color: isPlaying ? '#ef4444' : '#16a34a', fontWeight: '600' }}>
+                  {isPlaying ? '▶ Playing Audio Sound...' : `✓ Audio Note Saved (${val.duration || '00:15'})`}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={playAudioNote}
+                style={{ background: isPlaying ? '#ef4444' : accent, color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+              >
+                {isPlaying ? '⏸ Pause Audio' : '▶ Play Audio'}
+              </button>
+              <button
+                type="button"
+                onClick={deleteRecording}
+                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '8px 14px', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+              >
+                🗑️ Re-record
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1321,7 +1638,7 @@ function QuestionCard({
     } else {
       document.execCommand(cmd, false, null);
     }
-    
+
     // Save current values to state
     const newQ = { ...q };
     if (questionInputRef.current) {
@@ -1508,7 +1825,7 @@ function TitleDescCard({ q, focused, accent, onFocus, onChange, onDuplicate, onD
     } else {
       document.execCommand(cmd, false, null);
     }
-    
+
     const newQ = { ...q };
     if (titleRef.current) {
       newQ.question = titleRef.current.innerHTML;
@@ -1813,19 +2130,7 @@ function VideoCard({ q, focused, accent, onFocus, onChange, onDuplicate, onDelet
 export default function FormBuilder() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [tunnelUrl, setTunnelUrl] = useState('');
   const [customBaseUrl, setCustomBaseUrl] = useState(localStorage.getItem('customBaseUrl') || '');
-
-  useEffect(() => {
-    fetch('/tunnel.json')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.url) {
-          setTunnelUrl(data.url);
-        }
-      })
-      .catch(err => console.error('Error loading tunnel URL in FormBuilder:', err));
-  }, []);
 
   const getOrigin = () => {
     return customBaseUrl || window.location.origin;
@@ -1925,17 +2230,15 @@ export default function FormBuilder() {
 
   // Use template data if provided, else defaults
   const defaultTheme = { banner: 'linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)', accent: '#7B1C1C' };
-  const theme = state.theme || defaultTheme;
-  const accent = theme.accent;
+  const initialBg = (state.bg && state.bg.startsWith('#')) ? state.bg : (state.theme?.accent || '#7B1C1C');
+  const [formThemeColor, setFormThemeColor] = useState(initialBg);
+  const accent = formThemeColor || state.theme?.accent || '#7B1C1C';
+  const theme = { banner: `linear-gradient(90deg, ${accent}, ${accent}dd)`, accent: accent };
 
   const initQuestions = (state.questions && state.questions.length > 0)
     ? state.questions.map(makeQ)
     : [
-      { id: nextId++, type: 'short', question: 'Your full name', options: [], required: false },
-      {
-        id: nextId++, type: 'multiple', question: 'Select your department',
-        options: ['Computer Science', 'Electronics', 'Mechanical', 'Civil'], required: false
-      },
+      { id: nextId++, cardType: 'question', type: 'short', question: '', options: [], required: false }
     ];
 
   const [formTitle, setFormTitle] = useState(state.richName || state.templateName || 'Untitled form');
@@ -1978,7 +2281,10 @@ export default function FormBuilder() {
       if (saved) {
         // Store existing metadata so handlePublish can preserve it
         existingMetaRef.current = saved;
-        // Load latest title & desc from DB (overrides navigation state)
+        // Load latest title, desc & theme color from DB
+        if (saved.bg || saved.theme?.accent) {
+          setFormThemeColor(saved.bg || saved.theme?.accent);
+        }
         if (saved.richName || saved.name) {
           setFormTitle(saved.richName || saved.name);
           if (mainTitleRef.current) mainTitleRef.current.innerHTML = saved.richName || saved.name;
@@ -1995,7 +2301,7 @@ export default function FormBuilder() {
         }
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -2032,7 +2338,7 @@ export default function FormBuilder() {
     } else {
       document.execCommand(cmd, false, null);
     }
-    
+
     // Save current values to state
     if (mainTitleRef.current) {
       setFormTitle(mainTitleRef.current.innerHTML);
@@ -2135,9 +2441,8 @@ export default function FormBuilder() {
 
   const handlePublish = async (showModal = true) => {
     const plainTitle = stripHtml(formTitle);
-    const slug = toSlug(plainTitle) || `form-${Date.now()}`;
-    // Preserve original id (including default-X) so we overwrite, not duplicate
-    const formId = savedFormId || state.id || slug;
+    // Use saved ID or state ID, or generate a fresh unique form ID to prevent collisions with old forms/templates
+    const formId = savedFormId || state.id || `form_${Date.now()}`;
 
     // Load the latest version from DB to preserve existing metadata (tag, bg, visibility, etc.)
     let existingMeta = existingMetaRef.current;
@@ -2159,7 +2464,7 @@ export default function FormBuilder() {
       richName: formTitle,
       desc: formDesc,
       fields: `${questions.filter(q => q.cardType === 'question' || !q.cardType).length} fields`,
-      theme: theme,
+      theme: { accent: formThemeColor, banner: `linear-gradient(90deg, ${formThemeColor}, ${formThemeColor}dd)`, label: 'Custom' },
       headerImage: headerImage,
       questions: questions.map(q => ({
         cardType: q.cardType || 'question',
@@ -2172,7 +2477,7 @@ export default function FormBuilder() {
       })),
       // Preserve or set metadata
       tag: existingMeta?.tag || 'Custom Form',
-      bg: existingMeta?.bg || 'maroon-bg',
+      bg: formThemeColor,
       status: existingMeta?.status || 'Active',
       visibility: existingMeta?.visibility || 'public',
       is_hidden: existingMeta?.is_hidden !== undefined ? existingMeta.is_hidden : false,
@@ -2318,7 +2623,7 @@ export default function FormBuilder() {
               <polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          
+
           <img src="/mcc-mrf-logo.png?v=2" alt="MCC-MRF" className="fb-logo" />
 
           <div className="fb-title-area">
@@ -2344,7 +2649,78 @@ export default function FormBuilder() {
             </div>
           </div>
 
-          <div className="fb-topbar-actions">
+          <div className="fb-topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Form Theme Color Palette Selector */}
+            <div className="fb-theme-color-picker" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#ffffff', border: '1.5px solid #cbd5e1', padding: '5px 14px', borderRadius: '24px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', whiteSpace: 'nowrap' }}>🎨 Theme Color:</span>
+              {[
+                { name: 'MCC Maroon', hex: '#7B1C1C' },
+                { name: 'Crimson Rose', hex: '#be123c' },
+                { name: 'Royal Blue', hex: '#1e3a8a' },
+                { name: 'Ocean Cyan', hex: '#0284c7' },
+                { name: 'Emerald Green', hex: '#065f46' },
+                { name: 'Deep Teal', hex: '#0d9488' },
+                { name: 'Royal Purple', hex: '#581c87' },
+                { name: 'Deep Violet', hex: '#6d28d9' },
+                { name: 'Burnt Orange', hex: '#ea580c' },
+                { name: 'Amber Gold', hex: '#d97706' },
+                { name: 'Midnight Dark', hex: '#0f172a' },
+                { name: 'Slate Charcoal', hex: '#334155' }
+              ].map(c => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  title={`Set Form Theme: ${c.name}`}
+                  onClick={() => setFormThemeColor(c.hex)}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: c.hex,
+                    border: formThemeColor === c.hex ? '2px solid #ffffff' : '1px solid transparent',
+                    outline: formThemeColor === c.hex ? `2.5px solid ${c.hex}` : 'none',
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s ease',
+                    transform: formThemeColor === c.hex ? 'scale(1.25)' : 'scale(1)',
+                    flexShrink: 0
+                  }}
+                />
+              ))}
+
+              {/* Custom Color Wheel Picker */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: '4px' }} title="Pick Custom Color Wheel">
+                <input
+                  type="color"
+                  id="custom-color-picker-input"
+                  value={formThemeColor}
+                  onChange={e => setFormThemeColor(e.target.value)}
+                  style={{
+                    position: 'absolute',
+                    opacity: 0,
+                    width: '20px',
+                    height: '20px',
+                    cursor: 'pointer',
+                    left: 0,
+                    top: 0,
+                    zIndex: 2
+                  }}
+                />
+                <label
+                  htmlFor="custom-color-picker-input"
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: 'conic-gradient(from 0deg, red, yellow, green, cyan, blue, magenta, red)',
+                    border: '1.5px solid #ffffff',
+                    boxShadow: '0 0 0 1.5px #cbd5e1',
+                    cursor: 'pointer',
+                    display: 'inline-block'
+                  }}
+                  title="Pick Custom HEX Color Wheel"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

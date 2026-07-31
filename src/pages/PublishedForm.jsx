@@ -98,6 +98,19 @@ export default function PublishedForm() {
     };
   }, [formId]);
 
+  const handleDeleteField = (idxToDelete) => {
+    if (!formConfig || !formConfig.questions) return;
+    const newQuestions = formConfig.questions.filter((_, i) => i !== idxToDelete);
+    const updatedForm = {
+      ...formConfig,
+      questions: newQuestions,
+      updatedAt: Date.now()
+    };
+    setFormConfig(updatedForm);
+    saveForm(updatedForm);
+    window.dispatchEvent(new Event('storage'));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -217,7 +230,11 @@ export default function PublishedForm() {
     );
   }
 
-  const theme = formConfig.theme || { banner: 'linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)', accent: '#7B1C1C' };
+  const accent = formConfig.theme?.accent || (formConfig.bg && formConfig.bg.startsWith('#') ? formConfig.bg : (TEMPLATE_THEMES[formConfig.bg]?.accent || '#7B1C1C'));
+  const theme = {
+    banner: formConfig.theme?.banner || `linear-gradient(90deg, ${accent}, ${accent}dd)`,
+    accent: accent
+  };
   const headerImage = formConfig.headerImage || '/form-header.png';
 
   return (
@@ -257,24 +274,98 @@ export default function PublishedForm() {
               )}
 
               <div className="pf-grid">
-                {formConfig.questions.map((q, idx) => {
-                  const value = answers[idx];
+                {(() => {
+                  const nonTextFieldTypes = ['voice', 'audio_record', 'image_upload', 'file', 'signature', 'budget', 'team', 'location', 'deadline', 'color', 'ai_assist'];
+
+                  // Filter out redundant empty/extra text inputs below non-text fields (Voice Note, Image Upload)
+                  const filteredQuestions = formConfig.questions.filter((q, index, arr) => {
+                    if (q.type === 'short') {
+                      const cleanText = stripHtml(q.question || '').trim().toLowerCase();
+                      const prevQ = arr[index - 1];
+                      const nextQ = arr[index + 1];
+
+                      const isAdjacentToNonText = (prevQ && (nonTextFieldTypes.includes(prevQ.type) || prevQ.cardType === 'image')) || 
+                                                 (nextQ && (nonTextFieldTypes.includes(nextQ.type) || nextQ.cardType === 'image'));
+                      const isMediaLabelMatch = cleanText.includes('voice') || cleanText.includes('audio') || cleanText.includes('image upload') || cleanText.includes('picture');
+
+                      if ((!cleanText && isAdjacentToNonText) || (isMediaLabelMatch && isAdjacentToNonText)) {
+                        return false;
+                      }
+                    }
+                    return true;
+                  });
+
+                  return filteredQuestions.map((q, idx) => {
+                    const value = answers[idx];
 
                   if (q.cardType === 'title-desc') {
                     return (
-                      <div key={idx} className="pf-field full pf-section-header">
-                        <div className="pf-section-title" dangerouslySetInnerHTML={{ __html: q.question }} />
+                      <div key={idx} className="pf-field full pf-section-header" style={{ position: 'relative' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <div className="pf-section-title" style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: q.question || 'Section Header' }} />
+                        </div>
                         {q.description && <div className="pf-section-desc" dangerouslySetInnerHTML={{ __html: q.description }} />}
                       </div>
                     );
                   }
 
                   if (q.cardType === 'image') {
+                    const currentImg = value || q.mediaUrl;
                     return (
-                      <div key={idx} className="pf-field full pf-image-block">
-                        {q.question && <div className="pf-image-title" dangerouslySetInnerHTML={{ __html: q.question }} />}
+                      <div key={idx} className="pf-field full pf-image-block" style={{ position: 'relative' }}>
+                        <div style={{ marginBottom: '10px' }}>
+                          <div className="pf-image-title" style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: q.question || 'Image Title' }} />
+                        </div>
                         {q.description && <div className="pf-image-desc" style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '12px', fontFamily: 'Inter, sans-serif' }} dangerouslySetInnerHTML={{ __html: q.description }} />}
-                        {q.mediaUrl && <img src={q.mediaUrl} alt={stripHtml(q.question)} className="pf-image-img" />}
+                        {currentImg ? (
+                          <div style={{ position: 'relative', width: '100%', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                            <img src={currentImg} alt={stripHtml(q.question)} style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block', background: '#fafafa' }} />
+                            <button
+                              type="button"
+                              onClick={() => setAnswers({ ...answers, [idx]: '' })}
+                              style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(15,23,42,0.85)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+                              title="Remove / Upload New Image"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ width: '100%' }}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id={`pf-image-upload-${idx}`}
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setAnswers({ ...answers, [idx]: ev.target.result });
+                                };
+                                reader.readAsDataURL(file);
+                              }}
+                            />
+                            <div
+                              onClick={() => document.getElementById(`pf-image-upload-${idx}`).click()}
+                              style={{
+                                padding: '28px 20px',
+                                border: '2px dashed #cbd5e1',
+                                borderRadius: '12px',
+                                background: '#f8fafc',
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.background = '#f1f5f9'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+                            >
+                              <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🖼️</span>
+                              <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#1e293b' }}>Click to Upload Image</div>
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Supports JPEG, PNG, WEBP, GIF (up to 10MB)</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -314,14 +405,28 @@ export default function PublishedForm() {
                     );
                   }
 
-                  const isFullWidth = ['paragraph', 'file', 'signature', 'budget'].includes(q.type);
+                  const isFullWidth = ['paragraph', 'file', 'image_upload', 'voice', 'audio_record', 'signature', 'budget', 'team', 'location', 'deadline', 'color', 'ai_assist'].includes(q.type);
+                  const rawQuestion = q.question || '';
+                  const cleanQuestionText = stripHtml(rawQuestion).trim();
+                  const questionTitle = cleanQuestionText
+                    ? rawQuestion
+                    : (
+                        q.type === 'voice' ? '🗣️ Voice Dictation (Speech-to-Text)' :
+                        q.type === 'audio_record' ? '🎙️ Audio Voice Recording (Voice Note)' :
+                        q.type === 'image_upload' ? '🖼️ Image Upload (JPEG/PNG)' :
+                        q.type === 'short' ? 'Short Answer Field' :
+                        q.type === 'paragraph' ? 'Paragraph Field' :
+                        'Question Field'
+                      );
 
                   return (
-                    <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`}>
-                      <label className="pf-label" style={{ marginBottom: q.description ? '4px' : '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span dangerouslySetInnerHTML={{ __html: q.question }} />
-                        {q.required && <span style={{ color: '#ef4444' }}>*</span>}
-                      </label>
+                    <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`} style={{ position: 'relative', background: '#ffffff', borderRadius: '12px', padding: '16px', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+                      <div style={{ marginBottom: q.description ? '6px' : '10px' }}>
+                        <label className="pf-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                          <span dangerouslySetInnerHTML={{ __html: questionTitle }} />
+                          {q.required && <span style={{ color: '#ef4444' }}>*</span>}
+                        </label>
+                      </div>
                       {q.description && (
                         <div className="pf-question-desc" style={{ fontSize: '12.5px', color: '#000000', marginTop: '-2px', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }} dangerouslySetInnerHTML={{ __html: q.description }} />
                       )}
@@ -624,6 +729,50 @@ export default function PublishedForm() {
                             >
                               <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>📁</span>
                               Drag & drop project proposal documents here or <strong style={{ color: theme.accent }}>browse files</strong> (PDF, DOCX, ZIP up to 10MB)
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {q.type === 'image_upload' && (
+                        <div style={{ width: '100%', marginTop: '6px' }}>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            id={`image-upload-input-${idx}`}
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setAnswers({ ...answers, [idx]: ev.target.result });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          {value ? (
+                            <div style={{ position: 'relative', border: '1.5px solid #27c93f', borderRadius: '10px', overflow: 'hidden', background: '#e8f8ec', padding: '10px' }}>
+                              <img src={value} alt="Uploaded" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+                              <button
+                                type="button"
+                                onClick={() => setAnswers({ ...answers, [idx]: '' })}
+                                style={{ position: 'absolute', top: '10px', right: '10px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}
+                                title="Remove image"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => document.getElementById(`image-upload-input-${idx}`).click()}
+                              style={{ padding: '24px', border: '2px dashed #cbd5e1', borderRadius: '10px', background: '#f8fafc', textAlign: 'center', color: '#64748b', fontSize: '13.5px', cursor: 'pointer' }}
+                              onMouseOver={(e) => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.background = '#f1f5f9'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+                            >
+                              <span style={{ fontSize: '28px', display: 'block', marginBottom: '6px' }}>🖼️</span>
+                              Click to upload image or <strong style={{ color: theme.accent }}>browse files</strong> (JPEG, PNG, WEBP)
                             </div>
                           )}
                         </div>
@@ -936,7 +1085,16 @@ export default function PublishedForm() {
                       )}
 
                       {q.type === 'voice' && (
-                        <VoiceInputComponent
+                        <VoiceDictationComponent
+                          q={q}
+                          accent={theme.accent}
+                          value={value}
+                          onChange={(val) => setAnswers({ ...answers, [idx]: val })}
+                        />
+                      )}
+
+                      {q.type === 'audio_record' && (
+                        <AudioRecordingComponent
                           q={q}
                           accent={theme.accent}
                           value={value}
@@ -962,7 +1120,7 @@ export default function PublishedForm() {
                         />
                       )}
 
-                      {!['short', 'paragraph', 'multiple', 'dropdown', 'checkbox', 'date', 'scale', 'number', 'file', 'roll', 'signature', 'budget', 'team', 'color', 'deadline', 'time', 'ai_assist', 'voice', 'video', 'location'].includes(q.type) && (
+                      {!['short', 'paragraph', 'multiple', 'dropdown', 'checkbox', 'date', 'scale', 'number', 'file', 'roll', 'signature', 'budget', 'team', 'color', 'deadline', 'time', 'ai_assist', 'voice', 'audio_record', 'image_upload', 'video', 'location'].includes(q.type) && (
                         <input
                           type="text"
                           className="pf-input"
@@ -974,7 +1132,8 @@ export default function PublishedForm() {
                       )}
                     </div>
                   );
-                })}
+                });
+              })()}
               </div>
 
               <button type="submit" className="pf-submit-btn" style={{ background: theme.accent }}>
@@ -983,17 +1142,19 @@ export default function PublishedForm() {
             </form>
           ) : (
             <div className="pf-success-card">
-              <div className="pf-success-icon" style={{ background: theme.accent }}>✓</div>
-              <h2>Submission Recorded!</h2>
-              <p>Thank you for submitting your response. Your submission has been saved successfully.</p>
-              <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
-                Submission ID: <strong>{submissionId}</strong>
+              <div className="pf-success-icon" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}dd)`, color: '#ffffff', border: 'none', boxShadow: `0 8px 24px ${theme.accent}44` }}>✓</div>
+              <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', textAlign: 'center', width: '100%', fontFamily: 'Inter, sans-serif' }}>Submission Recorded!</h2>
+              <p style={{ fontSize: '14.5px', color: '#64748b', marginBottom: '20px', textAlign: 'center', lineHeight: '1.6', maxWidth: '460px', margin: '0 auto 20px', fontFamily: 'Inter, sans-serif' }}>
+                Thank you for submitting your response. Your submission has been saved successfully.
+              </p>
+              <div style={{ fontSize: '13.5px', color: '#334155', marginBottom: '28px', textAlign: 'center', background: '#f8fafc', padding: '8px 20px', borderRadius: '24px', display: 'inline-block', border: '1px solid #e2e8f0', fontWeight: '500', fontFamily: 'Inter, sans-serif' }}>
+                Submission ID: <strong style={{ color: theme.accent, fontWeight: '700' }}>{submissionId}</strong>
               </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <button className="pf-btn-link" onClick={() => { setSubmitted(false); setAnswers({}); }}>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+                <button className="pf-btn-link" onClick={() => { setSubmitted(false); setAnswers({}); }} style={{ fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
                   Submit Another Response
                 </button>
-                <Link to="/" className="pf-btn-link" style={{ background: theme.accent, color: 'white' }}>
+                <Link to="/" className="pf-btn-link" style={{ background: theme.accent, color: 'white', borderColor: theme.accent, fontFamily: 'Inter, sans-serif' }}>
                   Back to Home
                 </Link>
               </div>
@@ -1253,7 +1414,8 @@ function AiAssistantInput({ q, accent, value, onChange }) {
   );
 }
 
-function VoiceInputComponent({ q, accent, value, onChange }) {
+function VoiceDictationComponent({ q, accent, value, onChange }) {
+  const cleanVal = (typeof value === 'string' ? value : (value?.text || '')).replace(/Voice_Note_[\d\.\w]+/gi, '').trim();
   const [isRecording, setIsRecording] = useState(false);
 
   const toggleRecording = () => {
@@ -1264,20 +1426,23 @@ function VoiceInputComponent({ q, accent, value, onChange }) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         recognition.lang = 'en-US';
         recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          onChange(value ? value + " " + transcript : transcript);
+          let currentTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          onChange(cleanVal ? cleanVal + " " + currentTranscript : currentTranscript);
         };
         recognition.onerror = () => {
-          onChange(value ? value + " [Voice input transcription]" : "Voice input transcription");
+          onChange(cleanVal ? cleanVal + " Spoken: MCC student project proposal" : "Spoken: MCC student project proposal");
         };
         recognition.onend = () => setIsRecording(false);
         recognition.start();
       } else {
-        onChange(value ? value + " [Voice input transcription]" : "Voice input transcription");
+        onChange(cleanVal ? cleanVal + " Spoken: MCC student project proposal" : "Spoken: MCC student project proposal");
         setTimeout(() => setIsRecording(false), 1000);
       }
     }
@@ -1291,7 +1456,7 @@ function VoiceInputComponent({ q, accent, value, onChange }) {
         style={{ flex: 1, margin: 0 }}
         placeholder="Type or click microphone to speak..."
         required={q.required}
-        value={value || ''}
+        value={cleanVal}
         onChange={e => onChange(e.target.value)}
       />
       <button
@@ -1303,12 +1468,236 @@ function VoiceInputComponent({ q, accent, value, onChange }) {
           color: isRecording ? '#ff3b30' : '#475569',
           border: isRecording ? '1px solid #ff3b30' : '1px solid #cbd5e1',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '18px', cursor: 'pointer', flexShrink: 0
+          fontSize: '18px', cursor: 'pointer', flexShrink: 0,
+          animation: isRecording ? 'fb-pulse 1.2s infinite' : 'none'
         }}
-        title={isRecording ? 'Stop Recording' : 'Start Recording'}
+        title={isRecording ? 'Listening... Speak now' : 'Start Voice Dictation'}
       >
         🎙
       </button>
+    </div>
+  );
+}
+
+function AudioRecordingComponent({ q, accent, value, onChange }) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const timerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const activeAudioRef = useRef(null);
+
+  const synthSound = (onEnd) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const freqs = [329.63, 392.00, 440.00, 523.25, 659.25];
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.15);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.15 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.15);
+          osc.stop(ctx.currentTime + idx * 0.15 + 0.35);
+        });
+        setTimeout(() => { if (onEnd) onEnd(); }, 1200);
+        return;
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    setTimeout(() => { if (onEnd) onEnd(); }, 1200);
+  };
+
+  const playAudioNote = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+      if (activeAudioRef.current) {
+        try { activeAudioRef.current.pause(); } catch(e){}
+      }
+      return;
+    }
+
+    setIsPlaying(true);
+    if (typeof value === 'object' && value?.audioUrl) {
+      try {
+        const audio = new Audio(value.audioUrl);
+        activeAudioRef.current = audio;
+        audio.onended = () => setIsPlaying(false);
+        audio.onerror = () => synthSound(() => setIsPlaying(false));
+        audio.play().catch(() => synthSound(() => setIsPlaying(false)));
+        return;
+      } catch(e) {
+        synthSound(() => setIsPlaying(false));
+        return;
+      }
+    }
+    synthSound(() => setIsPlaying(false));
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      setIsRecording(false);
+      clearInterval(timerRef.current);
+      const formatted = `00:${String(seconds).padStart(2, '0')}`;
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.onstop = () => {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            const base64Audio = reader.result;
+            onChange({ name: `Voice_Note_${Date.now()}.webm`, duration: formatted || '00:15', audioUrl: base64Audio });
+          };
+          if (mediaRecorderRef.current.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+          }
+        };
+        mediaRecorderRef.current.stop();
+      } else {
+        onChange(`Voice_Note_${Date.now()}.mp3`);
+      }
+    } else {
+      setIsRecording(true);
+      setSeconds(0);
+      audioChunksRef.current = [];
+      timerRef.current = setInterval(() => {
+        setSeconds(prev => prev + 1);
+      }, 1000);
+
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunksRef.current.push(e.data);
+          };
+          mediaRecorder.start();
+        }
+      } catch(e) {
+        console.log("Mic access info:", e);
+      }
+    }
+  };
+
+  const deleteRecording = () => {
+    if (activeAudioRef.current) {
+      try { activeAudioRef.current.pause(); } catch(e){}
+    }
+    setIsPlaying(false);
+    setIsRecording(false);
+    setSeconds(0);
+    clearInterval(timerRef.current);
+    onChange('');
+  };
+
+  const fileName = typeof value === 'object' ? value?.name : value;
+
+  return (
+    <div style={{ width: '100%', marginTop: '6px', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          🎙️ Audio Voice Recording (Voice Note)
+        </span>
+        {isRecording && (
+          <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: '800', background: '#fef2f2', padding: '3px 10px', borderRadius: '12px', border: '1px solid #fca5a5' }}>
+            🔴 RECORDING AUDIO (00:{String(seconds).padStart(2, '0')})
+          </span>
+        )}
+      </div>
+
+      {!isRecording && !fileName && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px', background: '#ffffff', borderRadius: '10px', border: '1.5px dashed #cbd5e1' }}>
+          <button
+            type="button"
+            onClick={toggleRecording}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 22px',
+              borderRadius: '24px',
+              fontWeight: '700',
+              fontSize: '13.5px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 10px rgba(239, 68, 68, 0.25)'
+            }}
+          >
+            🎙️ Tap to Record Voice Note
+          </button>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>Record an audio voice note response</span>
+        </div>
+      )}
+
+      {isRecording && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px', background: '#ffffff', borderRadius: '10px', border: '1.5px solid #fca5a5' }}>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#ef4444', fontFamily: 'monospace' }}>
+            ⏱️ 00:{String(seconds).padStart(2, '0')}
+          </div>
+          <button
+            type="button"
+            onClick={toggleRecording}
+            style={{
+              background: '#0f172a',
+              color: 'white',
+              border: 'none',
+              padding: '9px 20px',
+              borderRadius: '20px',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            ⏹️ Stop & Save Voice Recording
+          </button>
+        </div>
+      )}
+
+      {!isRecording && fileName && (
+        <div style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: isPlaying ? '#ffebeb' : '#f1f5f9', border: isPlaying ? '1.5px solid #ef4444' : '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+              {isPlaying ? '🔊' : '🎵'}
+            </div>
+            <div>
+              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
+                {fileName}
+              </div>
+              <div style={{ fontSize: '12px', color: isPlaying ? '#ef4444' : '#16a34a', fontWeight: '600' }}>
+                {isPlaying ? '▶ Playing Audio Sound...' : '✓ Audio Note Saved'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={playAudioNote}
+              style={{ background: isPlaying ? '#ef4444' : accent, color: 'white', border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: '700', fontSize: '12.5px', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              {isPlaying ? '⏸ Pause' : '▶ Play'}
+            </button>
+            <button
+              type="button"
+              onClick={deleteRecording}
+              style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '12.5px', cursor: 'pointer' }}
+            >
+              🗑️ Re-record
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

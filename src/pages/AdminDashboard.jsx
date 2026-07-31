@@ -50,6 +50,105 @@ const DEFAULT_PERMISSIONS = [
   }
 ];
 
+const FOLDER_PALETTES = [
+  {
+    headerBg: '#450a0a',
+    notchBg: '#7B1C1C',
+    pocketGradient: 'linear-gradient(135deg, #450a0a 0%, #7B1C1C 50%, #991b1b 100%)',
+    stampColor: '#7B1C1C',
+    stampBg: '#fdf2f2',
+    stampBorder: '#fecaca',
+    badgeText: '#7B1C1C',
+    btnGradient: 'linear-gradient(135deg, #7B1C1C 0%, #991b1b 100%)',
+    btnShadow: 'rgba(123, 28, 28, 0.28)',
+    accentColor: '#7B1C1C'
+  },
+  {
+    headerBg: '#0f172a',
+    notchBg: '#1d4ed8',
+    pocketGradient: 'linear-gradient(135deg, #172554 0%, #1d4ed8 50%, #3b82f6 100%)',
+    stampColor: '#1d4ed8',
+    stampBg: '#eff6ff',
+    stampBorder: '#bfdbfe',
+    badgeText: '#1d4ed8',
+    btnGradient: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+    btnShadow: 'rgba(29, 78, 216, 0.28)',
+    accentColor: '#1d4ed8'
+  },
+  {
+    headerBg: '#022c22',
+    notchBg: '#047857',
+    pocketGradient: 'linear-gradient(135deg, #022c22 0%, #047857 50%, #10b981 100%)',
+    stampColor: '#047857',
+    stampBg: '#ecfdf5',
+    stampBorder: '#a7f3d0',
+    badgeText: '#047857',
+    btnGradient: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+    btnShadow: 'rgba(4, 120, 87, 0.28)',
+    accentColor: '#047857'
+  },
+  {
+    headerBg: '#3b0764',
+    notchBg: '#6b21a8',
+    pocketGradient: 'linear-gradient(135deg, #2e1065 0%, #6b21a8 50%, #9333ea 100%)',
+    stampColor: '#6b21a8',
+    stampBg: '#faf5ff',
+    stampBorder: '#e9d5ff',
+    badgeText: '#6b21a8',
+    btnGradient: 'linear-gradient(135deg, #6b21a8 0%, #7e22ce 100%)',
+    btnShadow: 'rgba(107, 33, 168, 0.28)',
+    accentColor: '#6b21a8'
+  },
+  {
+    headerBg: '#451a03',
+    notchBg: '#b45309',
+    pocketGradient: 'linear-gradient(135deg, #451a03 0%, #b45309 50%, #f59e0b 100%)',
+    stampColor: '#b45309',
+    stampBg: '#fffbeb',
+    stampBorder: '#fde68a',
+    badgeText: '#b45309',
+    btnGradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+    btnShadow: 'rgba(180, 83, 9, 0.28)',
+    accentColor: '#b45309'
+  },
+  {
+    headerBg: '#1e1b4b',
+    notchBg: '#3730a3',
+    pocketGradient: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #6366f1 100%)',
+    stampColor: '#3730a3',
+    stampBg: '#eef2ff',
+    stampBorder: '#c7d2fe',
+    badgeText: '#3730a3',
+    btnGradient: 'linear-gradient(135deg, #3730a3 0%, #4338ca 100%)',
+    btnShadow: 'rgba(55, 48, 163, 0.28)',
+    accentColor: '#3730a3'
+  },
+  {
+    headerBg: '#042f2e',
+    notchBg: '#0f766e',
+    pocketGradient: 'linear-gradient(135deg, #042f2e 0%, #0f766e 50%, #14b8a6 100%)',
+    stampColor: '#0f766e',
+    stampBg: '#f0fdfa',
+    stampBorder: '#99f6e4',
+    badgeText: '#0f766e',
+    btnGradient: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+    btnShadow: 'rgba(15, 118, 110, 0.28)',
+    accentColor: '#0f766e'
+  },
+  {
+    headerBg: '#4c0519',
+    notchBg: '#be123c',
+    pocketGradient: 'linear-gradient(135deg, #4c0519 0%, #be123c 50%, #f43f5e 100%)',
+    stampColor: '#be123c',
+    stampBg: '#fff1f2',
+    stampBorder: '#fecdd3',
+    badgeText: '#be123c',
+    btnGradient: 'linear-gradient(135deg, #be123c 0%, #e11d48 100%)',
+    btnShadow: 'rgba(190, 18, 60, 0.28)',
+    accentColor: '#be123c'
+  }
+];
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
@@ -105,6 +204,61 @@ export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [loginActivity, setLoginActivity] = useState([]);
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [subViewMode, setSubViewMode] = useState('grouped'); // 'grouped' or 'flat'
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState('ALL');
+  const [collapsedTemplates, setCollapsedTemplates] = useState({});
+  const [activeTemplateModal, setActiveTemplateModal] = useState(null);
+
+  const toggleTemplateCollapse = (templateTitle) => {
+    setCollapsedTemplates(prev => ({
+      ...prev,
+      [templateTitle]: !prev[templateTitle]
+    }));
+  };
+
+  const handleDownloadFormTemplateCSV = (formTitle, formSubs) => {
+    if (!formSubs || formSubs.length === 0) return;
+
+    const questionMap = new Map();
+    formSubs.forEach(sub => {
+      (sub.answers || []).forEach(ans => {
+        if (ans.q) questionMap.set(ans.q, true);
+      });
+    });
+    const uniqueQuestions = Array.from(questionMap.keys());
+
+    const headers = ['Submission ID', 'Submitter Name', 'Email', 'Submitted Date', 'Status', ...uniqueQuestions.map(q => `"${q.replace(/"/g, '""')}"`)];
+
+    const rows = formSubs.map(sub => {
+      const row = [
+        `"${(sub.id || '').toString().replace(/"/g, '""')}"`,
+        `"${(sub.name || '').replace(/"/g, '""')}"`,
+        `"${(sub.email || '').replace(/"/g, '""')}"`,
+        `"${(sub.date || '').replace(/"/g, '""')}"`,
+        `"${(sub.status || '').replace(/"/g, '""')}"`
+      ];
+
+      const subAnsMap = new Map();
+      (sub.answers || []).forEach(ans => {
+        if (ans.q) subAnsMap.set(ans.q, ans.a || '');
+      });
+
+      uniqueQuestions.forEach(q => {
+        const val = subAnsMap.get(q) || '';
+        row.push(`"${String(val).replace(/"/g, '""')}"`);
+      });
+
+      return row.join(',');
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", csvContent);
+    downloadAnchor.setAttribute("download", `${formTitle.replace(/[^a-zA-Z0-9]/g, '_')}-all-submissions.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   const handleDownloadSubCSV = (sub) => {
     const headers = ['Question', 'Answer'];
@@ -1411,217 +1565,956 @@ export default function AdminDashboard() {
         )}
 
         {/* ── 6. ALL SUBMISSIONS ── */}
-        {activeMenu === 'submissions' && (
-          <div className="admin-tab-content anim-fade-in">
-            <div className="tab-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Global Submissions Feed</h3>
-              <div className="admin-search-box" style={{ width: '300px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Filter submissions..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
+        {activeMenu === 'submissions' && (() => {
+          const filteredSubmissions = submissions.filter(sub =>
+            (sub.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (sub.form || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (sub.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
+          );
 
-            <div className="super-table-container">
-              <table className="super-data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Form Title</th>
-                    <th>Submitter</th>
-                    <th>Submitted Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions
-                    .filter(sub =>
-                      sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      sub.form.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      sub.id.toString().toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map(sub => (
-                      <tr key={sub.id}>
-                        <td className="font-semibold">{sub.id}</td>
-                        <td>{sub.form}</td>
-                        <td>{sub.name}</td>
-                        <td>{sub.date || '2026-07-09'}</td>
-                        <td>
-                          <span className={`status-badge ${sub.status.replace(' ', '-').toLowerCase()}`}>
-                            {sub.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              className="action-btn view"
-                              onClick={() => setSelectedSub(sub)}
-                            >
-                              View Details
-                            </button>
-                            <button
-                              className="action-btn edit"
-                              style={{ background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}
-                              onClick={() => handleDownloadSubCSV(sub)}
-                              title="Download as Excel/CSV"
-                            >
-                              📥 Excel
-                            </button>
-                            <button
-                              className="action-btn edit"
-                              style={{ background: '#fff5f5', color: '#991b1b', borderColor: '#fca5a5' }}
-                              onClick={() => handleDownloadSubPDF(sub)}
-                              title="Download as PDF"
-                            >
-                              📄 PDF
-                            </button>
-                            <button
-                              className="action-btn edit"
-                              onClick={() => openEditSubModal(sub)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="action-btn delete"
-                              onClick={() => handleDeleteSubmission(sub.id, sub.name)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+          // Group submissions by form title
+          const submissionsByForm = filteredSubmissions.reduce((acc, sub) => {
+            const formTitle = sub.form || 'Uncategorized Form';
+            if (!acc[formTitle]) {
+              acc[formTitle] = [];
+            }
+            acc[formTitle].push(sub);
+            return acc;
+          }, {});
 
-            {selectedSub && createPortal(
-              <div className="admin-modal-overlay">
-                <div className="admin-modal" style={{ maxWidth: '1100px', width: '95%' }}>
-                  <div className="modal-header">
-                    <h4>Submission Details - {selectedSub.id}</h4>
-                    <button className="modal-close" onClick={() => setSelectedSub(null)}>×</button>
-                  </div>
-                  <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                      <div>
-                        <strong>Submitter Name:</strong>
-                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.name}</p>
-                      </div>
-                      <div>
-                        <strong>Email Address:</strong>
-                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.email}</p>
-                      </div>
-                      <div>
-                        <strong>Form Name:</strong>
-                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.form}</p>
-                      </div>
-                      <div>
-                        <strong>Date Submitted:</strong>
-                        <p style={{ margin: '4px 0 0 0' }}>{selectedSub.date || '2026-07-09'}</p>
-                      </div>
-                    </div>
-                    <hr style={{ borderColor: '#e2e8f0', margin: '16px 0' }} />
-                    <h5>Field Answers</h5>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-                      {(selectedSub.answers || []).map((ans, idx) => (
-                        <div key={idx}>
-                          <strong style={{ color: '#475569', fontSize: '13px' }}>{ans.q}</strong>
-                          <p style={{ margin: '4px 0 0 0', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>{ans.a || '—'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          const formTitles = Object.keys(submissionsByForm);
+
+          return (
+            <div className="admin-tab-content anim-fade-in">
+              <div className="tab-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Global Submissions Feed</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                    Submissions organized by Form Templates. Each template section holds its respective submitted entries.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  {/* View Mode Toggle */}
+                  <div className="view-mode-toggle" style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                     <button
-                      className="admin-btn-primary"
-                      style={{ background: '#16a34a', borderColor: '#16a34a' }}
-                      onClick={() => handleDownloadSubCSV(selectedSub)}
+                      type="button"
+                      className={`view-mode-btn ${subViewMode === 'grouped' ? 'active' : ''}`}
+                      onClick={() => setSubViewMode('grouped')}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        background: subViewMode === 'grouped' ? '#7B1C1C' : 'transparent',
+                        color: subViewMode === 'grouped' ? '#ffffff' : '#64748b',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      📥 Download Excel (CSV)
+                      🗂️ Grouped by Template
                     </button>
                     <button
-                      className="admin-btn-primary"
-                      style={{ background: '#991b1b', borderColor: '#991b1b' }}
-                      onClick={() => handleDownloadSubPDF(selectedSub)}
+                      type="button"
+                      className={`view-mode-btn ${subViewMode === 'flat' ? 'active' : ''}`}
+                      onClick={() => setSubViewMode('flat')}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        background: subViewMode === 'flat' ? '#7B1C1C' : 'transparent',
+                        color: subViewMode === 'flat' ? '#ffffff' : '#64748b',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      📄 Download PDF Report
+                      📋 Flat Table
                     </button>
-                    <button type="button" className="admin-btn-secondary" style={{ background: '#64748b', borderColor: '#64748b', color: 'white' }} onClick={() => setSelectedSub(null)}>
-                      Close
-                    </button>
+                  </div>
+
+                  {/* Search Box */}
+                  <div className="admin-search-box" style={{ width: '260px' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Filter submissions..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 </div>
-              </div>,
-              document.body
-            )}
+              </div>
 
-            {editingSub && createPortal(
-              <div className="admin-modal-overlay">
-                <form onSubmit={handleSubEditSubmit} className="admin-modal" style={{ maxWidth: '500px' }}>
-                  <div className="modal-header">
-                    <h4>Edit Submission - {editingSub.id}</h4>
-                    <button type="button" className="modal-close" onClick={() => setEditingSub(null)}>×</button>
-                  </div>
-                  <div className="modal-body">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Submitter Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={subEditData.name}
-                          onChange={e => setSubEditData(prev => ({ ...prev, name: e.target.value }))}
-                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Email Address</label>
-                        <input
-                          type="email"
-                          required
-                          value={subEditData.email}
-                          onChange={e => setSubEditData(prev => ({ ...prev, email: e.target.value }))}
-                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Status</label>
-                        <select
-                          value={subEditData.status}
-                          onChange={e => setSubEditData(prev => ({ ...prev, status: e.target.value }))}
-                          style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', cursor: 'pointer', background: 'white' }}
+              {/* Template Filter Pills */}
+              <div className="template-filter-bar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '20px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className={`template-filter-pill ${selectedTemplateFilter === 'ALL' ? 'active' : ''}`}
+                  onClick={() => setSelectedTemplateFilter('ALL')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    border: '1px solid #cbd5e1',
+                    background: selectedTemplateFilter === 'ALL' ? '#7B1C1C' : '#ffffff',
+                    color: selectedTemplateFilter === 'ALL' ? '#ffffff' : '#334155',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  📁 All Folders ({filteredSubmissions.length})
+                </button>
+                {formTitles.map(title => (
+                  <button
+                    key={title}
+                    type="button"
+                    className={`template-filter-pill ${selectedTemplateFilter === title ? 'active' : ''}`}
+                    onClick={() => setSelectedTemplateFilter(title)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      border: '1px solid #cbd5e1',
+                      background: selectedTemplateFilter === title ? '#7B1C1C' : '#ffffff',
+                      color: selectedTemplateFilter === title ? '#ffffff' : '#334155',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    📁 {title} ({submissionsByForm[title].length})
+                  </button>
+                ))}
+              </div>
+
+              {/* GROUPED VIEW: REALISTIC DIGITAL FOLDER ARCHIVE CARDS GRID */}
+              {subViewMode === 'grouped' ? (
+                <div className="template-submissions-grid">
+                  {formTitles.length === 0 ? (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', background: '#ffffff', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+                      <p style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>No folder archives found matching your filter.</p>
+                    </div>
+                  ) : (
+                    formTitles
+                      .filter(title => selectedTemplateFilter === 'ALL' || selectedTemplateFilter === title)
+                      .map((title, idx) => {
+                        const formSubs = submissionsByForm[title];
+                        const matchingForm = forms.find(f => f.name === title || f.title === title) || {};
+                        const palette = FOLDER_PALETTES[idx % FOLDER_PALETTES.length];
+
+                        return (
+                          <div
+                            key={title}
+                            className="folder-archive-card"
+                            onClick={() => setActiveTemplateModal({ title, formSubs })}
+                            style={{
+                              '--folder-hover-border': palette.notchBg
+                            }}
+                          >
+                            {/* Folder Top Tab Notch & Header */}
+                            <div className="folder-tab-header" style={{ background: palette.headerBg }}>
+                              <div className="folder-tab-notch" style={{ background: palette.notchBg }}>
+                                📁 TEMPLATE ARCHIVE
+                              </div>
+                              <div className="folder-entries-badge">
+                                <span className="badge-count" style={{ color: palette.badgeText }}>{formSubs.length}</span>
+                                <span>{formSubs.length === 1 ? 'Entry' : 'Entries'}</span>
+                              </div>
+                            </div>
+
+                            {/* Folder Pocket with Stacked Paper Sheet Peek */}
+                            <div className="folder-pocket-preview" style={{ background: palette.pocketGradient }}>
+                              <div className="paper-stack-back"></div>
+                              <div className="paper-sheet-front">
+                                <div className="paper-header-row">
+                                  <span className="paper-icon">📄</span>
+                                  <span className="paper-title">{title}</span>
+                                </div>
+                                <div className="paper-line full"></div>
+                                <div className="paper-line medium"></div>
+                                <div className="paper-line short"></div>
+                                <div
+                                  className="paper-stamp-tag"
+                                  style={{
+                                    color: palette.stampColor,
+                                    background: palette.stampBg,
+                                    borderColor: palette.stampColor
+                                  }}
+                                >
+                                  SUBMITTED ARCHIVE
+                                </div>
+                              </div>
+                              <div className="folder-front-lip"></div>
+                            </div>
+
+                            {/* Folder Card Body */}
+                            <div className="folder-card-body">
+                              <h3 className="folder-card-title" title={title}>
+                                <span style={{ color: palette.notchBg }}>📁</span> {title}
+                              </h3>
+
+                              <div className="folder-meta-tags">
+                                <span
+                                  className="folder-tag-badge"
+                                  style={{
+                                    color: palette.stampColor,
+                                    background: palette.stampBg,
+                                    borderColor: palette.stampBorder
+                                  }}
+                                >
+                                  <span className="tag-dot" style={{ background: palette.stampColor }}></span> Custom Form
+                                </span>
+                                <span className="folder-fields-count">
+                                  📝 {matchingForm.questions ? `${matchingForm.questions.length} fields` : `${formSubs[0]?.answers?.length || 5} fields`}
+                                </span>
+                              </div>
+
+                              {/* Folder Actions Footer */}
+                              <div className="folder-card-actions">
+                                <button
+                                  type="button"
+                                  className="folder-open-btn"
+                                  style={{
+                                    background: palette.btnGradient,
+                                    boxShadow: `0 4px 12px ${palette.btnShadow}`
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveTemplateModal({ title, formSubs });
+                                  }}
+                                >
+                                  📂 View Datas ({formSubs.length})
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="folder-excel-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadFormTemplateCSV(title, formSubs);
+                                  }}
+                                  title="Export all submissions as CSV"
+                                >
+                                  📊 Excel
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              ) : (
+                /* FLAT TABLE VIEW */
+                <div className="super-table-container">
+                  <table className="super-data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Form Title</th>
+                        <th>Submitter</th>
+                        <th>Submitted Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSubmissions
+                        .filter(sub => selectedTemplateFilter === 'ALL' || sub.form === selectedTemplateFilter)
+                        .map(sub => (
+                          <tr key={sub.id}>
+                            <td className="font-semibold">{sub.id}</td>
+                            <td>{sub.form}</td>
+                            <td>
+                              <div>
+                                <div style={{ fontWeight: '600' }}>{sub.name}</div>
+                                {sub.email && <div style={{ fontSize: '12px', color: '#64748b' }}>{sub.email}</div>}
+                              </div>
+                            </td>
+                            <td>{sub.date || '2026-07-09'}</td>
+                            <td>
+                              <span className={`status-badge ${sub.status ? sub.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
+                                {sub.status || 'Pending Review'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="table-actions">
+                                <button
+                                  className="action-btn view"
+                                  onClick={() => setSelectedSub(sub)}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="action-btn edit"
+                                  style={{ background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}
+                                  onClick={() => handleDownloadSubCSV(sub)}
+                                  title="Download as Excel/CSV"
+                                >
+                                  📥 Excel
+                                </button>
+                                <button
+                                  className="action-btn edit"
+                                  style={{ background: '#fff5f5', color: '#991b1b', borderColor: '#fca5a5' }}
+                                  onClick={() => handleDownloadSubPDF(sub)}
+                                  title="Download as PDF"
+                                >
+                                  📄 PDF
+                                </button>
+                                <button
+                                  className="action-btn delete"
+                                  onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* FULL SCREEN SUBMISSIONS PAGE VIEW */}
+              {activeTemplateModal && (() => {
+                const modalSubs = activeTemplateModal.formSubs || [];
+
+                return createPortal(
+                  <div
+                    className="admin-fullscreen-page-overlay anim-fade-in"
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '100vw',
+                      height: '100vh',
+                      background: '#f8fafc',
+                      zIndex: 9000,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden'
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* Top Bar Navigation */}
+                    <div
+                      style={{
+                        padding: '20px 36px',
+                        background: '#ffffff',
+                        borderBottom: '1.5px solid #cbd5e1',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                        flexWrap: 'wrap',
+                        gap: '16px'
+                      }}
+                    >
+                      {/* Left: Back Button & Form Title */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTemplateModal(null)}
+                          style={{
+                            background: '#f8fafc',
+                            border: '1.5px solid #cbd5e1',
+                            borderRadius: '10px',
+                            padding: '10px 18px',
+                            color: '#7B1C1C',
+                            fontWeight: '700',
+                            fontSize: '13.5px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            transition: 'all 0.2s ease'
+                          }}
                         >
-                          <option value="Pending Review">Pending Review</option>
-                          <option value="Approved">Approved</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
+                          <span style={{ fontSize: '16px' }}>←</span> Back to Feed
+                        </button>
+
+                        <div style={{ height: '36px', width: '1px', background: '#cbd5e1' }} />
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div style={{
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 4px 8px rgba(123, 28, 28, 0.2)'
+                          }}>
+                            📋
+                          </div>
+                          <div>
+                            <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>
+                              {activeTemplateModal.title}
+                            </h2>
+                            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+                              Form Template • <span style={{ color: '#7B1C1C', fontWeight: '700' }}>{modalSubs.length}</span> response entries submitted
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Actions & Close */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <button
+                          type="button"
+                          style={{
+                            background: '#ecfdf5',
+                            color: '#065f46',
+                            border: '1.5px solid #a7f3d0',
+                            padding: '10px 20px',
+                            fontWeight: '700',
+                            fontSize: '13.5px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 2px 4px rgba(6, 95, 70, 0.08)'
+                          }}
+                          onClick={() => handleDownloadFormTemplateCSV(activeTemplateModal.title, modalSubs)}
+                        >
+                          📥 Export All Template CSV ({modalSubs.length})
+                        </button>
+                        <button
+                          onClick={() => setActiveTemplateModal(null)}
+                          style={{
+                            fontSize: '22px',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            background: '#f1f5f9',
+                            border: '1.5px solid #cbd5e1',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#475569',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Close Page"
+                        >
+                          ×
+                        </button>
                       </div>
                     </div>
+
+                    {/* Full Page Body */}
+                    <div style={{ flex: 1, padding: '28px 36px', overflowY: 'auto', background: '#f8fafc' }}>
+                      {/* Summary Banner */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>TOTAL SUBMISSIONS</span>
+                          <div style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>{modalSubs.length}</div>
+                        </div>
+                        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>PENDING REVIEW</span>
+                          <div style={{ fontSize: '24px', fontWeight: '800', color: '#d97706', marginTop: '4px' }}>
+                            {modalSubs.filter(s => (s.status || '').toLowerCase().includes('pending')).length}
+                          </div>
+                        </div>
+                        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>APPROVED / COMPLETED</span>
+                          <div style={{ fontSize: '24px', fontWeight: '800', color: '#059669', marginTop: '4px' }}>
+                            {modalSubs.filter(s => (s.status || '').toLowerCase().includes('approved') || (s.status || '').toLowerCase().includes('completed')).length}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Table Card */}
+                      <div
+                        className="super-table-container"
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1px solid #cbd5e1',
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
+                          width: '100%',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <table className="super-data-table" style={{ width: '100%', minWidth: '1050px', borderCollapse: 'separate', borderSpacing: 0 }}>
+                          <thead>
+                            <tr style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)' }}>
+                              <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #cbd5e1', width: '120px' }}>
+                                ID
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #cbd5e1', minWidth: '240px' }}>
+                                SUBMITTER NAME & EMAIL
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #cbd5e1', minWidth: '200px' }}>
+                                SUBMITTED DATE
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #cbd5e1', minWidth: '150px' }}>
+                                STATUS
+                              </th>
+                              <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1.5px solid #cbd5e1', minWidth: '360px' }}>
+                                ACTIONS
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {modalSubs.map(sub => (
+                              <tr key={sub.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s ease' }}>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: '800',
+                                    color: '#7B1C1C',
+                                    background: '#fcf2f2',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #fecaca',
+                                    fontSize: '13px'
+                                  }}>
+                                    {sub.id}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                      width: '36px',
+                                      height: '36px',
+                                      borderRadius: '50%',
+                                      background: '#f1f5f9',
+                                      border: '1px solid #cbd5e1',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontWeight: 'bold',
+                                      color: '#475569',
+                                      fontSize: '14px'
+                                    }}>
+                                      {(sub.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px' }}>{sub.name}</div>
+                                      {sub.email && <div style={{ fontSize: '12.5px', color: '#64748b' }}>{sub.email}</div>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '16px 20px', fontSize: '13.5px', color: '#475569', fontWeight: '500' }}>
+                                  {sub.date || '2026-07-09'}
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <span className={`status-badge ${sub.status ? sub.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
+                                    {sub.status || 'Pending Review'}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div className="table-actions" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <button
+                                      className="action-btn view"
+                                      onClick={() => setSelectedSub(sub)}
+                                      style={{ borderRadius: '6px', fontWeight: '600' }}
+                                    >
+                                      👁️ Details
+                                    </button>
+                                    <button
+                                      className="action-btn edit"
+                                      style={{ background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0', borderRadius: '6px', fontWeight: '600' }}
+                                      onClick={() => handleDownloadSubCSV(sub)}
+                                      title="Download as Excel/CSV"
+                                    >
+                                      📥 Excel
+                                    </button>
+                                    <button
+                                      className="action-btn edit"
+                                      style={{ background: '#fff5f5', color: '#991b1b', borderColor: '#fca5a5', borderRadius: '6px', fontWeight: '600' }}
+                                      onClick={() => handleDownloadSubPDF(sub)}
+                                      title="Download as PDF"
+                                    >
+                                      📄 PDF
+                                    </button>
+                                    <button
+                                      className="action-btn delete"
+                                      onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                                      style={{ borderRadius: '6px', fontWeight: '600' }}
+                                    >
+                                      🗑️ Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                );
+              })()}
+
+              {/* 100% FULL SCREEN SUBMISSION DETAILS VIEW PAGE */}
+              {selectedSub && createPortal(
+                <div
+                  className="admin-fullscreen-page-overlay anim-fade-in"
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: '#f8fafc',
+                    zIndex: 10500,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {/* Top Bar Navigation */}
+                  <div
+                    style={{
+                      padding: '20px 36px',
+                      background: '#ffffff',
+                      borderBottom: '1.5px solid #cbd5e1',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                      flexWrap: 'wrap',
+                      gap: '16px'
+                    }}
+                  >
+                    {/* Left: Back Button & Title */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSub(null)}
+                        style={{
+                          background: '#f8fafc',
+                          border: '1.5px solid #cbd5e1',
+                          borderRadius: '10px',
+                          padding: '10px 18px',
+                          color: '#7B1C1C',
+                          fontWeight: '700',
+                          fontSize: '13.5px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <span style={{ fontSize: '16px' }}>←</span> Back to Submissions
+                      </button>
+
+                      <div style={{ height: '36px', width: '1px', background: '#cbd5e1' }} />
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontWeight: '800',
+                          color: '#7B1C1C',
+                          background: '#fcf2f2',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #fecaca',
+                          fontSize: '14px'
+                        }}>
+                          {selectedSub.id}
+                        </span>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>
+                            Submission Record Details
+                          </h2>
+                          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+                            Form: <span style={{ color: '#0f172a', fontWeight: '700' }}>{selectedSub.form}</span> • Submitted: {selectedSub.date || '2026-07-09'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button
+                        type="button"
+                        style={{
+                          background: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1.5px solid #a7f3d0',
+                          padding: '10px 20px',
+                          fontWeight: '700',
+                          fontSize: '13.5px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 2px 4px rgba(6, 95, 70, 0.08)'
+                        }}
+                        onClick={() => handleDownloadSubCSV(selectedSub)}
+                      >
+                        📥 Export Excel (CSV)
+                      </button>
+
+                      <button
+                        type="button"
+                        style={{
+                          background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '10px 20px',
+                          fontWeight: '700',
+                          fontSize: '13.5px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 8px rgba(123, 28, 28, 0.2)'
+                        }}
+                        onClick={() => handleDownloadSubPDF(selectedSub)}
+                      >
+                        📄 Download PDF Report
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedSub(null)}
+                        style={{
+                          fontSize: '22px',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          background: '#f1f5f9',
+                          border: '1.5px solid #cbd5e1',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#475569',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="Close Page"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
-                  <div className="modal-footer">
-                    <button type="button" className="admin-btn-secondary" onClick={() => setEditingSub(null)}>
-                      Cancel
-                    </button>
-                    <button type="submit" className="admin-btn-primary">
-                      Save Changes
-                    </button>
+
+                  {/* Body Content */}
+                  <div style={{ flex: 1, padding: '32px 36px', overflowY: 'auto', background: '#f8fafc' }}>
+
+                    {/* Executive Submitter Hero Banner Card */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '16px',
+                        border: '1px solid #cbd5e1',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                        padding: '24px 32px',
+                        marginBottom: '28px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '24px'
+                      }}
+                    >
+                      {/* Left: Avatar & Submitter Info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <div
+                          style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '26px',
+                            fontWeight: '800',
+                            boxShadow: '0 4px 12px rgba(123, 28, 28, 0.25)'
+                          }}
+                        >
+                          {(selectedSub.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>
+                              {selectedSub.name}
+                            </h2>
+                            <span className={`status-badge ${selectedSub.status ? selectedSub.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
+                              {selectedSub.status || 'Pending Review'}
+                            </span>
+                          </div>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                            ✉️ {selectedSub.email || 'No email registered'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right: Submission Meta Badges */}
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>FORM TEMPLATE</span>
+                          <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#7B1C1C', marginTop: '4px' }}>{selectedSub.form}</div>
+                        </div>
+                        <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SUBMITTED DATE</span>
+                          <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>{selectedSub.date || '2026-07-09'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Field Answers Card Container */}
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '16px',
+                        border: '1px solid #cbd5e1',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+                        padding: '32px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '16px' }}>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>
+                            📋 Field Answers & Form Responses
+                          </h3>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                            Verified data entries captured for {selectedSub.name}
+                          </p>
+                        </div>
+                        <span style={{ background: '#f1f5f9', color: '#475569', fontWeight: '700', padding: '6px 16px', borderRadius: '20px', fontSize: '13px' }}>
+                          {(selectedSub.answers || []).length} Fields Recorded
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+                        {(selectedSub.answers || []).map((ans, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderLeft: '5px solid #7B1C1C',
+                              borderRadius: '12px',
+                              padding: '20px 24px',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                              <span style={{ background: '#7B1C1C', color: '#ffffff', fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '6px' }}>
+                                Q{idx + 1}
+                              </span>
+                              <label style={{ color: '#475569', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {ans.q}
+                              </label>
+                            </div>
+
+                            <div
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '8px',
+                                padding: '14px 18px',
+                                fontSize: '15.5px',
+                                fontWeight: '700',
+                                color: '#0f172a',
+                                whiteSpace: 'pre-wrap',
+                                lineHeight: '1.5',
+                                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                              }}
+                            >
+                              {ans.a || '—'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
-                </form>
-              </div>,
-              document.body
-            )}
-          </div>
-        )}
+                </div>,
+                document.body
+              )}
+
+              {editingSub && createPortal(
+                <div className="admin-modal-overlay">
+                  <form onSubmit={handleSubEditSubmit} className="admin-modal" style={{ maxWidth: '500px' }}>
+                    <div className="modal-header">
+                      <h4>Edit Submission - {editingSub.id}</h4>
+                      <button type="button" className="modal-close" onClick={() => setEditingSub(null)}>×</button>
+                    </div>
+                    <div className="modal-body">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Submitter Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={subEditData.name}
+                            onChange={e => setSubEditData(prev => ({ ...prev, name: e.target.value }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Email Address</label>
+                          <input
+                            type="email"
+                            required
+                            value={subEditData.email}
+                            onChange={e => setSubEditData(prev => ({ ...prev, email: e.target.value }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', color: '#475569', marginBottom: '6px' }}>Status</label>
+                          <select
+                            value={subEditData.status}
+                            onChange={e => setSubEditData(prev => ({ ...prev, status: e.target.value }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', outline: 'none', cursor: 'pointer', background: 'white' }}
+                          >
+                            <option value="Pending Review">Pending Review</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal-footer">
+                      <button type="button" className="admin-btn-secondary" onClick={() => setEditingSub(null)}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="admin-btn-primary">
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>,
+                document.body
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── 7. REPORTS & ANALYTICS ── */}
         {activeMenu === 'reports' && (
@@ -1699,24 +2592,95 @@ export default function AdminDashboard() {
               <div className="overview-panel">
                 <h3>Form Templates Usage Analytics</h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', marginTop: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px', marginTop: '16px' }}>
                   {/* Left Column: Usage Frequency List */}
                   <div>
-                    <h4 className="analytics-sub-heading">Popular Templates Ranking</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {getTemplatesRanking().map((item, idx) => (
-                        <div key={idx} className="analytics-ranking-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <strong className="analytics-ranking-name">{item.name}</strong>
-                          </div>
-                          <span style={{ background: '#7B1C1C', color: 'white', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', fontSize: '11px' }}>
-                            {item.count} uses
-                          </span>
-                        </div>
-                      ))}
-                      {getTemplatesRanking().length === 0 && (
-                        <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '12.5px' }}>No template activity logged yet.</p>
-                      )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <h4 className="analytics-sub-heading" style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                        Popular Templates Ranking
+                      </h4>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                        Top Form Activity
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {(() => {
+                        const rankingList = getTemplatesRanking();
+                        const maxCount = rankingList[0]?.count || 1;
+
+                        if (rankingList.length === 0) {
+                          return <p style={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '13px', padding: '16px 0' }}>No template activity logged yet.</p>;
+                        }
+
+                        return rankingList.map((item, idx) => {
+                          const percentage = Math.min(100, Math.round((item.count / maxCount) * 100));
+
+                          let rankBadgeStyle = { background: '#f1f5f9', color: '#475569', label: `#${idx + 1}` };
+                          if (idx === 0) rankBadgeStyle = { background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', label: '🥇 #1' };
+                          else if (idx === 1) rankBadgeStyle = { background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)', color: '#ffffff', label: '🥈 #2' };
+                          else if (idx === 2) rankBadgeStyle = { background: 'linear-gradient(135deg, #b45309 0%, #78350f 100%)', color: '#ffffff', label: '🥉 #3' };
+
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                background: '#ffffff',
+                                border: '1.5px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '12px 16px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '14px',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              {/* Rank Medal */}
+                              <div
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  fontWeight: '800',
+                                  fontSize: '12px',
+                                  whiteSpace: 'nowrap',
+                                  ...rankBadgeStyle
+                                }}
+                              >
+                                {rankBadgeStyle.label}
+                              </div>
+
+                              {/* Template Name & Progress */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {item.name}
+                                </div>
+                                <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', marginTop: '6px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${percentage}%`, height: '100%', background: 'linear-gradient(90deg, #7B1C1C 0%, #991b1b 100%)', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                                </div>
+                              </div>
+
+                              {/* Usage Count Pill (No-Wrap) */}
+                              <span
+                                style={{
+                                  background: 'linear-gradient(135deg, #5a1313 0%, #7B1C1C 100%)',
+                                  color: '#ffffff',
+                                  fontWeight: '700',
+                                  padding: '6px 14px',
+                                  borderRadius: '20px',
+                                  fontSize: '12px',
+                                  whiteSpace: 'nowrap',
+                                  boxShadow: '0 2px 6px rgba(123, 28, 28, 0.2)',
+                                  flexShrink: 0
+                                }}
+                              >
+                                {item.count} uses
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 

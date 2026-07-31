@@ -7,9 +7,9 @@
       "desc": "Let students apply for internship positions easily.",
       "fields": "4 fields",
       "theme": {
-        "banner": "linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)",
-        "accent": "#7B1C1C",
-        "label": "Maroon"
+        "accent": "#581c87",
+        "banner": "linear-gradient(90deg, #581c87, #581c87dd)",
+        "label": "Custom"
       },
       "headerImage": "/form-header.png",
       "questions": [
@@ -33,31 +33,25 @@
         },
         {
           "cardType": "question",
-          "type": "multiple",
-          "question": "Internship Domain",
-          "description": "",
-          "mediaUrl": null,
-          "options": [
-            "Software Development",
-            "Data Science",
-            "Marketing",
-            "Design",
-            "Research"
-          ],
-          "required": true
-        },
-        {
-          "cardType": "question",
           "type": "short",
           "question": "Current CGPA",
           "description": "",
           "mediaUrl": null,
           "options": [],
           "required": true
+        },
+        {
+          "cardType": "question",
+          "type": "short",
+          "question": "name",
+          "description": "",
+          "mediaUrl": null,
+          "options": [],
+          "required": false
         }
       ],
       "tag": "Custom Form",
-      "bg": "maroon-bg",
+      "bg": "#581c87",
       "status": "Active",
       "visibility": "public",
       "is_hidden": false,
@@ -65,12 +59,12 @@
       "creator": "MCC Administrator",
       "creator_id": "usr-default-admin",
       "created_by": "usr-default-admin",
-      "updatedAt": 1784563238411
+      "updatedAt": 1785490867216
     },
     {
       "id": "default-3",
-      "name": "Research Proposal Form",
-      "richName": "Research Proposal Form",
+      "name": "Research Proposal Form zzzzzz",
+      "richName": "<span style=\"font-weight: normal;\">Research Proposal Form zzzzzz</span>",
       "desc": "Submit research proposals with objectives and methodology.",
       "fields": "10 fields",
       "theme": {
@@ -185,7 +179,7 @@
       "creator": "anto",
       "creator_id": "usr-1784544847752",
       "created_by": "usr-1784544847752",
-      "updatedAt": 1784545766310
+      "updatedAt": 1784565747040
     },
     {
       "id": "default-8",
@@ -493,6 +487,30 @@
     }
   ],
   "responses": [
+    {
+      "id": "MMIP-18",
+      "name": "zaaaaa",
+      "email": "zaa@gmail.com",
+      "form": "Internship Application",
+      "formId": "default-6",
+      "creator_id": "usr-default-admin",
+      "date": "20/7/2026, 10:10:48 pm",
+      "status": "Pending Review",
+      "answers": [
+        {
+          "q": "Full Name",
+          "a": "zaaaaa"
+        },
+        {
+          "q": "Email",
+          "a": "zaa@gmail.com"
+        },
+        {
+          "q": "Current CGPA",
+          "a": "12.1"
+        }
+      ]
+    },
     {
       "id": "MMIP-17",
       "name": "KHAN",

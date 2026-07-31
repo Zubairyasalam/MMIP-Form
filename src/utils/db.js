@@ -25,9 +25,24 @@ export async function getForms() {
       const data = await res.json();
       if (Array.isArray(data)) {
         backendOnline = true;
-        // Sync local cache with backend truth
-        localStorage.setItem('global_customForms', JSON.stringify(data));
-        return data;
+        // Merge with local forms to preserve user edits and deleted questions
+        let localForms = [];
+        try { localForms = JSON.parse(localStorage.getItem('global_customForms') || '[]'); } catch { localForms = []; }
+
+        const mergedMap = new Map();
+        // Add backend forms
+        data.forEach(f => mergedMap.set(f.id, f));
+        // Override with local forms if local form is newer or explicitly saved
+        localForms.forEach(lf => {
+          const existing = mergedMap.get(lf.id);
+          if (!existing || (lf.updatedAt || 0) >= (existing.updatedAt || 0)) {
+            mergedMap.set(lf.id, lf);
+          }
+        });
+
+        const mergedList = Array.from(mergedMap.values());
+        localStorage.setItem('global_customForms', JSON.stringify(mergedList));
+        return mergedList;
       }
     }
   } catch (e) {

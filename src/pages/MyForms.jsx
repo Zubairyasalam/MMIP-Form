@@ -165,17 +165,10 @@ export default function MyForms() {
             ) : (
               <div className="templates-grid">
                 {filteredForms.map(tmpl => {
-                  let theme = TEMPLATE_THEMES[tmpl.bg];
-                  let dynamicBannerStyle = {};
-                  let isDynamic = false;
-
-                  if (!theme && tmpl.bg?.startsWith('#')) {
-                    theme = { accent: tmpl.bg, label: 'Custom' };
-                    dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
-                    isDynamic = true;
-                  } else if (!theme) {
-                    theme = TEMPLATE_THEMES['maroon-bg'];
-                  }
+                  const colorHex = tmpl.theme?.accent || (tmpl.bg && tmpl.bg.startsWith('#') ? tmpl.bg : (TEMPLATE_THEMES[tmpl.bg]?.accent || '#7B1C1C'));
+                  const theme = { accent: colorHex, label: 'Custom' };
+                  const dynamicBannerStyle = { background: `linear-gradient(135deg, ${colorHex} 0%, ${colorHex}dd 100%)` };
+                  const isDynamic = true;
 
                   const formName = stripHtml(tmpl.name || tmpl.title || 'Untitled Form');
                   const formSubs = getSubmissionsForForm(formName);

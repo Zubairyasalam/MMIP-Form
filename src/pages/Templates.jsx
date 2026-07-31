@@ -22,20 +22,9 @@ export default function Templates() {
   const [userRole, setUserRole] = useState('');
   const [userName, setUserName] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
-  const [tunnelUrl, setTunnelUrl] = useState('');
   const [customBaseUrl, setCustomBaseUrl] = useState(localStorage.getItem('customBaseUrl') || '');
   const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || "/mcc-mrf-logo.png?v=2");
-
-  useEffect(() => {
-    fetch('/tunnel.json')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.url) {
-          setTunnelUrl(data.url);
-        }
-      })
-      .catch(err => console.error('Error loading tunnel URL:', err));
-  }, []);
+  const [cardThemeColor, setCardThemeColor] = useState(localStorage.getItem('templatesCardColor') || '#7B1C1C');
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -45,7 +34,6 @@ export default function Templates() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Auto-detect: if on localhost, try to pre-fill with LAN IP
   const getOrigin = () => {
     return customBaseUrl || window.location.origin;
   };
@@ -325,36 +313,62 @@ export default function Templates() {
       <div className="templates-main">
         {/* Main content */}
         <div className="templates-content">
-          <div className="templates-content-header">
+          <div className="templates-content-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <div className="templates-content-title">
                 {search ? `Results for "${search}"` : 'All Templates'}
               </div>
               <div className="templates-content-count">{filtered.length} templates available</div>
             </div>
-            <div className="templates-sort">
-              Sort by:
-              <select id="templates-sort-select">
-                <option>Most Popular</option>
-                <option>Newest</option>
-                <option>A–Z</option>
-              </select>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              {/* Sort Dropdown */}
+              <div className="templates-sort">
+                Sort by:
+                <select id="templates-sort-select">
+                  <option>Most Popular</option>
+                  <option>Newest</option>
+                  <option>A–Z</option>
+                </select>
+              </div>
+
+              {/* Add New Form Button */}
+              <button
+                type="button"
+                className="create-new-form-btn"
+                onClick={() => navigate('/form-builder')}
+                style={{
+                  background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 10px rgba(123, 28, 28, 0.25)',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span style={{ fontSize: '18px', fontWeight: '800', lineHeight: 1 }}>+</span> Add New Form
+              </button>
             </div>
           </div>
 
           <div className="templates-grid">
             {filtered.map((tmpl, i) => {
-              let theme = TEMPLATE_THEMES[tmpl.bg];
-              let dynamicBannerStyle = {};
-              let isDynamic = false;
+              let theme = TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'];
+              let cardAccent = (tmpl.bg && tmpl.bg.startsWith('#'))
+                ? tmpl.bg
+                : (theme ? theme.accent : '#7B1C1C');
 
-              if (!theme && tmpl.bg?.startsWith('#')) {
-                theme = { accent: tmpl.bg, label: 'Custom' };
-                dynamicBannerStyle = { background: `linear-gradient(135deg, ${tmpl.bg}15 0%, ${tmpl.bg}33 100%)` };
-                isDynamic = true;
-              } else if (!theme) {
-                theme = TEMPLATE_THEMES['maroon-bg'];
-              }
+              let dynamicBannerStyle = {
+                background: `linear-gradient(135deg, ${cardAccent} 0%, ${cardAccent}dd 100%)`
+              };
 
               return (
                 <div
@@ -363,17 +377,17 @@ export default function Templates() {
                   id={`template-card-${i}`}
                   onClick={() => handleUseTemplate(tmpl)}
                 >
-                  {/* Preview with theme-colored banner */}
-                  <div className={`template-card-preview ${isDynamic ? '' : tmpl.bg}`} style={isDynamic ? dynamicBannerStyle : {}}>
+                  {/* Preview with custom theme color banner */}
+                  <div className="template-card-preview" style={dynamicBannerStyle}>
                     <div className="template-mini-form">
                       <div className="mini-form-title">{tmpl.name}</div>
                       <div className="mini-form-field full" />
                       <div className="mini-form-field short" />
                       <div className="mini-form-field full" />
-                      <div className="mini-form-btn" style={{ background: theme.accent }} />
+                      <div className="mini-form-btn" style={{ background: cardAccent }} />
                     </div>
-                    <div className="template-overlay" style={{ background: `${theme.accent}cc`, display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                      <button className="template-use-btn" style={{ color: theme.accent, width: '80%' }} onClick={() => handleUseTemplate(tmpl)}>
+                    <div className="template-overlay" style={{ background: `${cardAccent}ee`, display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                      <button className="template-use-btn" style={{ color: cardAccent, width: '80%' }} onClick={() => handleUseTemplate(tmpl)}>
                         Use Template →
                       </button>
                       <button
@@ -400,7 +414,7 @@ export default function Templates() {
                     <div className="template-card-desc">{tmpl.desc}</div>
                     <div className="template-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <span className="template-tag" style={{ color: theme.accent, background: `${theme.accent}15` }}>{tmpl.tag}</span>
+                        <span className="template-tag" style={{ color: cardAccent, background: `${cardAccent}22` }}>{tmpl.tag}</span>
                         <span className="template-fields" style={{ marginLeft: '8px' }}>{tmpl.fields}</span>
                       </div>
                     </div>
@@ -471,7 +485,7 @@ export default function Templates() {
                   />
                 </div>
                 <div style={{ fontSize: '11px', color: '#15803d', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                  ✅ QR code points to: <strong>{customBaseUrl || tunnelUrl || window.location.origin}</strong>
+                  ✅ QR code points to: <strong>{getOrigin()}</strong>
                 </div>
               </div>
             )}

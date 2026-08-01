@@ -165,7 +165,7 @@ export default function MyForms() {
             ) : (
               <div className="templates-grid">
                 {filteredForms.map(tmpl => {
-                  const colorHex = tmpl.theme?.accent || (tmpl.bg && tmpl.bg.startsWith('#') ? tmpl.bg : (TEMPLATE_THEMES[tmpl.bg]?.accent || '#7B1C1C'));
+                  const colorHex = tmpl.themeColor || tmpl.theme?.accent || (tmpl.bg && tmpl.bg.startsWith('#') ? tmpl.bg : (TEMPLATE_THEMES[tmpl.bg]?.accent || '#7B1C1C'));
                   const theme = { accent: colorHex, label: 'Custom' };
                   const dynamicBannerStyle = { background: `linear-gradient(135deg, ${colorHex} 0%, ${colorHex}dd 100%)` };
                   const isDynamic = true;

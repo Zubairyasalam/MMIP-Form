@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { TEMPLATES } from '../data/templates';
+import { TEMPLATES, TEMPLATE_THEMES } from '../data/templates';
 import { saveForm, getForms } from '../utils/db';
 import './FormBuilder.css';
 
@@ -2230,7 +2230,11 @@ export default function FormBuilder() {
 
   // Use template data if provided, else defaults
   const defaultTheme = { banner: 'linear-gradient(90deg, #5a1313, #7B1C1C, #a82828)', accent: '#7B1C1C' };
-  const initialBg = (state.bg && state.bg.startsWith('#')) ? state.bg : (state.theme?.accent || '#7B1C1C');
+  const initialBg = state.themeColor
+    || (state.bg && state.bg.startsWith('#') ? state.bg : null)
+    || (TEMPLATE_THEMES[state.bg]?.accent)
+    || state.theme?.accent
+    || '#7B1C1C';
   const [formThemeColor, setFormThemeColor] = useState(initialBg);
   const accent = formThemeColor || state.theme?.accent || '#7B1C1C';
   const theme = { banner: `linear-gradient(90deg, ${accent}, ${accent}dd)`, accent: accent };
@@ -2282,8 +2286,12 @@ export default function FormBuilder() {
         // Store existing metadata so handlePublish can preserve it
         existingMetaRef.current = saved;
         // Load latest title, desc & theme color from DB
-        if (saved.bg || saved.theme?.accent) {
-          setFormThemeColor(saved.bg || saved.theme?.accent);
+        const loadedColor = saved.themeColor
+          || (saved.bg && saved.bg.startsWith('#') ? saved.bg : null)
+          || saved.theme?.accent
+          || (TEMPLATE_THEMES[saved.bg]?.accent);
+        if (loadedColor) {
+          setFormThemeColor(loadedColor);
         }
         if (saved.richName || saved.name) {
           setFormTitle(saved.richName || saved.name);
@@ -2478,6 +2486,7 @@ export default function FormBuilder() {
       // Preserve or set metadata
       tag: existingMeta?.tag || 'Custom Form',
       bg: formThemeColor,
+      themeColor: formThemeColor,
       status: existingMeta?.status || 'Active',
       visibility: existingMeta?.visibility || 'public',
       is_hidden: existingMeta?.is_hidden !== undefined ? existingMeta.is_hidden : false,

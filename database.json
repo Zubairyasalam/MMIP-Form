@@ -7,8 +7,8 @@
       "desc": "Form description",
       "fields": "3 fields",
       "theme": {
-        "accent": "#7B1C1C",
-        "banner": "linear-gradient(90deg, #7B1C1C, #7B1C1Cdd)",
+        "accent": "#065f46",
+        "banner": "linear-gradient(90deg, #065f46, #065f46dd)",
         "label": "Custom"
       },
       "headerImage": "/form-header.png",
@@ -42,7 +42,7 @@
         }
       ],
       "tag": "Custom Form",
-      "bg": "#7B1C1C",
+      "bg": "#065f46",
       "status": "Active",
       "visibility": "public",
       "is_hidden": false,
@@ -50,7 +50,7 @@
       "creator": "Admin",
       "creator_id": "usr-default-admin",
       "created_by": "usr-default-admin",
-      "updatedAt": 1785574322748
+      "updatedAt": 1785574791556
     },
     {
       "id": "default-6",

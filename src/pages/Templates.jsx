@@ -175,7 +175,8 @@ export default function Templates() {
         desc: cf.desc || 'No description provided.',
         tag: cf.tag || 'Custom',
         fields: cf.fields || `${cf.questions?.length || 0} fields`,
-        bg: cf.bg || 'maroon-bg',
+        bg: cf.themeColor || cf.bg || 'maroon-bg',
+        themeColor: cf.themeColor || cf.theme?.accent || (cf.bg && cf.bg.startsWith('#') ? cf.bg : null),
         questions: cf.questions || [],
         status: cf.status || 'Active',
         visibility: cf.visibility || 'public',
@@ -362,9 +363,9 @@ export default function Templates() {
           <div className="templates-grid">
             {filtered.map((tmpl, i) => {
               let theme = TEMPLATE_THEMES[tmpl.bg] || TEMPLATE_THEMES['maroon-bg'];
-              let cardAccent = (tmpl.bg && tmpl.bg.startsWith('#'))
-                ? tmpl.bg
-                : (theme ? theme.accent : '#7B1C1C');
+              let cardAccent = tmpl.themeColor 
+                || tmpl.theme?.accent 
+                || ((tmpl.bg && tmpl.bg.startsWith('#')) ? tmpl.bg : (theme ? theme.accent : '#7B1C1C'));
 
               let dynamicBannerStyle = {
                 background: `linear-gradient(135deg, ${cardAccent} 0%, ${cardAccent}dd 100%)`

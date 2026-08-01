@@ -230,7 +230,11 @@ export default function PublishedForm() {
     );
   }
 
-  const accent = formConfig.theme?.accent || (formConfig.bg && formConfig.bg.startsWith('#') ? formConfig.bg : (TEMPLATE_THEMES[formConfig.bg]?.accent || '#7B1C1C'));
+  const accent = formConfig.themeColor 
+    || (formConfig.theme?.accent && formConfig.theme.accent.startsWith('#') ? formConfig.theme.accent : null)
+    || (formConfig.bg && formConfig.bg.startsWith('#') ? formConfig.bg : null)
+    || (TEMPLATE_THEMES[formConfig.bg]?.accent)
+    || '#7B1C1C';
   const theme = {
     banner: formConfig.theme?.banner || `linear-gradient(90deg, ${accent}, ${accent}dd)`,
     accent: accent

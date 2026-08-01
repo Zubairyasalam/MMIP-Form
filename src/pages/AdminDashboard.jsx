@@ -2472,7 +2472,7 @@ export default function AdminDashboard() {
                                   Q{idx + 1}
                                 </span>
                                 <label style={{ color: '#334155', fontSize: '13.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                  {ans.q}
+                                  {ans.q && String(ans.q).trim() ? ans.q : `Question ${idx + 1}`}
                                 </label>
                               </div>
 
@@ -2489,7 +2489,33 @@ export default function AdminDashboard() {
                                   lineHeight: '1.6'
                                 }}
                               >
-                                {ans.a ? ans.a : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '500' }}>Not provided</span>}
+                                {(() => {
+                                  if (!ans.a) return <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '500' }}>Not provided</span>;
+                                  const valStr = String(ans.a).trim();
+                                  if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          🖼️ Captured Image / Digital Signature
+                                        </div>
+                                        <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1.5px solid #cbd5e1', display: 'inline-block', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                          <img src={valStr} alt="Uploaded file" style={{ maxHeight: '250px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px', display: 'block' }} />
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  if (valStr.startsWith('data:audio/')) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          🎙️ Audio Recording
+                                        </div>
+                                        <audio controls src={valStr} style={{ width: '100%', maxWidth: '400px' }} />
+                                      </div>
+                                    );
+                                  }
+                                  return valStr;
+                                })()}
                               </div>
                             </div>
                           ))}

@@ -158,8 +158,17 @@ export default function PublishedForm() {
     const mappedAnswers = [];
     formConfig.questions.forEach((q, idx) => {
       if (q.cardType === 'question' || !q.cardType) {
+        const rawQ = q.question || '';
+        const cleanQ = stripHtml(rawQ).trim() 
+          || (q.type === 'voice' ? 'Voice Dictation' :
+              q.type === 'audio_record' ? 'Audio Voice Recording' :
+              q.type === 'image_upload' ? 'Image Upload Field' :
+              q.type === 'signature' ? 'Digital Signature Pad' :
+              q.type === 'file' ? 'Uploaded File' :
+              `Question ${idx + 1}`);
+
         mappedAnswers.push({
-          q: stripHtml(q.question),
+          q: cleanQ,
           a: Array.isArray(answers[idx]) ? answers[idx].join(', ') : String(answers[idx] || '')
         });
       }

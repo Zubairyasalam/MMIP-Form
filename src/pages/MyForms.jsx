@@ -358,10 +358,38 @@ export default function MyForms() {
                   <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <span style={{ background: '#7B1C1C', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px' }}>Q{idx + 1}</span>
-                      <span style={{ fontWeight: '700', color: '#334155', fontSize: '13px', textTransform: 'uppercase' }}>{ans.q}</span>
+                      <span style={{ fontWeight: '700', color: '#334155', fontSize: '13px', textTransform: 'uppercase' }}>
+                        {ans.q && String(ans.q).trim() ? ans.q : `Question ${idx + 1}`}
+                      </span>
                     </div>
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', color: '#0f172a', fontSize: '14.5px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                      {ans.a || <em style={{ color: '#94a3b8', fontStyle: 'italic' }}>No answer provided</em>}
+                      {(() => {
+                        if (!ans.a) return <em style={{ color: '#94a3b8', fontStyle: 'italic' }}>No answer provided</em>;
+                        const valStr = String(ans.a).trim();
+                        if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
+                          return (
+                            <div style={{ marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                🖼️ Captured Image / Digital Signature
+                              </div>
+                              <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1.5px solid #cbd5e1', display: 'inline-block', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <img src={valStr} alt="Uploaded file" style={{ maxHeight: '220px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px', display: 'block' }} />
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (valStr.startsWith('data:audio/')) {
+                          return (
+                            <div style={{ marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                🎙️ Audio Recording
+                              </div>
+                              <audio controls src={valStr} style={{ width: '100%', maxWidth: '380px' }} />
+                            </div>
+                          );
+                        }
+                        return valStr;
+                      })()}
                     </div>
                   </div>
                 ))}

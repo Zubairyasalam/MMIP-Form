@@ -364,8 +364,96 @@ export default function MyForms() {
                     </div>
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', color: '#0f172a', fontSize: '14.5px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                       {(() => {
-                        if (!ans.a) return <em style={{ color: '#94a3b8', fontStyle: 'italic' }}>No answer provided</em>;
-                        const valStr = String(ans.a).trim();
+                        if (!ans.a && ans.a !== 0) return <em style={{ color: '#94a3b8', fontStyle: 'italic' }}>No answer provided</em>;
+                        let valStr = typeof ans.a === 'object' ? JSON.stringify(ans.a) : String(ans.a).trim();
+
+                        let parsedObj = null;
+                        if (typeof ans.a === 'object') {
+                          parsedObj = ans.a;
+                        } else if ((valStr.startsWith('[') && valStr.endsWith(']')) || (valStr.startsWith('{') && valStr.endsWith('}'))) {
+                          try { parsedObj = JSON.parse(valStr); } catch (e) {}
+                        }
+
+                        // 1. Budget Breakdown Table
+                        if (Array.isArray(parsedObj) && parsedObj.length > 0 && (parsedObj[0].item !== undefined || parsedObj[0].cost !== undefined || parsedObj[0].amount !== undefined)) {
+                          const totalCost = parsedObj.reduce((sum, r) => sum + (parseFloat(r.cost || r.amount || 0) || 0), 0);
+                          return (
+                            <div style={{ marginTop: '2px', width: '100%' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                💰 Budget Breakdown Table
+                              </div>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#ffffff', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', fontSize: '13px' }}>
+                                <thead>
+                                  <tr style={{ background: '#f1f5f9', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>
+                                    <th style={{ padding: '8px 12px', fontWeight: '700', color: '#334155' }}>Item / Description</th>
+                                    <th style={{ padding: '8px 12px', fontWeight: '700', color: '#334155', textAlign: 'right' }}>Cost / Amount</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {parsedObj.map((row, rIdx) => (
+                                    <tr key={rIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                      <td style={{ padding: '8px 12px', color: '#0f172a', fontWeight: '600' }}>{row.item || 'N/A'}</td>
+                                      <td style={{ padding: '8px 12px', color: '#059669', fontWeight: '700', textAlign: 'right' }}>₹{row.cost || row.amount || '0'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                                {totalCost > 0 && (
+                                  <tfoot>
+                                    <tr style={{ background: '#f8fafc', fontWeight: '800' }}>
+                                      <td style={{ padding: '8px 12px', color: '#1e293b' }}>Total Estimated Budget</td>
+                                      <td style={{ padding: '8px 12px', color: '#059669', textAlign: 'right', fontSize: '14px' }}>₹{totalCost.toLocaleString()}</td>
+                                    </tr>
+                                  </tfoot>
+                                )}
+                              </table>
+                            </div>
+                          );
+                        }
+
+                        // 2. Team Members Roster
+                        if (Array.isArray(parsedObj) && parsedObj.length > 0 && (parsedObj[0].name !== undefined || parsedObj[0].role !== undefined)) {
+                          return (
+                            <div style={{ marginTop: '2px', width: '100%' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                👥 Team Members Roster
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                                {parsedObj.map((m, mIdx) => (
+                                  <div key={mIdx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {(m.name || 'M').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>{m.name || 'Team Member'}</div>
+                                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '600' }}>{m.role || 'Member'}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 3. Deadline Reminder / Milestones
+                        if (Array.isArray(parsedObj) && parsedObj.length > 0 && (parsedObj[0].phase !== undefined || parsedObj[0].date !== undefined)) {
+                          return (
+                            <div style={{ marginTop: '2px', width: '100%' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                ⏰ Project Milestones & Deadlines
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {parsedObj.map((d, dIdx) => (
+                                  <div key={dIdx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>📌 {d.phase || 'Milestone'}</span>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#ea580c', background: '#fff7ed', padding: '3px 10px', borderRadius: '12px', border: '1px solid #ffedd5' }}>📅 {d.date || 'TBD'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 4. Image or Signature
                         if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
                           return (
                             <div style={{ marginTop: '2px' }}>
@@ -379,17 +467,15 @@ export default function MyForms() {
                           );
                         }
 
+                        // 5. Audio Voice Recording
                         let audioUrl = null;
                         if (valStr.startsWith('data:audio/')) {
                           audioUrl = valStr;
                         } else if (valStr.includes('data:audio/')) {
                           const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
                           if (match) audioUrl = match[0];
-                        } else if (valStr.startsWith('{') && valStr.includes('audioUrl')) {
-                          try {
-                            const parsed = JSON.parse(valStr);
-                            if (parsed.audioUrl) audioUrl = parsed.audioUrl;
-                          } catch(e){}
+                        } else if (parsedObj && parsedObj.audioUrl) {
+                          audioUrl = parsedObj.audioUrl;
                         }
 
                         if (audioUrl) {
@@ -413,6 +499,56 @@ export default function MyForms() {
                               </div>
                               <div style={{ background: '#f0f9ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bae6fd', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                                 <span>🎵</span> {valStr.replace(/["{}]/g, '')}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 6. Location Coordinates / Address
+                        if (/^-?\d+\.\d+,\s*-?\d+\.\d+/.test(valStr) || valStr.toLowerCase().includes('lat') || valStr.toLowerCase().includes('location')) {
+                          const coordsMatch = valStr.match(/-?\d+\.\d+,\s*-?\d+\.\d+/);
+                          const coords = coordsMatch ? coordsMatch[0] : valStr;
+                          return (
+                            <div style={{ marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#0284c7', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                📍 Geo-Location Captured
+                              </div>
+                              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0369a1' }}>📍 {coords}</span>
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ padding: '6px 14px', background: '#0284c7', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  🗺️ Open Google Maps
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 7. Color Swatch
+                        if (/^#([0-9a-f]{3}){1,2}$/i.test(valStr) || /^rgb/i.test(valStr)) {
+                          return (
+                            <div style={{ marginTop: '2px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: valStr, border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }} />
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                                Chosen Color: <strong style={{ color: valStr }}>{valStr}</strong>
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        // 8. File Attachments (PDF, Documents)
+                        if (valStr.toLowerCase().includes('.pdf') || valStr.toLowerCase().includes('.doc') || valStr.toLowerCase().includes('.xlsx') || valStr.toLowerCase().includes('.zip') || valStr.startsWith('data:application/')) {
+                          return (
+                            <div style={{ marginTop: '2px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#d97706', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                📁 File Document Attachment
+                              </div>
+                              <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '8px', padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: '10px', color: '#d46b08', fontSize: '13.5px', fontWeight: '700' }}>
+                                <span>📄</span> {valStr.replace(/["{}]/g, '')}
                               </div>
                             </div>
                           );

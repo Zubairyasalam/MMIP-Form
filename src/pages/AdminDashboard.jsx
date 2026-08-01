@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
 import { getForms, getResponses, saveResponse, deleteResponse } from '../utils/db';
+import { TEMPLATE_THEMES } from '../data/templates';
 
 const hashPassword = (password) => {
   let hash = 0;
@@ -1718,7 +1719,7 @@ export default function AdminDashboard() {
                         const formAccent = matchingForm.themeColor 
                           || (matchingForm.theme?.accent && matchingForm.theme.accent.startsWith('#') ? matchingForm.theme.accent : null)
                           || (matchingForm.bg && matchingForm.bg.startsWith('#') ? matchingForm.bg : null)
-                          || (TEMPLATE_THEMES[matchingForm.bg]?.accent);
+                          || (TEMPLATE_THEMES && matchingForm.bg ? TEMPLATE_THEMES[matchingForm.bg]?.accent : null);
 
                         let palette;
                         if (formAccent) {

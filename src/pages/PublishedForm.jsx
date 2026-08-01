@@ -167,9 +167,19 @@ export default function PublishedForm() {
               q.type === 'file' ? 'Uploaded File' :
               `Question ${idx + 1}`);
 
+        const rawAns = answers[idx];
+        let finalAns = '';
+        if (Array.isArray(rawAns)) {
+          finalAns = rawAns.join(', ');
+        } else if (rawAns && typeof rawAns === 'object') {
+          finalAns = rawAns.audioUrl ? JSON.stringify(rawAns) : (rawAns.name || JSON.stringify(rawAns));
+        } else {
+          finalAns = String(rawAns || '');
+        }
+
         mappedAnswers.push({
           q: cleanQ,
-          a: Array.isArray(answers[idx]) ? answers[idx].join(', ') : String(answers[idx] || '')
+          a: finalAns
         });
       }
     });

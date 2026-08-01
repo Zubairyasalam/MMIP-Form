@@ -2492,6 +2492,8 @@ export default function AdminDashboard() {
                                 {(() => {
                                   if (!ans.a) return <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '500' }}>Not provided</span>;
                                   const valStr = String(ans.a).trim();
+
+                                  // 1. Image or Signature
                                   if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
                                     return (
                                       <div style={{ marginTop: '2px' }}>
@@ -2504,16 +2506,47 @@ export default function AdminDashboard() {
                                       </div>
                                     );
                                   }
+
+                                  // 2. Extract playable audio URL (Direct base64 audio or inside JSON object)
+                                  let audioUrl = null;
                                   if (valStr.startsWith('data:audio/')) {
+                                    audioUrl = valStr;
+                                  } else if (valStr.includes('data:audio/')) {
+                                    const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
+                                    if (match) audioUrl = match[0];
+                                  } else if (valStr.startsWith('{') && valStr.includes('audioUrl')) {
+                                    try {
+                                      const parsed = JSON.parse(valStr);
+                                      if (parsed.audioUrl) audioUrl = parsed.audioUrl;
+                                    } catch(e){}
+                                  }
+
+                                  if (audioUrl) {
                                     return (
                                       <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          🎙️ Audio Recording
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎙️</span> Audio Voice Recording Captured
                                         </div>
-                                        <audio controls src={valStr} style={{ width: '100%', maxWidth: '400px' }} />
+                                        <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid #a7f3d0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'inline-block', width: '100%', maxWidth: '440px' }}>
+                                          <audio controls src={audioUrl} style={{ width: '100%', outline: 'none' }} />
+                                        </div>
                                       </div>
                                     );
                                   }
+
+                                  if (valStr.includes('Voice_Note') || valStr.toLowerCase().includes('.mp3') || valStr.toLowerCase().includes('.webm') || valStr.toLowerCase().includes('.wav')) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          🎙️ Voice Note / Audio File Attached
+                                        </div>
+                                        <div style={{ background: '#f0f9ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bae6fd', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                          <span>🎵</span> {valStr.replace(/["{}]/g, '')}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
                                   return valStr;
                                 })()}
                               </div>

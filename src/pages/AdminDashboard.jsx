@@ -1852,7 +1852,7 @@ export default function AdminDashboard() {
                                   className="action-btn view"
                                   onClick={() => setSelectedSub(sub)}
                                 >
-                                  View Details
+                                  Details
                                 </button>
                                 <button
                                   className="action-btn edit"
@@ -1860,7 +1860,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleDownloadSubCSV(sub)}
                                   title="Download as Excel/CSV"
                                 >
-                                  📥 Excel
+                                  Excel
                                 </button>
                                 <button
                                   className="action-btn edit"
@@ -1868,7 +1868,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleDownloadSubPDF(sub)}
                                   title="Download as PDF"
                                 >
-                                  📄 PDF
+                                  PDF
                                 </button>
                                 <button
                                   className="action-btn delete"
@@ -2127,9 +2127,8 @@ export default function AdminDashboard() {
                                     <button
                                       className="action-btn view"
                                       onClick={() => setSelectedSub(sub)}
-                                      style={{ borderRadius: '6px', fontWeight: '600' }}
                                     >
-                                      👁️ Details
+                                      Details
                                     </button>
                                     <button
                                       className="action-btn edit"
@@ -2137,7 +2136,7 @@ export default function AdminDashboard() {
                                       onClick={() => handleDownloadSubCSV(sub)}
                                       title="Download as Excel/CSV"
                                     >
-                                      📥 Excel
+                                      Excel
                                     </button>
                                     <button
                                       className="action-btn edit"
@@ -2145,14 +2144,14 @@ export default function AdminDashboard() {
                                       onClick={() => handleDownloadSubPDF(sub)}
                                       title="Download as PDF"
                                     >
-                                      📄 PDF
+                                      PDF
                                     </button>
                                     <button
                                       className="action-btn delete"
                                       onClick={() => handleDeleteSubmission(sub.id, sub.name)}
                                       style={{ borderRadius: '6px', fontWeight: '600' }}
                                     >
-                                      🗑️ Delete
+                                      Delete
                                     </button>
                                   </div>
                                 </td>
@@ -2167,7 +2166,7 @@ export default function AdminDashboard() {
                 );
               })()}
 
-              {/* 100% FULL SCREEN SUBMISSION DETAILS VIEW PAGE */}
+              {/* 100% FULL SCREEN EXECUTIVE SUBMISSION DETAILS VIEW PAGE */}
               {selectedSub && createPortal(
                 <div
                   className="admin-fullscreen-page-overlay anim-fade-in"
@@ -2190,88 +2189,92 @@ export default function AdminDashboard() {
                   {/* Top Bar Navigation */}
                   <div
                     style={{
-                      padding: '20px 36px',
+                      padding: '16px 36px',
                       background: '#ffffff',
-                      borderBottom: '1.5px solid #cbd5e1',
+                      borderBottom: '1px solid #e2e8f0',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                       flexWrap: 'wrap',
-                      gap: '16px'
+                      gap: '16px',
+                      zIndex: 10
                     }}
                   >
-                    {/* Left: Back Button & Title */}
+                    {/* Left: Back Button & Record Info */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                       <button
                         type="button"
                         onClick={() => setSelectedSub(null)}
                         style={{
-                          background: '#f8fafc',
-                          border: '1.5px solid #cbd5e1',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
                           borderRadius: '10px',
-                          padding: '10px 18px',
-                          color: '#7B1C1C',
+                          padding: '8px 16px',
+                          color: '#334155',
                           fontWeight: '700',
-                          fontSize: '13.5px',
+                          fontSize: '13px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                           transition: 'all 0.2s ease'
                         }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
                       >
-                        <span style={{ fontSize: '16px' }}>←</span> Back to Submissions
+                        <span style={{ fontSize: '15px' }}>←</span> Back to Submissions
                       </button>
 
-                      <div style={{ height: '36px', width: '1px', background: '#cbd5e1' }} />
+                      <div style={{ height: '32px', width: '1px', background: '#e2e8f0' }} />
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <span style={{
                           fontFamily: 'monospace',
                           fontWeight: '800',
-                          color: '#7B1C1C',
-                          background: '#fcf2f2',
-                          padding: '6px 14px',
+                          color: '#1e40af',
+                          background: '#eff6ff',
+                          padding: '5px 12px',
                           borderRadius: '8px',
-                          border: '1.5px solid #fecaca',
-                          fontSize: '14px'
+                          border: '1px solid #bfdbfe',
+                          fontSize: '13px'
                         }}>
                           {selectedSub.id}
                         </span>
                         <div>
-                          <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>
+                          <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.3px' }}>
                             Submission Record Details
                           </h2>
-                          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+                          <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
                             Form: <span style={{ color: '#0f172a', fontWeight: '700' }}>{selectedSub.form}</span> • Submitted: {selectedSub.date || '2026-07-09'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right: Actions */}
+                    {/* Right: Export & Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button
                         type="button"
                         style={{
                           background: '#ecfdf5',
-                          color: '#065f46',
-                          border: '1.5px solid #a7f3d0',
-                          padding: '10px 20px',
+                          color: '#047857',
+                          border: '1px solid #a7f3d0',
+                          padding: '9px 18px',
                           fontWeight: '700',
-                          fontSize: '13.5px',
+                          fontSize: '13px',
                           borderRadius: '10px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          boxShadow: '0 2px 4px rgba(6, 95, 70, 0.08)'
+                          gap: '6px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                          transition: 'all 0.2s ease'
                         }}
                         onClick={() => handleDownloadSubCSV(selectedSub)}
                       >
-                        📥 Export Excel (CSV)
+                        Excel
                       </button>
 
                       <button
@@ -2280,30 +2283,31 @@ export default function AdminDashboard() {
                           background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
                           color: '#ffffff',
                           border: 'none',
-                          padding: '10px 20px',
+                          padding: '9px 18px',
                           fontWeight: '700',
-                          fontSize: '13.5px',
+                          fontSize: '13px',
                           borderRadius: '10px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          boxShadow: '0 4px 8px rgba(123, 28, 28, 0.2)'
+                          gap: '6px',
+                          boxShadow: '0 4px 10px rgba(123, 28, 28, 0.25)',
+                          transition: 'all 0.2s ease'
                         }}
                         onClick={() => handleDownloadSubPDF(selectedSub)}
                       >
-                        📄 Download PDF Report
+                        Download PDF Report
                       </button>
 
                       <button
                         onClick={() => setSelectedSub(null)}
                         style={{
-                          fontSize: '22px',
-                          width: '40px',
-                          height: '40px',
+                          fontSize: '20px',
+                          width: '36px',
+                          height: '36px',
                           borderRadius: '50%',
                           background: '#f1f5f9',
-                          border: '1.5px solid #cbd5e1',
+                          border: '1px solid #cbd5e1',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
@@ -2311,146 +2315,275 @@ export default function AdminDashboard() {
                           color: '#475569',
                           transition: 'all 0.2s ease'
                         }}
-                        title="Close Page"
+                        title="Close View"
                       >
                         ×
                       </button>
                     </div>
                   </div>
 
-                  {/* Body Content */}
-                  <div style={{ flex: 1, padding: '32px 36px', overflowY: 'auto', background: '#f8fafc' }}>
+                  {/* Body Content Container */}
+                  <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto', background: '#f8fafc' }}>
+                    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-                    {/* Executive Submitter Hero Banner Card */}
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        borderRadius: '16px',
-                        border: '1px solid #cbd5e1',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                        padding: '24px 32px',
-                        marginBottom: '28px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '24px'
-                      }}
-                    >
-                      {/* Left: Avatar & Submitter Info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div
-                          style={{
-                            width: '64px',
-                            height: '64px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
-                            color: '#ffffff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '26px',
-                            fontWeight: '800',
-                            boxShadow: '0 4px 12px rgba(123, 28, 28, 0.25)'
-                          }}
-                        >
-                          {(selectedSub.name || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>
-                              {selectedSub.name}
-                            </h2>
-                            <span className={`status-badge ${selectedSub.status ? selectedSub.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
-                              {selectedSub.status || 'Pending Review'}
-                            </span>
-                          </div>
-                          <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
-                            ✉️ {selectedSub.email || 'No email registered'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right: Submission Meta Badges */}
-                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                        <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>FORM TEMPLATE</span>
-                          <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#7B1C1C', marginTop: '4px' }}>{selectedSub.form}</div>
-                        </div>
-                        <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SUBMITTED DATE</span>
-                          <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>{selectedSub.date || '2026-07-09'}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Field Answers Card Container */}
-                    <div
-                      style={{
-                        background: '#ffffff',
-                        borderRadius: '16px',
-                        border: '1px solid #cbd5e1',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
-                        padding: '32px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '16px' }}>
-                        <div>
-                          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>
-                            📋 Field Answers & Form Responses
-                          </h3>
-                          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                            Verified data entries captured for {selectedSub.name}
-                          </p>
-                        </div>
-                        <span style={{ background: '#f1f5f9', color: '#475569', fontWeight: '700', padding: '6px 16px', borderRadius: '20px', fontSize: '13px' }}>
-                          {(selectedSub.answers || []).length} Fields Recorded
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-                        {(selectedSub.answers || []).map((ans, idx) => (
+                      {/* Executive Submitter Hero Banner Card */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 4px 20px -4px rgba(0,0,0,0.03)',
+                          padding: '28px 36px',
+                          marginBottom: '28px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '24px'
+                        }}
+                      >
+                        {/* Left: Avatar & Submitter Info */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
                           <div
-                            key={idx}
                             style={{
-                              background: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderLeft: '5px solid #7B1C1C',
-                              borderRadius: '12px',
-                              padding: '20px 24px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                              width: '60px',
+                              height: '60px',
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '24px',
+                              fontWeight: '800',
+                              boxShadow: '0 4px 14px rgba(123, 28, 28, 0.25)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                              <span style={{ background: '#7B1C1C', color: '#ffffff', fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '6px' }}>
-                                Q{idx + 1}
+                            {(selectedSub.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>
+                                {selectedSub.name}
+                              </h2>
+                              <span className={`status-badge ${selectedSub.status ? selectedSub.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
+                                {selectedSub.status || 'Pending Review'}
                               </span>
-                              <label style={{ color: '#475569', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                {ans.q}
-                              </label>
                             </div>
+                            <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '13px' }}>✉</span> {selectedSub.email || 'No email registered'}
+                            </p>
+                          </div>
+                        </div>
 
+                        {/* Right: Submission Meta Badges */}
+                        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                          <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '150px' }}>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px' }}>FORM TEMPLATE</span>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#7B1C1C', marginTop: '4px' }}>{selectedSub.form}</div>
+                          </div>
+                          <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '150px' }}>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px' }}>SUBMITTED DATE</span>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginTop: '4px' }}>{selectedSub.date || '2026-07-09'}</div>
+                          </div>
+                          <div style={{ background: '#f8fafc', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: '120px' }}>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.6px' }}>RECORDED FIELDS</span>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#2563eb', marginTop: '4px' }}>{(selectedSub.answers || []).length} Fields</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Field Answers Card Container */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.03)',
+                          padding: '32px',
+                          marginBottom: '28px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1px solid #f1f5f9', paddingBottom: '18px' }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: '19px', fontWeight: '800', color: '#0f172a' }}>
+                              Field Answers & Form Responses
+                            </h3>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                              Verified data entries captured for <strong style={{ color: '#0f172a' }}>{selectedSub.name}</strong>
+                            </p>
+                          </div>
+                          <span style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontWeight: '700', padding: '6px 16px', borderRadius: '9999px', fontSize: '12.5px' }}>
+                            {(selectedSub.answers || []).length} Fields Recorded
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '18px' }}>
+                          {(selectedSub.answers || []).map((ans, idx) => (
                             <div
+                              key={idx}
                               style={{
                                 background: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '8px',
-                                padding: '14px 18px',
-                                fontSize: '15.5px',
-                                fontWeight: '700',
-                                color: '#0f172a',
-                                whiteSpace: 'pre-wrap',
-                                lineHeight: '1.5',
-                                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '20px 24px',
+                                transition: 'all 0.2s ease',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = '#cbd5e1';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = '#e2e8f0';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
                               }}
                             >
-                              {ans.a || '—'}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                <span style={{ background: '#7B1C1C', color: '#ffffff', fontSize: '11px', fontWeight: '800', padding: '3px 8px', borderRadius: '6px' }}>
+                                  Q{idx + 1}
+                                </span>
+                                <label style={{ color: '#334155', fontSize: '13.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                  {ans.q}
+                                </label>
+                              </div>
 
+                              <div
+                                style={{
+                                  background: '#f8fafc',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '10px',
+                                  padding: '14px 18px',
+                                  fontSize: '15px',
+                                  fontWeight: '600',
+                                  color: '#0f172a',
+                                  whiteSpace: 'pre-wrap',
+                                  lineHeight: '1.6'
+                                }}
+                              >
+                                {ans.a ? ans.a : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '500' }}>Not provided</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Executive Quick Actions & Status Control Bar */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.03)',
+                          padding: '20px 28px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '16px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Update Record Status:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = { ...selectedSub, status: 'Approved' };
+                              saveResponse(updated).then(() => {
+                                setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
+                                setSelectedSub(updated);
+                                showToastMessage(`Submission ${selectedSub.id} marked as Approved!`);
+                              });
+                            }}
+                            style={{
+                              background: selectedSub.status === 'Approved' ? '#059669' : '#ecfdf5',
+                              color: selectedSub.status === 'Approved' ? '#ffffff' : '#047857',
+                              border: '1px solid #a7f3d0',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            ✓ Approved
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = { ...selectedSub, status: 'Pending Review' };
+                              saveResponse(updated).then(() => {
+                                setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
+                                setSelectedSub(updated);
+                                showToastMessage(`Submission ${selectedSub.id} set to Pending Review!`);
+                              });
+                            }}
+                            style={{
+                              background: selectedSub.status === 'Pending Review' ? '#d97706' : '#fffbe0',
+                              color: selectedSub.status === 'Pending Review' ? '#ffffff' : '#b45309',
+                              border: '1px solid #fde68a',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            ⏳ Pending Review
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = { ...selectedSub, status: 'Rejected' };
+                              saveResponse(updated).then(() => {
+                                setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
+                                setSelectedSub(updated);
+                                showToastMessage(`Submission ${selectedSub.id} marked as Rejected.`);
+                              });
+                            }}
+                            style={{
+                              background: selectedSub.status === 'Rejected' ? '#dc2626' : '#fef2f2',
+                              color: selectedSub.status === 'Rejected' ? '#ffffff' : '#b91c1c',
+                              border: '1px solid #fecaca',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            ✕ Rejected
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const subToDelete = selectedSub;
+                            setSelectedSub(null);
+                            handleDeleteSubmission(subToDelete.id, subToDelete.name);
+                          }}
+                          style={{
+                            background: '#fff5f5',
+                            color: '#dc2626',
+                            border: '1px solid #fecaca',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            fontWeight: '700',
+                            fontSize: '12.5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Delete Record
+                        </button>
+                      </div>
+
+                    </div>
                   </div>
                 </div>,
                 document.body

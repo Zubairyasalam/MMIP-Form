@@ -545,7 +545,7 @@ export default function AdminFormManagement({ onLogAction }) {
                   <td>
                     <div className="table-actions">
                       <button type="button" onClick={() => setSelectedForm(tmpl)} className="action-btn view">
-                        View
+                        Details
                       </button>
                       <button type="button" onClick={() => startEditForm(tmpl)} className="action-btn edit">
                         Edit

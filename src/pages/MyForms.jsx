@@ -282,9 +282,9 @@ export default function MyForms() {
                         <td style={{ padding: '12px 8px', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                           <button
                             onClick={() => setSelectedSubmissionDetails(sub)}
-                            style={{ padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '4px', color: '#2563eb', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}
+                            style={{ padding: '6px 14px', background: '#f0f4f9', border: '1px solid #cbd5e1', borderRadius: '12px', color: '#1e293b', fontWeight: '700', cursor: 'pointer', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
                           >
-                            View Details
+                            Details
                           </button>
                           <button
                             onClick={() => handleDeleteSubmission(sub.id)}
@@ -312,48 +312,68 @@ export default function MyForms() {
         </div>
       )}
 
-      {/* ── Submission Details Modal ── */}
+      {/* ── Executive Submission Details Modal ── */}
       {selectedSubmissionDetails && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', width: '90%', maxWidth: '1400px', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', color: 'white' }}>
-              <div>
-                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>Response Details</h4>
-                <span style={{ fontSize: '12px', opacity: 0.85 }}>Submission ID: {selectedSubmissionDetails.id}</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', width: '92%', maxWidth: '850px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '20px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: '800', color: '#1e40af', background: '#eff6ff', padding: '4px 10px', borderRadius: '6px', border: '1px solid #bfdbfe', fontSize: '12.5px' }}>
+                  {selectedSubmissionDetails.id}
+                </span>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Response Details</h4>
+                  <span style={{ fontSize: '12.5px', color: '#64748b' }}>Submitted on {selectedSubmissionDetails.date}</span>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedSubmissionDetails(null)}
-                style={{ background: 'none', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', width: '32px', height: '32px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13.5px' }}>
-                <div><strong>Respondent:</strong> {selectedSubmissionDetails.name}</div>
-                <div><strong>Email:</strong> {selectedSubmissionDetails.email}</div>
-                <div><strong>Submitted At:</strong> {selectedSubmissionDetails.date}</div>
-                <div><strong>Status:</strong> <span style={{ padding: '2px 8px', background: '#fef3c7', color: '#d97706', borderRadius: '999px', fontSize: '11px', fontWeight: '700' }}>{selectedSubmissionDetails.status}</span></div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '28px', background: '#f8fafc' }}>
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '20px 24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #7B1C1C 0%, #a82828 100%)', color: 'white', fontWeight: '800', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {(selectedSubmissionDetails.name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h5 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>{selectedSubmissionDetails.name}</h5>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>✉ {selectedSubmissionDetails.email}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className={`status-badge ${selectedSubmissionDetails.status ? selectedSubmissionDetails.status.replace(' ', '-').toLowerCase() : 'pending-review'}`}>
+                    {selectedSubmissionDetails.status || 'Pending Review'}
+                  </span>
+                </div>
               </div>
 
-              <h5 style={{ fontSize: '14px', fontWeight: '700', color: '#475569', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Answers</h5>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h5 style={{ fontSize: '14px', fontWeight: '800', color: '#334155', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Recorded Answers</h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {selectedSubmissionDetails.answers && selectedSubmissionDetails.answers.map((ans, idx) => (
-                  <div key={idx} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-                    <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '4px', fontSize: '13.5px' }}>{ans.q}</div>
-                    <div style={{ color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{ans.a || <em style={{ color: '#94a3b8' }}>No answer provided</em>}</div>
+                  <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ background: '#7B1C1C', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px' }}>Q{idx + 1}</span>
+                      <span style={{ fontWeight: '700', color: '#334155', fontSize: '13px', textTransform: 'uppercase' }}>{ans.q}</span>
+                    </div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', color: '#0f172a', fontSize: '14.5px', fontWeight: '600', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                      {ans.a || <em style={{ color: '#94a3b8', fontStyle: 'italic' }}>No answer provided</em>}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', background: '#f8fafc' }}>
+            <div style={{ padding: '16px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', background: '#ffffff' }}>
               <button
                 onClick={() => setSelectedSubmissionDetails(null)}
-                style={{ padding: '8px 16px', background: '#1e293b', border: 'none', borderRadius: '6px', color: 'white', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}
+                style={{ padding: '8px 20px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', color: '#334155', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}
               >
-                Close Details
+                Close View
               </button>
             </div>
           </div>

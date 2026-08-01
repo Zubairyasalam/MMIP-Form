@@ -587,9 +587,14 @@ export default function AdminDashboard() {
       const mappedCustom = dbForms.map(cf => ({
         id: cf.id,
         title: cf.name || cf.title || 'Untitled Form',
+        name: cf.name || cf.title || 'Untitled Form',
         status: cf.status || 'Active',
         created: cf.created || new Date().toLocaleDateString(),
-        creator: cf.creator || 'Admin'
+        creator: cf.creator || 'Admin',
+        bg: cf.bg,
+        themeColor: cf.themeColor,
+        theme: cf.theme,
+        questions: cf.questions
       }));
 
       const defaultForms = [
@@ -1708,8 +1713,30 @@ export default function AdminDashboard() {
                       .filter(title => selectedTemplateFilter === 'ALL' || selectedTemplateFilter === title)
                       .map((title, idx) => {
                         const formSubs = submissionsByForm[title];
-                        const matchingForm = forms.find(f => f.name === title || f.title === title) || {};
-                        const palette = FOLDER_PALETTES[idx % FOLDER_PALETTES.length];
+                        const matchingForm = forms.find(f => f.name === title || f.title === title || f.id === title) || {};
+
+                        const formAccent = matchingForm.themeColor 
+                          || (matchingForm.theme?.accent && matchingForm.theme.accent.startsWith('#') ? matchingForm.theme.accent : null)
+                          || (matchingForm.bg && matchingForm.bg.startsWith('#') ? matchingForm.bg : null)
+                          || (TEMPLATE_THEMES[matchingForm.bg]?.accent);
+
+                        let palette;
+                        if (formAccent) {
+                          palette = {
+                            headerBg: formAccent,
+                            notchBg: formAccent,
+                            pocketGradient: `linear-gradient(135deg, ${formAccent} 0%, ${formAccent}dd 60%, ${formAccent}aa 100%)`,
+                            stampColor: formAccent,
+                            stampBg: `${formAccent}18`,
+                            stampBorder: `${formAccent}44`,
+                            badgeText: formAccent,
+                            btnGradient: `linear-gradient(135deg, ${formAccent} 0%, ${formAccent}dd 100%)`,
+                            btnShadow: `${formAccent}44`,
+                            accentColor: formAccent
+                          };
+                        } else {
+                          palette = FOLDER_PALETTES[idx % FOLDER_PALETTES.length];
+                        }
 
                         return (
                           <div

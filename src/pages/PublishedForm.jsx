@@ -1565,17 +1565,77 @@ function AiAssistantInput({ q, accent, value, onChange }) {
     setGenerating(true);
     setTimeout(() => {
       setGenerating(false);
-      const lower = (value || '').toLowerCase();
-      let response = "MCC Student Research Portal: A unified, secure digital platform designed to automate student project submissions, department reviews, and visual presentation approvals.";
-      if (lower.includes('attendance') || lower.includes('fingerprint') || lower.includes('facial')) {
-        response = "IoT-Based Student Attendance Guard: A hardware-software solution incorporating low-power biometric fingerprint sensors and high-accuracy facial recognition pipelines.";
-      } else if (lower.includes('water') || lower.includes('recycling') || lower.includes('hostel')) {
-        response = "IoT Hostel Water Recycling Grid: An environmental engineering initiative that recycles greywater from student hostel blocks.";
-      } else if (lower.includes('solar') || lower.includes('energy') || lower.includes('battery')) {
-        response = "Smart Lab Microgrid & Solar Ledger: An automated energy distribution and tracking framework designed for campus lab facilities.";
+      if (!value || !value.trim()) {
+        onChange("MCC Student Research Portal: A unified, secure digital platform designed to automate student project submissions, department reviews, and visual presentation approvals.");
+        return;
       }
-      onChange(response);
-    }, 800);
+
+      let text = value.trim();
+      const ALL_CORRECTIONS = {
+        'u': 'you', 'r': 'are', 'ur': 'your', 'cn': 'can', 'dn': 'done',
+        'abt': 'about', 'plz': 'please', 'pls': 'please', 'thks': 'thanks',
+        'thnk': 'thank', 'hw': 'how', 'wht': 'what', 'whr': 'where',
+        'teh': 'the', 'hte': 'the', 'thsi': 'this', 'taht': 'that',
+        'fo': 'of', 'ot': 'to', 'heo': 'hello', 'helllo': 'hello',
+        'recived': 'received', 'recieve': 'receive', 'beleive': 'believe',
+        'occured': 'occurred', 'occurance': 'occurrence', 'seperate': 'separate',
+        'definate': 'definite', 'definately': 'definitely', 'independant': 'independent',
+        'neccessary': 'necessary', 'untill': 'until', 'tommorrow': 'tomorrow',
+        'accomodate': 'accommodate', 'grammer': 'grammar', 'noticable': 'noticeable',
+        'wierd': 'weird', 'freind': 'friend', 'goverment': 'government',
+        'intresting': 'interesting', 'succesful': 'successful', 'succes': 'success',
+        'programm': 'program', 'algoritm': 'algorithm', 'algorythm': 'algorithm',
+        'databse': 'database', 'interfce': 'interface', 'sofware': 'software',
+        'softeware': 'software', 'softeaware': 'software', 'hadware': 'hardware',
+        'implemantation': 'implementation', 'developement': 'development',
+        'devlop': 'develop', 'applicaiton': 'application',
+        'managment': 'management', 'analsis': 'analysis', 'requirment': 'requirement',
+        'reaserch': 'research', 'reserch': 'research', 'resurce': 'resource',
+        'colg': 'college', 'univ': 'university', 'dept': 'department',
+        'studen': 'student', 'studnet': 'student', 'proposel': 'proposal',
+        'propsal': 'proposal', 'fild': 'field', 'worng': 'wrong',
+        'englissh': 'english', 'englsh': 'english', 'engilsh': 'english',
+        'projct': 'project', 'proejct': 'project', 'inovation': 'innovation',
+        'innovaton': 'innovation', 'submision': 'submission', 'submitt': 'submit',
+        'evalaution': 'evaluation', 'evalution': 'evaluation', 'approvel': 'approval',
+        'coorection': 'correction', 'coorect': 'correct', 'improvment': 'improvement',
+        'imprive': 'improve', 'yhst': 'that', 'thst': 'that', 'menas': 'means',
+        'feild': 'field', 'realy': 'really', 'tether': 'together', 'submiting': 'submitting',
+        'atendence': 'attendance', 'atendance': 'attendance', 'sysem': 'system',
+        'sysstem': 'system', 'informamtion': 'information', 'infomation': 'information',
+        'clcik': 'click', 'clik': 'click', 'whst': 'what', 'wats': 'what is',
+        'wat': 'what', 'herer': 'here', 'unfoed': 'unfilled', 'trext': 'text', 'shoud': 'should',
+        'mising': 'missing', 'shos': 'shows', 'shew': 'show'
+      };
+
+      Object.entries(ALL_CORRECTIONS).forEach(([bad, good]) => {
+        const regex = new RegExp('\\b' + bad + '\\b', 'gi');
+        text = text.replace(regex, (match) => {
+          if (match[0] === match[0].toUpperCase()) {
+            return good.charAt(0).toUpperCase() + good.slice(1);
+          }
+          return good;
+        });
+      });
+
+      text = text.replace(/\bi\b/g, 'I');
+      text = text.replace(/\bi'm\b/gi, "I'm");
+      text = text.replace(/\bi've\b/gi, "I've");
+      text = text.replace(/\bi'll\b/gi, "I'll");
+      text = text.replace(/\bi'd\b/gi, "I'd");
+      text = text.replace(/\s+/g, ' ');
+      text = text.replace(/\s+([.,!?:;])/g, '$1');
+      text = text.replace(/([.,!?:;])([a-zA-Z])/g, '$1 $2');
+      text = text.replace(/(^\s*|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+      if (text.length > 0) {
+        text = text.charAt(0).toUpperCase() + text.slice(1);
+      }
+      if (!/[.!?]$/.test(text)) {
+        text += '.';
+      }
+
+      onChange(text);
+    }, 600);
   };
 
   const toggleRecording = () => {

@@ -1071,7 +1071,7 @@ export default function PublishedForm() {
                                       onChange={(e) => {
                                         const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
                                         const next = [...current];
-                                        next[rIdx] = { ...next[rIdx], role: e.target.value };
+                                        next[rIdx] = { ...next[rIdx], role: e.target.value, roleOther: '' };
                                         setAnswers({ ...answers, [idx]: next });
                                       }}
                                       style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', background: 'white' }}
@@ -1088,6 +1088,21 @@ export default function PublishedForm() {
                                       <option value="Writer">Writer</option>
                                       <option value="Other">Other</option>
                                     </select>
+                                    {row.role === 'Other' && (
+                                      <input
+                                        type="text"
+                                        value={row.roleOther || ''}
+                                        onChange={(e) => {
+                                          const current = value || [{ name: '', roll: '', role: 'Other', link: '' }];
+                                          const next = [...current];
+                                          next[rIdx] = { ...next[rIdx], roleOther: e.target.value };
+                                          setAnswers({ ...answers, [idx]: next });
+                                        }}
+                                        placeholder="Specify role..."
+                                        autoFocus
+                                        style={{ width: '100%', marginTop: '5px', padding: '5px 10px', border: '1.5px solid #7B1C1C', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', background: '#fff8f8' }}
+                                      />
+                                    )}
                                   </td>
                                   <td style={{ padding: '6px 0' }}>
                                     <input
@@ -1369,43 +1384,65 @@ export default function PublishedForm() {
 
 function SignaturePad({ accent, onChange }) {
   const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
   const canvasRef = useRef(null);
 
+  // Stop drawing when mouse is released ANYWHERE on the page
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDrawingRef.current) {
+        isDrawingRef.current = false;
+        setIsDrawing(false);
+        if (canvasRef.current && onChange) {
+          onChange(canvasRef.current.toDataURL());
+        }
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener('touchend', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('touchend', handleGlobalMouseUp);
+    };
+  }, [onChange]);
+
+  const getPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
   const startDrawing = (e) => {
+    e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = accent || '#7B1C1C';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-
+    ctx.lineJoin = 'round';
+    const { x, y } = getPos(e, canvas);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    isDrawingRef.current = true;
     setIsDrawing(true);
   };
 
   const draw = (e) => {
     if (!isDrawing) return;
+    e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    if (!clientX || !clientY) return;
-
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
+    const { x, y } = getPos(e, canvas);
     ctx.lineTo(x, y);
     ctx.stroke();
   };
 
   const stopDrawing = () => {
-    if (isDrawing) {
+    if (isDrawingRef.current) {
+      isDrawingRef.current = false;
       setIsDrawing(false);
       if (canvasRef.current && onChange) {
         onChange(canvasRef.current.toDataURL());
@@ -1427,9 +1464,9 @@ function SignaturePad({ accent, onChange }) {
     <div style={{ position: 'relative', width: '100%', marginTop: '6px' }}>
       <canvas
         ref={canvasRef}
-        width={500}
-        height={100}
-        style={{ border: '1.5px solid #e2e8f0', borderRadius: '8px', background: '#fafafa', display: 'block', width: '100%', height: '100px', cursor: 'crosshair' }}
+        width={1000}
+        height={200}
+        style={{ border: '1.5px solid #e2e8f0', borderRadius: '8px', background: '#fafafa', display: 'block', width: '100%', height: '100px', cursor: 'crosshair', touchAction: 'none' }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}

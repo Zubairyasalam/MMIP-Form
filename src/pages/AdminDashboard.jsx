@@ -2537,24 +2537,48 @@ export default function AdminDashboard() {
                                   }
 
                                   // 2. Team Members Roster
-                                  if (Array.isArray(parsedObj) && parsedObj.length > 0 && (parsedObj[0].name !== undefined || parsedObj[0].role !== undefined)) {
+                                  if (Array.isArray(parsedObj) && parsedObj.length > 0 && (parsedObj[0].name !== undefined || parsedObj[0].role !== undefined || parsedObj[0].roll !== undefined)) {
                                     return (
                                       <div style={{ marginTop: '2px', width: '100%' }}>
                                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                                           👥 Team Members Roster
                                         </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
-                                          {parsedObj.map((m, mIdx) => (
-                                            <div key={mIdx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {(m.name || 'M').charAt(0).toUpperCase()}
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                                          {parsedObj.map((m, mIdx) => {
+                                            const roleText = (m.role === 'Other' && m.roleOther) ? m.roleOther : (m.role || 'Member');
+                                            return (
+                                              <div key={mIdx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '12px 14px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: '800', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    {(m.name || 'M').charAt(0).toUpperCase()}
+                                                  </div>
+                                                  <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name || 'Team Member'}</div>
+                                                    <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600' }}>🏷️ {roleText}</div>
+                                                  </div>
+                                                </div>
+
+                                                {(m.roll || m.link) && (
+                                                  <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '6px', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px' }}>
+                                                    {m.roll && (
+                                                      <div style={{ color: '#475569' }}>
+                                                        <span style={{ color: '#64748b', fontWeight: '600' }}>ID / Roll No: </span>
+                                                        <span style={{ fontWeight: '700', color: '#1e293b' }}>{m.roll}</span>
+                                                      </div>
+                                                    )}
+                                                    {m.link && (
+                                                      <div style={{ color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        <span style={{ color: '#64748b', fontWeight: '600' }}>Link: </span>
+                                                        <a href={m.link.startsWith('http') ? m.link : `https://${m.link}`} target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: '600', textDecoration: 'underline' }}>
+                                                          {m.link}
+                                                        </a>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
                                               </div>
-                                              <div>
-                                                <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>{m.name || 'Team Member'}</div>
-                                                <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '600' }}>{m.role || 'Member'}</div>
-                                              </div>
-                                            </div>
-                                          ))}
+                                            );
+                                          })}
                                         </div>
                                       </div>
                                     );
@@ -2589,9 +2613,15 @@ export default function AdminDashboard() {
                                           {isImg ? '🖼️ Uploaded Image' : '📄 Uploaded File'}
                                         </div>
                                         {isImg ? (
-                                          <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1.5px solid #cbd5e1', display: 'inline-block', maxWidth: '100%' }}>
-                                            <img src={parsedObj.dataUrl} alt={parsedObj.name} style={{ maxHeight: '250px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px', display: 'block' }} />
-                                            <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{parsedObj.name}</div>
+                                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', overflow: 'hidden', display: 'inline-block', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                                            <img src={parsedObj.dataUrl} alt={parsedObj.name} style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                                            <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
+                                              <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{parsedObj.name}</span>
+                                              <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                Download
+                                              </a>
+                                            </div>
                                           </div>
                                         ) : (
                                           <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '8px', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', textDecoration: 'none' }}>
@@ -2603,13 +2633,22 @@ export default function AdminDashboard() {
                                   }
 
                                   if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
+                                    const imgExt = valStr.startsWith('data:image/') ? valStr.split(';')[0].split('/')[1] : valStr.split('.').pop();
+                                    const imgFileName = `image_${Date.now()}.${imgExt || 'png'}`;
                                     return (
                                       <div style={{ marginTop: '2px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                                           🖼️ Captured Image / Digital Signature
                                         </div>
-                                        <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1.5px solid #cbd5e1', display: 'inline-block', maxWidth: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                          <img src={valStr} alt="Uploaded file" style={{ maxHeight: '250px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px', display: 'block' }} />
+                                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', overflow: 'hidden', display: 'inline-block', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                                          <img src={valStr} alt="Uploaded file" style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                                          <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
+                                            <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155' }}>🖼️ Captured Image</span>
+                                            <a href={valStr} download={imgFileName} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
+                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                              Download
+                                            </a>
+                                          </div>
                                         </div>
                                       </div>
                                     );

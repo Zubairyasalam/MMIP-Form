@@ -7,6 +7,7 @@ import './PublishedForm.css';
 export default function PublishedForm() {
   const { formId } = useParams();
   const navigate = useNavigate();
+  const formTopRef = useRef(null);
 
   const [formConfig, setFormConfig] = useState(undefined);
   const [answers, setAnswers] = useState({});
@@ -15,6 +16,13 @@ export default function PublishedForm() {
   const [submitted, setSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
+  const [toast, setToast] = useState(null); // { message, type }
+  const [missingFields, setMissingFields] = useState([]);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -116,21 +124,26 @@ export default function PublishedForm() {
 
     // Validate required fields
     let valid = true;
+    const missing = [];
     formConfig.questions.forEach((q, idx) => {
       if ((q.cardType === 'question' || !q.cardType) && q.required) {
         const val = answers[idx];
         if (q.type === 'checkbox') {
-          if (!val || val.length === 0) valid = false;
+          if (!val || val.length === 0) { valid = false; missing.push(idx); }
         } else {
-          if (!val) valid = false;
+          if (!val) { valid = false; missing.push(idx); }
         }
       }
     });
 
     if (!valid) {
-      alert('Please fill out all required fields.');
+      setMissingFields(missing);
+      showToast(`⚠️ Please fill out all required fields. (${missing.length} field${missing.length > 1 ? 's' : ''} missing)`, 'error');
+      // Scroll to the validation banner at the top of the form
+      if (formTopRef.current) formTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
+    setMissingFields([]);
 
     // Determine submitter name from form answers if possible
     let submitterName = 'Anonymous';
@@ -170,9 +183,14 @@ export default function PublishedForm() {
         const rawAns = answers[idx];
         let finalAns = '';
         if (Array.isArray(rawAns)) {
-          finalAns = rawAns.join(', ');
+          // Arrays of objects (team members, budget rows) → JSON string so viewer can render them
+          if (rawAns.length > 0 && typeof rawAns[0] === 'object') {
+            finalAns = JSON.stringify(rawAns);
+          } else {
+            finalAns = rawAns.join(', ');
+          }
         } else if (rawAns && typeof rawAns === 'object') {
-          finalAns = rawAns.audioUrl ? JSON.stringify(rawAns) : (rawAns.name || JSON.stringify(rawAns));
+          finalAns = rawAns.audioUrl ? JSON.stringify(rawAns) : (rawAns.dataUrl ? JSON.stringify(rawAns) : (rawAns.name || JSON.stringify(rawAns)));
         } else {
           finalAns = String(rawAns || '');
         }
@@ -262,12 +280,80 @@ export default function PublishedForm() {
 
   return (
     <div className="pf-page">
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          zIndex: 9999,
+          background: toast.type === 'error' ? '#dc2626' : '#16a34a',
+          color: '#fff',
+          padding: '14px 22px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+          fontSize: '14.5px',
+          fontWeight: '600',
+          fontFamily: 'Inter, sans-serif',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          maxWidth: '380px',
+          animation: 'slideInToast 0.35s cubic-bezier(.21,1.02,.73,1) forwards'
+        }}>
+          <span style={{ fontSize: '18px' }}>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+          <span>{toast.message.replace(/^⚠️ /, '')}</span>
+        </div>
+      )}
       <div className="pf-container">
         {/* Form Body */}
         <div className="pf-body">
           {!submitted ? (
-            <form onSubmit={handleSubmit}>
-              {/* Header Image */}
+            <form onSubmit={handleSubmit} noValidate>
+              {/* Validation Banner - shown at top when submit fails */}
+              <div ref={formTopRef} />
+              {missingFields.length > 0 && (
+                <div style={{
+                  margin: '0 0 16px 0',
+                  background: '#fff1f2',
+                  border: '1.5px solid #fca5a5',
+                  borderRadius: '12px',
+                  padding: '14px 18px',
+                  fontFamily: 'Inter, sans-serif'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>⚠️</span>
+                    <span style={{ fontWeight: '700', fontSize: '14px', color: '#b91c1c' }}>
+                      Please fill in the following required fields before submitting:
+                    </span>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '22px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {missingFields.map(idx => {
+                      const q = formConfig.questions[idx];
+                      const label = stripHtml(q?.question || '').trim() || `Field ${idx + 1}`;
+                      return (
+                        <li key={idx} style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById(`field-${idx}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                            style={{
+                              background: 'none', border: 'none', padding: 0,
+                              color: '#dc2626', fontWeight: '600', fontSize: '13px',
+                              cursor: 'pointer', textDecoration: 'underline',
+                              fontFamily: 'Inter, sans-serif', textAlign: 'left'
+                            }}
+                          >
+                            {label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               {headerImage ? (
                 <img
                   src={headerImage}
@@ -300,25 +386,28 @@ export default function PublishedForm() {
                 {(() => {
                   const nonTextFieldTypes = ['voice', 'audio_record', 'image_upload', 'file', 'signature', 'budget', 'team', 'location', 'deadline', 'color', 'ai_assist'];
 
-                  // Filter out redundant empty/extra text inputs below non-text fields (Voice Note, Image Upload)
-                  const filteredQuestions = formConfig.questions.filter((q, index, arr) => {
-                    if (q.type === 'short') {
-                      const cleanText = stripHtml(q.question || '').trim().toLowerCase();
-                      const prevQ = arr[index - 1];
-                      const nextQ = arr[index + 1];
 
-                      const isAdjacentToNonText = (prevQ && (nonTextFieldTypes.includes(prevQ.type) || prevQ.cardType === 'image')) || 
-                                                 (nextQ && (nonTextFieldTypes.includes(nextQ.type) || nextQ.cardType === 'image'));
-                      const isMediaLabelMatch = cleanText.includes('voice') || cleanText.includes('audio') || cleanText.includes('image upload') || cleanText.includes('picture');
-
-                      if ((!cleanText && isAdjacentToNonText) || (isMediaLabelMatch && isAdjacentToNonText)) {
-                        return false;
+                  // Build array of {q, originalIdx} so answers always keyed by ORIGINAL index
+                  const allQs = formConfig.questions;
+                  const filteredQsWithIdx = allQs
+                    .map((q, origIdx) => ({ q, origIdx }))
+                    .filter(({ q, origIdx }) => {
+                      if (q.type === 'short') {
+                        const cleanText = stripHtml(q.question || '').trim().toLowerCase();
+                        const prevQ = allQs[origIdx - 1];
+                        const nextQ = allQs[origIdx + 1];
+                        const isAdjacentToNonText =
+                          (prevQ && (nonTextFieldTypes.includes(prevQ.type) || prevQ.cardType === 'image')) ||
+                          (nextQ && (nonTextFieldTypes.includes(nextQ.type) || nextQ.cardType === 'image'));
+                        const isMediaLabelMatch = cleanText.includes('voice') || cleanText.includes('audio') || cleanText.includes('image upload') || cleanText.includes('picture');
+                        if ((!cleanText && isAdjacentToNonText) || (isMediaLabelMatch && isAdjacentToNonText)) {
+                          return false;
+                        }
                       }
-                    }
-                    return true;
-                  });
+                      return true;
+                    });
 
-                  return filteredQuestions.map((q, idx) => {
+                  return filteredQsWithIdx.map(({ q, origIdx: idx }) => {
                     const value = answers[idx];
 
                   if (q.cardType === 'title-desc') {
@@ -443,7 +532,21 @@ export default function PublishedForm() {
                       );
 
                   return (
-                    <div key={idx} className={`pf-field ${isFullWidth ? 'full' : ''}`} style={{ position: 'relative', background: '#ffffff', borderRadius: '12px', padding: '16px', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+                    <div
+                      key={idx}
+                      id={`field-${idx}`}
+                      className={`pf-field ${isFullWidth ? 'full' : ''}`}
+                      style={{
+                        position: 'relative',
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: missingFields.includes(idx) ? '2px solid #ef4444' : '1.5px solid #e2e8f0',
+                        boxShadow: missingFields.includes(idx) ? '0 0 0 3px rgba(239,68,68,0.15)' : '0 1px 3px rgba(0,0,0,0.05)',
+                        marginBottom: '16px',
+                        transition: 'border 0.2s, box-shadow 0.2s'
+                      }}
+                    >
                       <div style={{ marginBottom: q.description ? '6px' : '10px' }}>
                         <label className="pf-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
                           <span dangerouslySetInnerHTML={{ __html: questionTitle }} />
@@ -723,25 +826,31 @@ export default function PublishedForm() {
                             style={{ display: 'none' }}
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0]) {
-                                setAnswers({ ...answers, [idx]: e.target.files[0].name });
+                                const file = e.target.files[0];
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setAnswers({ ...answers, [idx]: { name: file.name, dataUrl: ev.target.result, type: file.type, size: file.size } });
+                                };
+                                reader.readAsDataURL(file);
                               }
                             }}
                           />
                           {value ? (
-                            <div style={{ padding: '12px 14px', border: '1.5px solid #27c93f', borderRadius: '8px', background: '#e8f8ec', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e7e34', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
-                                <span>📄</span> {value}
+                            <div style={{ border: '1.5px solid #27c93f', borderRadius: '8px', background: '#e8f8ec', marginTop: '6px', overflow: 'hidden' }}>
+                              {value.type && value.type.startsWith('image/') && value.dataUrl ? (
+                                <img src={value.dataUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', display: 'block', margin: '0 auto', padding: '8px' }} />
+                              ) : null}
+                              <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e7e34', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
+                                  <span>{value.type && value.type.startsWith('image/') ? '🖼️' : '📄'}</span>
+                                  {value.name || value}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setAnswers({ ...answers, [idx]: '' }); }}
+                                  style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                                >✕</button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAnswers({ ...answers, [idx]: '' });
-                                }}
-                                style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
-                              >
-                                ✕
-                              </button>
                             </div>
                           ) : (
                             <div
@@ -921,18 +1030,19 @@ export default function PublishedForm() {
                                 <th style={{ padding: '6px 0', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>Name</th>
                                 <th style={{ padding: '6px 0', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '150px', fontFamily: 'Inter, sans-serif' }}>Roll No</th>
                                 <th style={{ padding: '6px 0', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', width: '120px', fontFamily: 'Inter, sans-serif' }}>Role</th>
+                                <th style={{ padding: '6px 0', fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>Link</th>
                                 <th style={{ width: '36px' }}></th>
                               </tr>
                             </thead>
                             <tbody>
-                              {(value || [{ name: '', roll: '', role: 'Developer' }]).map((row, rIdx) => (
+                              {(value || [{ name: '', roll: '', role: 'Developer', link: '' }]).map((row, rIdx) => (
                                 <tr key={rIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                   <td style={{ padding: '6px 0' }}>
                                     <input
                                       type="text"
                                       value={row.name}
                                       onChange={(e) => {
-                                        const current = value || [{ name: '', roll: '', role: 'Developer' }];
+                                        const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
                                         const next = [...current];
                                         next[rIdx] = { ...next[rIdx], name: e.target.value };
                                         setAnswers({ ...answers, [idx]: next });
@@ -959,7 +1069,7 @@ export default function PublishedForm() {
                                     <select
                                       value={row.role}
                                       onChange={(e) => {
-                                        const current = value || [{ name: '', roll: '', role: 'Developer' }];
+                                        const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
                                         const next = [...current];
                                         next[rIdx] = { ...next[rIdx], role: e.target.value };
                                         setAnswers({ ...answers, [idx]: next });
@@ -970,13 +1080,34 @@ export default function PublishedForm() {
                                       <option value="Developer">Developer</option>
                                       <option value="Designer">Designer</option>
                                       <option value="Researcher">Researcher</option>
+                                      <option value="Presenter">Presenter</option>
+                                      <option value="Tester">Tester</option>
+                                      <option value="Analyst">Analyst</option>
+                                      <option value="Manager">Manager</option>
+                                      <option value="Mentor">Mentor</option>
+                                      <option value="Writer">Writer</option>
+                                      <option value="Other">Other</option>
                                     </select>
+                                  </td>
+                                  <td style={{ padding: '6px 0' }}>
+                                    <input
+                                      type="url"
+                                      value={row.link || ''}
+                                      onChange={(e) => {
+                                        const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
+                                        const next = [...current];
+                                        next[rIdx] = { ...next[rIdx], link: e.target.value };
+                                        setAnswers({ ...answers, [idx]: next });
+                                      }}
+                                      placeholder="Profile / LinkedIn link"
+                                      style={{ width: '90%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                                    />
                                   </td>
                                   <td style={{ textAlign: 'right', padding: '6px 0' }}>
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const current = value || [{ name: '', roll: '', role: 'Developer' }];
+                                        const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
                                         if (current.length === 1) return;
                                         const next = current.filter((_, i) => i !== rIdx);
                                         setAnswers({ ...answers, [idx]: next });
@@ -993,8 +1124,8 @@ export default function PublishedForm() {
                           <button
                             type="button"
                             onClick={() => {
-                              const current = value || [{ name: '', roll: '', role: 'Developer' }];
-                              setAnswers({ ...answers, [idx]: [...current, { name: '', roll: '', role: 'Developer' }] });
+                              const current = value || [{ name: '', roll: '', role: 'Developer', link: '' }];
+                              setAnswers({ ...answers, [idx]: [...current, { name: '', roll: '', role: 'Developer', link: '' }] });
                             }}
                             style={{ padding: '6px 12px', background: 'white', border: `1.5px solid ${theme.accent}`, color: theme.accent, borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
                           >
@@ -1321,37 +1452,77 @@ function SignaturePad({ accent, onChange }) {
 function AiAssistantInput({ q, accent, value, onChange }) {
   const [generating, setGenerating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [typoMap, setTypoMap] = useState({});
+  const debounceRef = useRef(null);
 
-  const getTypos = () => {
-    if (!value) return [];
-    const words = value.split(/\s+/);
-    const found = [];
-    const TYPOS = {
-      'heo': 'hello', 'teh': 'the', 'worng': 'wrong', 'reaserch': 'research',
-      'colg': 'college', 'univ': 'university', 'recived': 'received',
-      'studen': 'student', 'proposel': 'proposal', 'devlop': 'develop',
-      'sofware': 'software', 'fild': 'field', 'abt': 'about', 'plz': 'please',
-      'thks': 'thanks', 'u': 'you', 'r': 'are'
-    };
-    words.forEach(w => {
-      const clean = w.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g, "");
-      if (TYPOS[clean]) {
-        found.push({ original: clean, correction: TYPOS[clean] });
-      }
-    });
-    return found.filter((v, i, a) => a.findIndex(t => t.original === v.original) === i);
+  const CORRECTIONS = {
+    'u': 'you', 'r': 'are', 'ur': 'your', 'cn': 'can', 'dn': 'done',
+    'abt': 'about', 'plz': 'please', 'pls': 'please', 'thks': 'thanks',
+    'thnk': 'thank', 'hw': 'how', 'wht': 'what', 'whr': 'where',
+    'teh': 'the', 'hte': 'the', 'thsi': 'this', 'taht': 'that',
+    'fo': 'of', 'ot': 'to', 'heo': 'hello', 'helllo': 'hello',
+    'recived': 'received', 'recieve': 'receive', 'beleive': 'believe',
+    'occured': 'occurred', 'occurance': 'occurrence', 'seperate': 'separate',
+    'definate': 'definite', 'definately': 'definitely', 'independant': 'independent',
+    'neccessary': 'necessary', 'untill': 'until', 'tommorrow': 'tomorrow',
+    'accomodate': 'accommodate', 'grammer': 'grammar', 'noticable': 'noticeable',
+    'wierd': 'weird', 'freind': 'friend', 'goverment': 'government',
+    'intresting': 'interesting', 'succesful': 'successful', 'succes': 'success',
+    'programm': 'program', 'algoritm': 'algorithm', 'algorythm': 'algorithm',
+    'databse': 'database', 'interfce': 'interface', 'sofware': 'software',
+    'softeware': 'software', 'softeaware': 'software', 'hadware': 'hardware',
+    'implemantation': 'implementation', 'developement': 'development',
+    'devlop': 'develop', 'applicaiton': 'application',
+    'managment': 'management', 'analsis': 'analysis', 'requirment': 'requirement',
+    'reaserch': 'research', 'reserch': 'research', 'resurce': 'resource',
+    'colg': 'college', 'univ': 'university', 'dept': 'department',
+    'studen': 'student', 'studnet': 'student', 'proposel': 'proposal',
+    'propsal': 'proposal', 'fild': 'field', 'worng': 'wrong',
+    'englissh': 'english', 'englsh': 'english', 'engilsh': 'english',
+    'projct': 'project', 'proejct': 'project', 'inovation': 'innovation',
+    'innovaton': 'innovation', 'submision': 'submission', 'submitt': 'submit',
+    'evalaution': 'evaluation', 'evalution': 'evaluation', 'approvel': 'approval',
   };
 
-  const detectedTypos = getTypos();
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (!value) { setTypoMap({}); return; }
+      const words = value.split(/\s+/);
+      const found = {};
+      words.forEach(raw => {
+        const clean = raw.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?'"!]/g, '');
+        if (clean.length > 1 && CORRECTIONS[clean] && !found[clean]) {
+          found[clean] = CORRECTIONS[clean];
+        }
+      });
+      setTypoMap(found);
+    }, 400);
+  }, [value]);
 
-  const fixTypos = () => {
-    let fixedText = value;
-    detectedTypos.forEach(item => {
-      const regex = new RegExp(`\\b${item.original}\\b`, 'gi');
-      fixedText = fixedText.replace(regex, item.correction);
+  const fixAll = () => {
+    let fixed = value;
+    Object.entries(typoMap).forEach(([bad, good]) => {
+      const regex = new RegExp('\\b' + bad + '\\b', 'gi');
+      fixed = fixed.replace(regex, (match) =>
+        match[0] === match[0].toUpperCase() ? good.charAt(0).toUpperCase() + good.slice(1) : good
+      );
     });
-    onChange(fixedText);
+    onChange(fixed);
+    setTypoMap({});
   };
+
+  const fixOne = (bad, good) => {
+    const regex = new RegExp('\\b' + bad + '\\b', 'gi');
+    const fixed = value.replace(regex, (match) =>
+      match[0] === match[0].toUpperCase() ? good.charAt(0).toUpperCase() + good.slice(1) : good
+    );
+    onChange(fixed);
+    setTypoMap(prev => { const next = { ...prev }; delete next[bad]; return next; });
+  };
+
+  const typoEntries = Object.entries(typoMap);
+  const hasTypos = typoEntries.length > 0;
 
   const triggerAi = () => {
     setGenerating(true);
@@ -1401,12 +1572,65 @@ function AiAssistantInput({ q, accent, value, onChange }) {
     <div style={{ width: '100%', marginTop: '6px' }}>
       <textarea
         className="pf-input"
-        style={{ height: '100px', resize: 'vertical', paddingTop: '8px' }}
-        placeholder="Type or use AI suggestion below..."
+        style={{
+          height: '100px', resize: 'vertical', paddingTop: '8px',
+          border: hasTypos ? '1.5px solid #f59e0b' : undefined,
+          transition: 'border-color 0.2s'
+        }}
+        placeholder="Type your answer... spelling mistakes will be detected automatically"
         required={q.required}
         value={value || ''}
+        spellCheck={true}
         onChange={e => onChange(e.target.value)}
       />
+
+      {hasTypos && (
+        <div style={{
+          marginTop: '8px', background: '#fffbeb', border: '1px solid #fcd34d',
+          borderRadius: '8px', padding: '10px 12px',
+          display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center'
+        }}>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#92400e', marginRight: '4px', fontFamily: 'Inter, sans-serif' }}>
+            ✏️ Possible corrections:
+          </span>
+          {typoEntries.map(([bad, good]) => (
+            <button
+              key={bad}
+              type="button"
+              onClick={() => fixOne(bad, good)}
+              title={'Click to fix: "' + bad + '" → "' + good + '"'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                padding: '3px 9px', background: '#fff',
+                border: '1.5px solid #f59e0b', borderRadius: '20px',
+                fontSize: '12px', fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer', color: '#78350f', fontWeight: '600'
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#fef3c7'}
+              onMouseOut={e => e.currentTarget.style.background = '#fff'}
+            >
+              <span style={{ color: '#dc2626', textDecoration: 'line-through' }}>{bad}</span>
+              <span style={{ color: '#6b7280' }}>→</span>
+              <span style={{ color: '#15803d' }}>{good}</span>
+            </button>
+          ))}
+          {typoEntries.length > 1 && (
+            <button
+              type="button"
+              onClick={fixAll}
+              style={{
+                padding: '3px 10px', background: '#d1fae5',
+                border: '1.5px solid #34d399', borderRadius: '20px',
+                fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                color: '#065f46', fontFamily: 'Inter, sans-serif'
+              }}
+            >
+              ✓ Fix All
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
         <button
           type="button"
@@ -1423,20 +1647,10 @@ function AiAssistantInput({ q, accent, value, onChange }) {
         >
           {isRecording ? '🎙 Listening...' : '🎙 Dictate (Voice)'}
         </button>
-        {detectedTypos.length > 0 && (
-          <button
-            type="button"
-            onClick={fixTypos}
-            style={{ padding: '6px 12px', background: '#e8f8ec', color: '#1e7e34', border: '1px solid #27c93f', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
-          >
-            🔧 Fix {detectedTypos.length} Typos
-          </button>
-        )}
       </div>
     </div>
   );
 }
-
 function VoiceDictationComponent({ q, accent, value, onChange }) {
   const cleanVal = (typeof value === 'string' ? value : (value?.text || '')).replace(/Voice_Note_[\d\.\w]+/gi, '').trim();
   const [isRecording, setIsRecording] = useState(false);

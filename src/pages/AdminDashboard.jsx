@@ -2580,6 +2580,28 @@ export default function AdminDashboard() {
                                   }
 
                                   // 4. Image or Signature
+                                  // Handle file upload objects {name, dataUrl, type} saved by new upload handler
+                                  if (parsedObj && parsedObj.dataUrl && parsedObj.name) {
+                                    const isImg = parsedObj.type && parsedObj.type.startsWith('image/');
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          {isImg ? '🖼️ Uploaded Image' : '📄 Uploaded File'}
+                                        </div>
+                                        {isImg ? (
+                                          <div style={{ background: '#ffffff', padding: '8px', borderRadius: '10px', border: '1.5px solid #cbd5e1', display: 'inline-block', maxWidth: '100%' }}>
+                                            <img src={parsedObj.dataUrl} alt={parsedObj.name} style={{ maxHeight: '250px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px', display: 'block' }} />
+                                            <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>{parsedObj.name}</div>
+                                          </div>
+                                        ) : (
+                                          <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '8px', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', textDecoration: 'none' }}>
+                                            <span>📄</span> {parsedObj.name} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>↓ Download</span>
+                                          </a>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+
                                   if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
                                     return (
                                       <div style={{ marginTop: '2px' }}>
@@ -2675,6 +2697,49 @@ export default function AdminDashboard() {
                                         </div>
                                         <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '8px', padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: '10px', color: '#d46b08', fontSize: '13.5px', fontWeight: '700' }}>
                                           <span>📄</span> {valStr.replace(/["{}]/g, '')}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  // Image filename only (old submissions — only name stored)
+                                  if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(valStr.trim())) {
+                                    const cleanName = valStr.trim();
+                                    const ext = cleanName.split('.').pop().toUpperCase();
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          🖼️ Uploaded Image
+                                        </div>
+                                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                          {/* Placeholder image area */}
+                                          <div style={{ background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                                            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                                              <polyline points="21 15 16 10 5 21"/>
+                                            </svg>
+                                            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>{ext} Image</span>
+                                          </div>
+                                          {/* File info + download */}
+                                          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                            <div style={{ minWidth: 0 }}>
+                                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{cleanName}</div>
+                                              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>⚠️ Data not stored — ask to re-upload</div>
+                                            </div>
+                                            <button
+                                              disabled
+                                              title="Image data not available — ask submitter to re-upload"
+                                              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 13px', background: '#f1f5f9', border: '1.5px solid #cbd5e1', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '700', cursor: 'not-allowed', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}
+                                            >
+                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="7 10 12 15 17 10"/>
+                                                <line x1="12" y1="15" x2="12" y2="3"/>
+                                              </svg>
+                                              Download
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
                                     );

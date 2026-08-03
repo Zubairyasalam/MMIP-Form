@@ -653,7 +653,7 @@ function AnswerArea({
 // ── Custom Interactive Question Components ──
 
 function TeamEditor({ q, accent, teams, setTeams }) {
-  const defaultMembers = [{ name: '', roll: '', role: 'Developer' }];
+  const defaultMembers = [{ name: '', roll: '', role: 'Developer', link: '' }];
   const members = teams?.[q.id] || defaultMembers;
 
   const updateMember = (idx, field, val) => {
@@ -665,7 +665,7 @@ function TeamEditor({ q, accent, teams, setTeams }) {
   const addMember = () => {
     setTeams(prev => ({
       ...prev,
-      [q.id]: [...members, { name: '', roll: '', role: 'Developer' }]
+      [q.id]: [...members, { name: '', roll: '', role: 'Developer', link: '' }]
     }));
   };
 
@@ -704,7 +704,20 @@ function TeamEditor({ q, accent, teams, setTeams }) {
               <option value="Designer">Designer</option>
               <option value="Researcher">Researcher</option>
               <option value="Presenter">Presenter</option>
+              <option value="Tester">Tester</option>
+              <option value="Analyst">Analyst</option>
+              <option value="Manager">Manager</option>
+              <option value="Mentor">Mentor</option>
+              <option value="Writer">Writer</option>
+              <option value="Other">Other</option>
             </select>
+            <input
+              type="url"
+              value={m.link || ''}
+              onChange={e => updateMember(idx, 'link', e.target.value)}
+              placeholder="Profile / LinkedIn link"
+              style={{ flex: 2, minWidth: '140px', padding: '8px 10px', border: '1px solid #e0e0e0', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            />
             {members.length > 1 && (
               <button
                 type="button"

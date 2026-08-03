@@ -5,7 +5,7 @@ let backendOnline = true;
 
 async function checkBackend() {
   try {
-    const res = await fetch(`${API_URL}/forms`, { method: 'HEAD' });
+    const res = await fetch(`${API_URL}/forms`, { signal: AbortSignal.timeout(3000) });
     backendOnline = res.ok;
   } catch {
     backendOnline = false;

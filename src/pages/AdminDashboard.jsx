@@ -2604,7 +2604,70 @@ export default function AdminDashboard() {
                                   }
 
                                   // 4. Image or Signature
-                                  // Handle file upload objects {name, dataUrl, type} saved by new upload handler
+                                  // 4. Video Upload / Video Recording
+                                  let videoUrl = null;
+                                  let videoName = "Video Recording";
+                                  if (parsedObj && (parsedObj.type?.startsWith('video/') || parsedObj.dataUrl?.startsWith('data:video/'))) {
+                                    videoUrl = parsedObj.dataUrl;
+                                    videoName = parsedObj.name || "video_recording.mp4";
+                                  } else if (valStr.startsWith('data:video/')) {
+                                    videoUrl = valStr;
+                                  } else if (valStr.includes('data:video/')) {
+                                    const match = valStr.match(/data:video\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
+                                    if (match) videoUrl = match[0];
+                                  }
+
+                                  if (videoUrl) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f46e5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎥</span> Video Recording / File Uploaded
+                                        </div>
+                                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #c7d2fe', overflow: 'hidden', display: 'inline-block', width: '100%', maxWidth: '440px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                                          <video controls src={videoUrl} style={{ width: '100%', maxHeight: '250px', background: '#000000', display: 'block' }} />
+                                          <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
+                                            <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>{videoName}</span>
+                                            <a href={videoUrl} download={videoName} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #4f46e5, #4338ca)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
+                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                              Download
+                                            </a>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  // 5. Audio Voice Recording
+                                  let audioUrl = null;
+                                  let audioName = "Voice Note Recording";
+                                  if (valStr.startsWith('data:audio/')) {
+                                    audioUrl = valStr;
+                                  } else if (valStr.includes('data:audio/')) {
+                                    const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
+                                    if (match) audioUrl = match[0];
+                                  } else if (parsedObj && (parsedObj.audioUrl || (parsedObj.type?.startsWith('audio/') && parsedObj.dataUrl))) {
+                                    audioUrl = parsedObj.audioUrl || parsedObj.dataUrl;
+                                    audioName = parsedObj.name || audioName;
+                                  }
+
+                                  if (audioUrl) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎙️</span> Audio Voice Recording Captured
+                                        </div>
+                                        <div style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid #a7f3d0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'inline-block', width: '100%', maxWidth: '440px' }}>
+                                          <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#065f46', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>🎵 {audioName}</span>
+                                            <a href={audioUrl} download={audioName} style={{ fontSize: '11.5px', color: '#059669', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>↓ Download</a>
+                                          </div>
+                                          <audio controls src={audioUrl} style={{ width: '100%', outline: 'none' }} />
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  // 6. Image or File Upload
                                   if (parsedObj && parsedObj.dataUrl && parsedObj.name) {
                                     const isImg = parsedObj.type && parsedObj.type.startsWith('image/');
                                     return (
@@ -2628,52 +2691,6 @@ export default function AdminDashboard() {
                                             <span>📄</span> {parsedObj.name} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>↓ Download</span>
                                           </a>
                                         )}
-                                      </div>
-                                    );
-                                  }
-
-                                  if (valStr.startsWith('data:image/') || /^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
-                                    const imgExt = valStr.startsWith('data:image/') ? valStr.split(';')[0].split('/')[1] : valStr.split('.').pop();
-                                    const imgFileName = `image_${Date.now()}.${imgExt || 'png'}`;
-                                    return (
-                                      <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          🖼️ Captured Image / Digital Signature
-                                        </div>
-                                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', overflow: 'hidden', display: 'inline-block', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                                          <img src={valStr} alt="Uploaded file" style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
-                                          <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
-                                            <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155' }}>🖼️ Captured Image</span>
-                                            <a href={valStr} download={imgFileName} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
-                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                              Download
-                                            </a>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-
-                                  // 5. Audio Voice Recording
-                                  let audioUrl = null;
-                                  if (valStr.startsWith('data:audio/')) {
-                                    audioUrl = valStr;
-                                  } else if (valStr.includes('data:audio/')) {
-                                    const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
-                                    if (match) audioUrl = match[0];
-                                  } else if (parsedObj && parsedObj.audioUrl) {
-                                    audioUrl = parsedObj.audioUrl;
-                                  }
-
-                                  if (audioUrl) {
-                                    return (
-                                      <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                          <span>🎙️</span> Audio Voice Recording Captured
-                                        </div>
-                                        <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid #a7f3d0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'inline-block', width: '100%', maxWidth: '440px' }}>
-                                          <audio controls src={audioUrl} style={{ width: '100%', outline: 'none' }} />
-                                        </div>
                                       </div>
                                     );
                                   }

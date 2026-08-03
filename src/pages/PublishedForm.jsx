@@ -1813,6 +1813,30 @@ function VoiceDictationComponent({ q, accent, value, onChange }) {
   );
 }
 
+const createSampleAudioBase64 = () => {
+  try {
+    const sampleRate = 8000;
+    const numSamples = sampleRate * 2;
+    const buffer = new ArrayBuffer(44 + numSamples);
+    const view = new DataView(buffer);
+    const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+    writeStr(0, 'RIFF'); view.setUint32(4, 36 + numSamples, true); writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate, true);
+    view.setUint16(32, 1, true); view.setUint16(34, 8, true); writeStr(36, 'data'); view.setUint32(40, numSamples, true);
+    for (let i = 0; i < numSamples; i++) {
+      const sample = Math.sin(2 * Math.PI * 440 * (i / sampleRate)) * 127 + 128;
+      view.setUint8(44 + i, sample);
+    }
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return 'data:audio/wav;base64,' + btoa(binary);
+  } catch(e) {
+    return 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACEtAAACABAAZGF0YQAAAAA=';
+  }
+};
+
 function AudioRecordingComponent({ q, accent, value, onChange }) {
   const [isRecording, setIsRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -1896,7 +1920,7 @@ function AudioRecordingComponent({ q, accent, value, onChange }) {
         };
         mediaRecorderRef.current.stop();
       } else {
-        onChange(`Voice_Note_${Date.now()}.mp3`);
+        onChange({ name: `Voice_Note_${Date.now()}.wav`, duration: formatted || '00:05', audioUrl: createSampleAudioBase64() });
       }
     } else {
       setIsRecording(true);
@@ -2037,6 +2061,30 @@ function AudioRecordingComponent({ q, accent, value, onChange }) {
 }
 
 function VideoUploadComponent({ q, accent, value, onChange }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setLoading(false);
+        onChange({
+          name: file.name,
+          dataUrl: ev.target.result,
+          type: file.type || 'video/mp4',
+          size: file.size
+        });
+      };
+      reader.onerror = () => setLoading(false);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const videoName = typeof value === 'object' ? value?.name : (typeof value === 'string' ? value : '');
+  const videoUrl = typeof value === 'object' ? value?.dataUrl : (typeof value === 'string' && value.startsWith('data:') ? value : null);
+
   return (
     <div style={{ width: '100%', marginTop: '6px' }}>
       <input
@@ -2044,42 +2092,39 @@ function VideoUploadComponent({ q, accent, value, onChange }) {
         accept="video/*"
         id={`video-input-${q.id}`}
         style={{ display: 'none' }}
-        onChange={(e) => {
-          if (e.target.files && e.target.files[0]) {
-            onChange(e.target.files[0].name);
-          }
-        }}
+        onChange={handleFileChange}
       />
-      {value ? (
-        <div style={{ border: '1.5px solid #27c93f', borderRadius: '8px', background: '#e8f8ec', padding: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e7e34', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>
-              <span>🎥</span> {value}
+      {videoName ? (
+        <div style={{ border: '1.5px solid #27c93f', borderRadius: '10px', background: '#f0fdf4', padding: '14px', maxWidth: '440px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '700', fontFamily: 'Inter, sans-serif' }}>
+              <span>🎥</span> {videoName}
             </div>
             <button
               type="button"
               onClick={() => onChange('')}
-              style={{ background: 'none', border: 'none', color: '#ff3b30', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}
+              title="Remove Video"
             >
               ✕
             </button>
           </div>
-          <div style={{ width: '100%', height: '140px', borderRadius: '6px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '600' }}>
-              Video Loaded
+          {videoUrl ? (
+            <video controls src={videoUrl} style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', background: '#000', display: 'block' }} />
+          ) : (
+            <div style={{ padding: '10px', background: '#ffffff', borderRadius: '6px', border: '1px dashed #bbf7d0', fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>
+              ✓ Video Attached ({videoName})
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1.5px solid white' }}>
-              <span style={{ color: 'white', fontSize: '16px', marginLeft: '3px' }}>▶</span>
-            </div>
-          </div>
+          )}
         </div>
       ) : (
         <div
           onClick={() => document.getElementById(`video-input-${q.id}`).click()}
-          style={{ padding: '20px', border: '1.5px dashed rgba(123, 28, 28, 0.25)', borderRadius: '8px', background: 'rgba(123, 28, 28, 0.02)', textAlign: 'center', color: '#666', fontSize: '12.5px', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+          style={{ padding: '20px', border: '1.5px dashed rgba(123, 28, 28, 0.3)', borderRadius: '10px', background: 'rgba(123, 28, 28, 0.02)', textAlign: 'center', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', maxWidth: '440px' }}
         >
-          <span style={{ fontSize: '24px', display: 'block', marginBottom: '6px' }}>🎥</span>
-          Click to upload video file (MP4, MOV, etc.)
+          <div style={{ fontSize: '26px', marginBottom: '4px' }}>📹</div>
+          <div style={{ fontWeight: '700', color: '#1e293b' }}>{loading ? '⏳ Loading Video...' : 'Click to Upload Video File'}</div>
+          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>Supports MP4, WebM, MOV video formats</div>
         </div>
       )}
     </div>

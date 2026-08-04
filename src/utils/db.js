@@ -129,32 +129,52 @@ export async function deleteForm(id) {
  * Get all form submissions.
  */
 export async function getResponses() {
+  let localSubs = [];
+  try {
+    localSubs = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]');
+  } catch { localSubs = []; }
+
   try {
     const res = await fetch(`${API_URL}/responses`);
     if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
+      const dbSubs = await res.json();
+      if (Array.isArray(dbSubs)) {
         backendOnline = true;
+        const mergedMap = new Map();
+        // Add backend responses
+        dbSubs.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
+        // Add local responses that aren't on server yet
+        localSubs.forEach(s => {
+          if (s && s.id && !mergedMap.has(s.id)) {
+            mergedMap.set(s.id, s);
+            // Push missing local submission to backend server
+            fetch(`${API_URL}/responses/${encodeURIComponent(s.id)}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(s)
+            }).catch(() => {});
+          }
+        });
+
+        const mergedList = Array.from(mergedMap.values());
+        mergedList.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+
         try {
-          localStorage.setItem('global_formSubmissions', JSON.stringify(data));
+          localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList));
         } catch (e) {
-          // If local storage is full, store latest 20 items in cache
           try {
-            localStorage.setItem('global_formSubmissions', JSON.stringify(data.slice(0, 20)));
+            localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList.slice(0, 20)));
           } catch (e2) {}
         }
-        return data;
+        return mergedList;
       }
     }
   } catch (e) {
     backendOnline = false;
     console.warn('Backend API offline. Using local submissions cache.');
   }
-  try {
-    return JSON.parse(localStorage.getItem('global_formSubmissions') || '[]');
-  } catch {
-    return [];
-  }
+
+  return localSubs;
 }
 
 /**

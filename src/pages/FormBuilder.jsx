@@ -861,6 +861,7 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
   const [generating, setGenerating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [suggestTip, setSuggestTip] = useState(false);
+  const recognitionRef = useRef(null);
 
   const getTypos = () => {
     if (!textVal) return [];
@@ -1029,64 +1030,59 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
 
   const toggleRecording = () => {
     if (isRecording) {
-      setIsRecording(false);
-    } else {
-      setIsRecording(true);
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setAiTexts(prev => ({
-            ...prev,
-            [q.id]: textVal ? textVal + " " + transcript : transcript
-          }));
-          setSuggestTip(true);
-        };
-
-        recognition.onerror = () => {
-          simulateSpeechInput();
-        };
-
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
-
-        recognition.start();
-      } else {
-        simulateSpeechInput();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) { }
       }
+      setIsRecording(false);
+      return;
     }
-  };
 
-  const simulateSpeechInput = () => {
-    const mockQueries = [
-      "how to build smart campus water recycling with sensors",
-      "can you describe an rfid biometric student attendance grid",
-      "explain the details of a campus solar energy ledger proposal"
-    ];
-    const query = mockQueries[Math.floor(Math.random() * mockQueries.length)];
-    let current = "";
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < query.length) {
-        current += query.slice(i, i + 3);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      const initialText = textVal || '';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        const newText = initialText ? (initialText.trim() + ' ' + transcript.trim()) : transcript;
         setAiTexts(prev => ({
           ...prev,
-          [q.id]: current
+          [q.id]: newText
         }));
-        i += 3;
-      } else {
-        clearInterval(interval);
-        setIsRecording(false);
         setSuggestTip(true);
-      }
-    }, 50);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("Speech recognition notice:", e.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition start failed:", err);
+      setIsRecording(false);
+    }
   };
 
   return (
@@ -1227,8 +1223,8 @@ function VoiceDictationEditor({ q, accent, voiceInputs, setVoiceInputs }) {
         };
 
         recognition.onerror = (e) => {
-          console.log("Speech recognition notice:", e);
-          simulateSpeechTyping();
+          console.warn("Speech recognition notice:", e.error);
+          setIsDictating(false);
         };
 
         recognition.onend = () => {
@@ -1239,32 +1235,12 @@ function VoiceDictationEditor({ q, accent, voiceInputs, setVoiceInputs }) {
         return;
       } catch (e) {
         console.error(e);
-      }
-    }
-    simulateSpeechTyping();
-  };
-
-  const simulateSpeechTyping = () => {
-    let phrase = "Madras Christian College proposal for smart campus student project management.";
-    let current = textVal ? textVal + ' ' : '';
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < phrase.length) {
-        current += phrase.slice(i, i + 3);
-        setVoiceInputs(prev => ({
-          ...prev,
-          [q.id]: { text: current, isRecording: true }
-        }));
-        i += 3;
-      } else {
-        clearInterval(interval);
         setIsDictating(false);
-        setVoiceInputs(prev => ({
-          ...prev,
-          [q.id]: { text: current, isRecording: false }
-        }));
       }
-    }, 50);
+    } else {
+      alert("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+      setIsDictating(false);
+    }
   };
 
   return (
@@ -1609,27 +1585,56 @@ function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) 
   const val = locationInputs?.[q.id] || { address: '', coords: { lat: 12.9229, lng: 80.1221 }, set: false };
   const [searching, setSearching] = useState(false);
 
+  const fetchAddressName = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.address) {
+          const a = data.address;
+          const parts = [
+            a.amenity || a.building || a.shop || a.office || a.road || a.pedestrian,
+            a.suburb || a.neighbourhood || a.city_district || a.town || a.city,
+            a.city || a.county || a.state
+          ].filter(Boolean);
+          const unique = parts.filter((item, idx) => parts.indexOf(item) === idx);
+          if (unique.length > 0) return unique.join(', ');
+        }
+        if (data && data.display_name) {
+          return data.display_name.split(',').slice(0, 3).join(',').trim();
+        }
+      }
+    } catch (e) {
+      console.warn("Reverse geocode failed:", e);
+    }
+    return "East Tambaram, Chennai";
+  };
+
   const pinCoordinates = () => {
     setSearching(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const addrName = await fetchAddressName(lat, lng);
           setSearching(false);
           setLocationInputs(prev => ({
             ...prev,
             [q.id]: {
-              address: `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`,
-              coords: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+              address: `${addrName} (${lat.toFixed(6)}, ${lng.toFixed(6)})`,
+              coords: { lat, lng },
               set: true
             }
           }));
         },
-        () => {
+        async () => {
+          const addrName = await fetchAddressName(12.9229, 80.1221);
           setSearching(false);
           setLocationInputs(prev => ({
             ...prev,
             [q.id]: {
-              address: 'Madras Christian College (MCC), Chennai',
+              address: `${addrName} (12.9229, 80.1221)`,
               coords: { lat: 12.9229, lng: 80.1221 },
               set: true
             }
@@ -1638,15 +1643,17 @@ function LocationPickerEditor({ q, accent, locationInputs, setLocationInputs }) 
         { enableHighAccuracy: true, timeout: 5000 }
       );
     } else {
-      setSearching(false);
-      setLocationInputs(prev => ({
-        ...prev,
-        [q.id]: {
-          address: 'Madras Christian College (MCC), Chennai',
-          coords: { lat: 12.9229, lng: 80.1221 },
-          set: true
-        }
-      }));
+      fetchAddressName(12.9229, 80.1221).then(addrName => {
+        setSearching(false);
+        setLocationInputs(prev => ({
+          ...prev,
+          [q.id]: {
+            address: `${addrName} (12.9229, 80.1221)`,
+            coords: { lat: 12.9229, lng: 80.1221 },
+            set: true
+          }
+        }));
+      });
     }
   };
 

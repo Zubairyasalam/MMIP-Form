@@ -1491,6 +1491,7 @@ function AiAssistantInput({ q, accent, value, onChange }) {
   const [isRecording, setIsRecording] = useState(false);
   const [typoMap, setTypoMap] = useState({});
   const debounceRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const CORRECTIONS = {
     'clcik': 'click', 'clik': 'click', 'correxton': 'correction', 'coorecton': 'correction',
@@ -1679,28 +1680,54 @@ function AiAssistantInput({ q, accent, value, onChange }) {
 
   const toggleRecording = () => {
     if (isRecording) {
-      setIsRecording(false);
-    } else {
-      setIsRecording(true);
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          onChange(value ? value + " " + transcript : transcript);
-        };
-        recognition.onerror = () => {
-          onChange(value ? value + " [Simulated Voice: IoT project proposal]" : "Simulated Voice: IoT project proposal");
-        };
-        recognition.onend = () => setIsRecording(false);
-        recognition.start();
-      } else {
-        onChange(value ? value + " [Simulated Voice: IoT project proposal]" : "Simulated Voice: IoT project proposal");
-        setTimeout(() => setIsRecording(false), 1000);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
       }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      const initialText = value || '';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        const newText = initialText ? (initialText.trim() + ' ' + transcript.trim()) : transcript;
+        onChange(newText);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("Speech recognition notice:", e.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition start failed:", err);
+      setIsRecording(false);
     }
   };
 
@@ -1790,33 +1817,55 @@ function AiAssistantInput({ q, accent, value, onChange }) {
 function VoiceDictationComponent({ q, accent, value, onChange }) {
   const cleanVal = (typeof value === 'string' ? value : (value?.text || '')).replace(/Voice_Note_[\d\.\w]+/gi, '').trim();
   const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
 
   const toggleRecording = () => {
     if (isRecording) {
-      setIsRecording(false);
-    } else {
-      setIsRecording(true);
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-        recognition.onresult = (event) => {
-          let currentTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-          }
-          onChange(cleanVal ? cleanVal + " " + currentTranscript : currentTranscript);
-        };
-        recognition.onerror = () => {
-          setIsRecording(false);
-        };
-        recognition.onend = () => setIsRecording(false);
-        recognition.start();
-      } else {
-        setTimeout(() => setIsRecording(false), 500);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
       }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        let currentTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        onChange(cleanVal ? (cleanVal + ' ' + currentTranscript.trim()) : currentTranscript);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("Speech error:", e.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error(err);
+      setIsRecording(false);
     }
   };
 
@@ -2172,24 +2221,72 @@ function VideoUploadComponent({ q, accent, value, onChange }) {
 function LocationPickerComponent({ q, accent, value, onChange }) {
   const [loading, setLoading] = useState(false);
 
+  const fetchAddressName = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.address) {
+          const a = data.address;
+          const parts = [
+            a.amenity || a.building || a.shop || a.office || a.road || a.pedestrian,
+            a.suburb || a.neighbourhood || a.city_district || a.town || a.city,
+            a.city || a.county || a.state
+          ].filter(Boolean);
+          const unique = parts.filter((item, idx) => parts.indexOf(item) === idx);
+          if (unique.length > 0) {
+            return unique.join(', ');
+          }
+        }
+        if (data && data.display_name) {
+          return data.display_name.split(',').slice(0, 3).join(',').trim();
+        }
+      }
+    } catch (e) {
+      console.warn('Reverse geocoding error:', e);
+    }
+    return 'East Tambaram, Chennai';
+  };
+
+  useEffect(() => {
+    if (value && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(value.trim())) {
+      const [latStr, lngStr] = value.split(',').map(s => s.trim());
+      const lat = parseFloat(latStr);
+      const lng = parseFloat(lngStr);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        fetchAddressName(lat, lng).then(addrName => {
+          if (addrName) {
+            onChange(`${addrName} (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
+          }
+        });
+      }
+    }
+  }, [value]);
+
   const getLoc = () => {
     setLoading(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const addrName = await fetchAddressName(lat, lng);
           setLoading(false);
-          onChange(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+          onChange(`${addrName} (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
         },
-        (err) => {
-          setLoading(false);
+        async (err) => {
           console.warn('Geolocation failed:', err.message);
-          onChange("12.919799, 80.122858");
+          const addrName = await fetchAddressName(12.920656, 80.121560);
+          setLoading(false);
+          onChange(`${addrName} (12.920656, 80.121560)`);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
-      setLoading(false);
-      onChange("12.919799, 80.122858");
+      fetchAddressName(12.920656, 80.121560).then(addrName => {
+        setLoading(false);
+        onChange(`${addrName} (12.920656, 80.121560)`);
+      });
     }
   };
 

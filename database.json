@@ -7,8 +7,8 @@
       "desc": "Form description",
       "fields": "22 fields",
       "theme": {
-        "accent": "#7B1C1C",
-        "banner": "linear-gradient(90deg, #7B1C1C, #7B1C1Cdd)",
+        "accent": "#334155",
+        "banner": "linear-gradient(90deg, #334155, #334155dd)",
         "label": "Custom"
       },
       "headerImage": "/form-header.png",
@@ -223,8 +223,8 @@
         }
       ],
       "tag": "Custom Form",
-      "bg": "#7B1C1C",
-      "themeColor": "#7B1C1C",
+      "bg": "#334155",
+      "themeColor": "#334155",
       "status": "Active",
       "visibility": "public",
       "is_hidden": false,
@@ -232,7 +232,7 @@
       "creator": "MCC Administrator",
       "creator_id": "usr-default-admin",
       "created_by": "usr-default-admin",
-      "updatedAt": 1785835190169
+      "updatedAt": 1785835956630
     },
     {
       "id": "form_1785574228453",

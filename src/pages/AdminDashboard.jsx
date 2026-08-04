@@ -217,6 +217,94 @@ export default function AdminDashboard() {
     }));
   };
 
+  // Helper: sanitize answer value for CSV — strips base64 data, converts dates to text, keeps readable text
+  const sanitizeForCSV = (val) => {
+    if (!val) return '';
+    let str = typeof val === 'string' ? val : JSON.stringify(val);
+    // Replace base64 image/audio/video data URLs with a label
+    if (/^data:image\//i.test(str)) return '[Image Uploaded]';
+    if (/^data:audio\//i.test(str)) return '[Audio Recording Uploaded]';
+    if (/^data:video\//i.test(str)) return '[Video Recording Uploaded]';
+    if (/^data:application\//i.test(str)) return '[File Uploaded]';
+    if (/^data:[a-zA-Z]+\/[a-zA-Z0-9.+-]+;base64,/i.test(str)) return '[Media Uploaded]';
+    // If it's a JSON string (budget/team/deadline arrays), try to pretty print
+    try {
+      const parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => {
+          if (typeof item === 'object') return Object.values(item).join(' | ');
+          return String(item);
+        }).join('; ');
+      }
+      if (typeof parsed === 'object') {
+        // Could be audio/video object with dataUrl
+        if (parsed.dataUrl || parsed.audioUrl) return '[Media Uploaded]';
+        return Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(', ');
+      }
+    } catch (e) { /* not JSON, use as-is */ }
+
+    // Convert any date-like string (e.g. 2026-06-04, 04-06-2026, 4/8/2026) to text format like "04 Jun 2026"
+    // This prevents Excel from auto-converting date answers into Date objects, date pickers, or "######"
+    const cleanStr = str.trim();
+    if (
+      /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(cleanStr) ||
+      /^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}/.test(cleanStr) ||
+      /^\d{1,2}\/\d{1,2}\/\d{4}/.test(cleanStr)
+    ) {
+      const d = new Date(cleanStr);
+      if (!isNaN(d.getTime())) {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = months[d.getMonth()];
+        const yyyy = d.getFullYear();
+        if (yyyy > 1900 && yyyy < 2100) {
+          const hh = d.getHours();
+          const min = d.getMinutes();
+          if (hh === 0 && min === 0 && !cleanStr.includes(':')) {
+            return `${dd} ${mm} ${yyyy}`;
+          } else {
+            return `${dd} ${mm} ${yyyy} ${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+
+    // Truncate extremely long strings that are not base64 but are still huge
+    if (str.length > 1000) return str.substring(0, 997) + '...';
+    return str;
+  };
+
+
+
+  // Build a styled HTML-table XLS file and trigger download
+  const downloadAsXLS = (htmlContent, filename) => {
+    const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
+  };
+
+  // Format date so Excel CANNOT auto-detect it as a date (prevents ###### and date picker)
+  // Output: "08 Aug 2026 14:45" — no slashes/dashes Excel would recognize
+  const formatDateForXLS = (dateStr) => {
+    return sanitizeForCSV(dateStr);
+  };
+
+  // TEXT cell — mso-number-format:'\@' forces Excel to treat as plain text (no scientific, no date parsing)
+  const TC = (val, extraStyle = '') => {
+    const clean = sanitizeForCSV(val);
+    return `<td style="mso-number-format:'\\@';font-family:Calibri,Arial,sans-serif;font-size:11pt;vertical-align:top;padding:6px 10px;border:1px solid #D0D7E2;white-space:pre-wrap;word-break:break-word;${extraStyle}" x:str>${clean}</td>`;
+  };
+  // HEADER cell
+  const HC = (val, extraStyle = '') => {
+    const clean = sanitizeForCSV(val);
+    return `<td style="mso-number-format:'\\@';font-family:Calibri,Arial,sans-serif;font-size:11pt;font-weight:bold;color:#ffffff;background:#800000;padding:7px 10px;border:1px solid #5c0000;white-space:nowrap;${extraStyle}">${clean}</td>`;
+  };
+
   const handleDownloadFormTemplateCSV = (formTitle, formSubs) => {
     if (!formSubs || formSubs.length === 0) return;
 
@@ -227,66 +315,118 @@ export default function AdminDashboard() {
       });
     });
     const uniqueQuestions = Array.from(questionMap.keys());
+    const metaCols = ['Submission ID', 'Submitter Name', 'Email Address', 'Form Name', 'Date Submitted', 'Status'];
+    const allCols = [...metaCols, ...uniqueQuestions];
+    const colCount = allCols.length;
 
-    const headers = ['Submission ID', 'Submitter Name', 'Email', 'Submitted Date', 'Status', ...uniqueQuestions.map(q => `"${q.replace(/"/g, '""')}"`)];
+    const headerRow = '<tr>' + allCols.map((h, i) => HC(h, i < metaCols.length ? 'min-width:120px;' : 'min-width:160px;')).join('') + '</tr>';
 
-    const rows = formSubs.map(sub => {
-      const row = [
-        `"${(sub.id || '').toString().replace(/"/g, '""')}"`,
-        `"${(sub.name || '').replace(/"/g, '""')}"`,
-        `"${(sub.email || '').replace(/"/g, '""')}"`,
-        `"${(sub.date || '').replace(/"/g, '""')}"`,
-        `"${(sub.status || '').replace(/"/g, '""')}"`
-      ];
-
+    const dataRows = formSubs.map((sub, i) => {
+      const bg = i % 2 === 0 ? '#ffffff' : '#F5F7FA';
       const subAnsMap = new Map();
-      (sub.answers || []).forEach(ans => {
-        if (ans.q) subAnsMap.set(ans.q, ans.a || '');
-      });
+      (sub.answers || []).forEach(ans => { if (ans.q) subAnsMap.set(ans.q, ans.a || ''); });
 
-      uniqueQuestions.forEach(q => {
-        const val = subAnsMap.get(q) || '';
-        row.push(`"${String(val).replace(/"/g, '""')}"`);
-      });
+      const vals = [
+        sub.id || '',
+        sub.name || '',
+        sub.email || '',
+        sub.form || formTitle || '',
+        formatDateForXLS(sub.date || ''),
+        sub.status || '',
+        ...uniqueQuestions.map(q => subAnsMap.get(q) || '')
+      ];
+      const cells = vals.map(v => TC(v, `background:${bg};`));
+      return '<tr>' + cells.join('') + '</tr>';
+    }).join('');
 
-      return row.join(',');
-    });
+    const html = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+    <x:Name>${formTitle.substring(0,31)}</x:Name>
+    <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+  </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 0; }
+    table { border-collapse: collapse; width: 100%; }
+    .banner td { background: #4a0000; color: #ffffff; font-size: 14pt; font-weight: bold; font-family: Calibri,Arial,sans-serif; padding: 14px 16px; letter-spacing: 0.5px; }
+    .subinfo td { background: #fff5f5; color: #800000; font-size: 9pt; font-family: Calibri,Arial,sans-serif; padding: 5px 12px; border-bottom: 2px solid #800000; }
+    .spacer td { padding: 6px; background: #f0f0f0; }
+  </style>
+</head>
+<body>
+<table>
+  <tr class="banner"><td colspan="${colCount}">&#128203; ${formTitle} &mdash; All Submissions</td></tr>
+  <tr class="subinfo"><td colspan="${colCount}">Total Records: ${formSubs.length} &nbsp;&nbsp;|&nbsp;&nbsp; Exported on: ${new Date().toLocaleString('en-IN', {dateStyle:'long', timeStyle:'short'})}</td></tr>
+  <tr class="spacer"><td colspan="${colCount}"></td></tr>
+  ${headerRow}
+  ${dataRows}
+</table>
+</body>
+</html>`;
 
-    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(','), ...rows].join('\n'));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", csvContent);
-    downloadAnchor.setAttribute("download", `${formTitle.replace(/[^a-zA-Z0-9]/g, '_')}-all-submissions.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    downloadAsXLS(html, `${formTitle.replace(/[^a-zA-Z0-9]/g, '_')}-submissions.xls`);
   };
 
   const handleDownloadSubCSV = (sub) => {
-    const headers = ['Question', 'Answer'];
-    const rows = (sub.answers || []).map(ans => {
-      const qText = ans.q ? ans.q.toString() : '';
-      const aText = ans.a ? ans.a.toString() : '';
-      return `"${qText.replace(/"/g, '""')}","${aText.replace(/"/g, '""')}"`;
-    });
-
-    const metadata = [
-      `"Submission ID","${sub.id || ''}"`,
-      `"Submitter Name","${sub.name || ''}"`,
-      `"Email Address","${sub.email || ''}"`,
-      `"Form Name","${sub.form || ''}"`,
-      `"Date Submitted","${sub.date || ''}"`,
-      `""`,
-      `""`
+    const metaPairs = [
+      ['Submission ID',  sub.id   || ''],
+      ['Submitter Name', sub.name  || ''],
+      ['Email Address',  sub.email || ''],
+      ['Form Name',      sub.form  || ''],
+      ['Date Submitted', formatDateForXLS(sub.date  || '')],
+      ['Status',         sub.status || ''],
     ];
+    const metaRows = metaPairs.map(([k, v]) =>
+      `<tr>${TC(k, 'background:#F0F4FF;font-weight:bold;color:#1e293b;min-width:160px;')}${TC(v, 'background:#ffffff;min-width:260px;')}</tr>`
+    ).join('');
 
-    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([metadata.join('\n'), headers.join(','), ...rows].join('\n'));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", csvContent);
-    downloadAnchor.setAttribute("download", `submission-${sub.id || 'export'}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+    const answerRows = (sub.answers || []).map((ans, i) => {
+      const bg = i % 2 === 0 ? '#ffffff' : '#F5F7FA';
+      return `<tr>
+        ${TC(ans.q || '', `background:${bg};font-weight:600;color:#334155;min-width:200px;`)}
+        ${TC(ans.a || '', `background:${bg};min-width:300px;`)}
+      </tr>`;
+    }).join('');
+
+    const html = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+    <x:Name>Submission</x:Name>
+    <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+  </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 0; }
+    table { border-collapse: collapse; }
+    .banner td { background: #4a0000; color: #ffffff; font-size: 14pt; font-weight: bold; font-family: Calibri,Arial,sans-serif; padding: 14px 16px; }
+    .sec-hdr td { background: #800000; color: #ffffff; font-size: 10pt; font-weight: bold; font-family: Calibri,Arial,sans-serif; padding: 7px 10px; border: 1px solid #5c0000; }
+    .spacer td { padding: 6px; background: #f0f0f0; }
+  </style>
+</head>
+<body>
+<table>
+  <tr class="banner"><td colspan="2">&#128203; Submission Report &mdash; ${sub.form || ''}</td></tr>
+  <tr class="spacer"><td colspan="2"></td></tr>
+
+  <tr class="sec-hdr"><td colspan="2">&#128205; Submission Details</td></tr>
+  ${metaRows}
+
+  <tr class="spacer"><td colspan="2"></td></tr>
+
+  <tr class="sec-hdr">${HC('Question')}${HC('Answer')}</tr>
+  ${answerRows}
+</table>
+</body>
+</html>`;
+
+    downloadAsXLS(html, `submission-${sub.id || 'export'}.xls`);
   };
+
 
   const handleDownloadSubPDF = (sub) => {
     const printWindow = window.open('', '_blank');
@@ -295,10 +435,69 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Smart answer renderer for PDF
+    const renderAnswerValue = (a) => {
+      if (!a) return '<span style="color:#94a3b8;font-style:italic;">Not provided</span>';
+      const str = typeof a === 'string' ? a : JSON.stringify(a);
+
+      // Image upload or image_upload (data URL)
+      if (/^data:image\//i.test(str)) {
+        return `<img src="${str}" style="max-width:100%;max-height:350px;border-radius:8px;border:1px solid #e2e8f0;display:block;margin-top:6px;" />`;
+      }
+
+      // Audio
+      if (/^data:audio\//i.test(str)) {
+        return `<div style="background:#f1f5f9;padding:10px;border-radius:6px;color:#475569;font-size:13px;">🎵 Audio Recording Uploaded</div>`;
+      }
+
+      // Video data URL
+      if (/^data:video\//i.test(str)) {
+        return `<div style="background:#f1f5f9;padding:10px;border-radius:6px;color:#475569;font-size:13px;">🎥 Video Recording Uploaded</div>`;
+      }
+
+      // Try parsing JSON (file object, video object, audio object, budget, team, deadline)
+      try {
+        const parsed = JSON.parse(str);
+
+        // File object with dataUrl (image file)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const dataUrl = parsed.dataUrl || parsed.audioUrl || parsed.videoUrl;
+          if (dataUrl && /^data:image\//i.test(dataUrl)) {
+            return `<div style="font-size:12px;color:#64748b;margin-bottom:4px;">📎 ${parsed.name || 'File'}</div><img src="${dataUrl}" style="max-width:100%;max-height:350px;border-radius:8px;border:1px solid #e2e8f0;display:block;" />`;
+          }
+          if (dataUrl && /^data:audio\//i.test(dataUrl)) {
+            return `<div style="background:#f1f5f9;padding:10px;border-radius:6px;color:#475569;font-size:13px;">🎵 Audio: ${parsed.name || 'Recording'} ${parsed.duration ? '(' + parsed.duration + ')' : ''}</div>`;
+          }
+          if (dataUrl && /^data:video\//i.test(dataUrl)) {
+            return `<div style="background:#f1f5f9;padding:10px;border-radius:6px;color:#475569;font-size:13px;">🎥 Video: ${parsed.name || 'Recording'}</div>`;
+          }
+          if (parsed.name && (parsed.dataUrl || parsed.size)) {
+            return `<div style="background:#f1f5f9;padding:10px;border-radius:6px;color:#475569;font-size:13px;">📎 File: ${parsed.name}</div>`;
+          }
+        }
+
+        // Arrays (budget, team, deadline)
+        if (Array.isArray(parsed)) {
+          const rows = parsed.map(item => {
+            if (typeof item === 'object') {
+              return '<tr>' + Object.entries(item).map(([k,v]) =>
+                `<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:13px;"><strong style="color:#64748b;font-size:11px;display:block;">${k}</strong>${v}</td>`
+              ).join('') + '</tr>';
+            }
+            return `<tr><td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:13px;">${item}</td></tr>`;
+          }).join('');
+          return `<table style="border-collapse:collapse;width:100%;margin-top:6px;">${rows}</table>`;
+        }
+      } catch (e) { /* not JSON */ }
+
+      // Plain text answer
+      return `<span style="white-space:pre-wrap;word-break:break-word;">${str}</span>`;
+    };
+
     const answersHtml = (sub.answers || []).map(ans => {
       const q = ans.q || '';
-      const a = ans.a || '—';
-      return '<div class="answer-card"><strong>' + q + '</strong><p>' + a + '</p></div>';
+      const aHtml = renderAnswerValue(ans.a);
+      return `<div class="answer-card"><strong>${q}</strong><div class="answer-body">${aHtml}</div></div>`;
     }).join('');
 
     printWindow.document.write(`
@@ -358,8 +557,7 @@ export default function AdminDashboard() {
               font-size: 14px;
               margin-bottom: 6px;
             }
-            .answer-card p {
-              margin: 0;
+            .answer-body {
               background: #f8fafc;
               padding: 12px;
               border-radius: 6px;

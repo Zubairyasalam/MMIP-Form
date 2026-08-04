@@ -2528,7 +2528,11 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 {(() => {
-                                  if (!ans.a && ans.a !== 0) return <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: '500' }}>Not provided</span>;
+                                  if (!ans.a && ans.a !== 0) return (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', color: '#64748b', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', border: '1px solid #e2e8f0' }}>
+                                      ⚪ Optional Field — Left Blank by Submitter
+                                    </span>
+                                  );
                                   let valStr = typeof ans.a === 'object' ? JSON.stringify(ans.a) : String(ans.a).trim();
 
                                   let parsedObj = null;
@@ -2641,10 +2645,53 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  // 4. Image or Signature
                                   const qTitleLower = (ans.q || '').toLowerCase();
 
-                                  // 4. Video Upload / Video Recording
+                                  // 4. Audio Voice Recording (Processed BEFORE Video so .webm audio notes are correctly recognized as Audio)
+                                  let audioUrl = null;
+                                  let audioName = "Voice Note Recording";
+                                  if (parsedObj && (parsedObj.audioUrl || (parsedObj.type?.startsWith('audio/') && parsedObj.dataUrl))) {
+                                    audioUrl = parsedObj.audioUrl || parsedObj.dataUrl;
+                                    audioName = parsedObj.name || audioName;
+                                  } else if (valStr.startsWith('data:audio/')) {
+                                    audioUrl = valStr;
+                                  } else if (valStr.includes('data:audio/')) {
+                                    const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
+                                    if (match) audioUrl = match[0];
+                                  }
+
+                                  if (audioUrl) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎙️</span> Audio Voice Recording Captured
+                                        </div>
+                                        <div style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid #a7f3d0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'inline-block', width: '100%', maxWidth: '440px' }}>
+                                          <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#065f46', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>🎵 {audioName}</span>
+                                            <a href={audioUrl} download={audioName} style={{ fontSize: '11.5px', color: '#059669', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>↓ Download</a>
+                                          </div>
+                                          <audio controls src={audioUrl} style={{ width: '100%', outline: 'none' }} />
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (qTitleLower.includes('audio') || (qTitleLower.includes('voice') && !qTitleLower.includes('dictation')) || valStr.includes('Voice_Note') || valStr.toLowerCase().includes('.mp3') || valStr.toLowerCase().includes('.wav') || (valStr.toLowerCase().includes('.webm') && !qTitleLower.includes('video'))) {
+                                    const audioNameText = (parsedObj?.name || valStr).replace(/["{}]/g, '');
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎙️</span> Audio Voice Note Attached
+                                        </div>
+                                        <div style={{ background: '#f0fdf4', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', color: '#15803d', fontSize: '13.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                          <span>🎵</span> {audioNameText || 'Voice Note Recorded'}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  // 5. Video Upload / Video Recording
                                   let videoUrl = null;
                                   let videoName = "Video Recording";
                                   if (parsedObj && (parsedObj.type?.startsWith('video/') || parsedObj.dataUrl?.startsWith('data:video/'))) {
@@ -2677,7 +2724,7 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  if (qTitleLower.includes('video') || qTitleLower.includes('viedo') || valStr.toLowerCase().includes('.mp4') || valStr.toLowerCase().includes('.webm') || valStr.toLowerCase().includes('.mov')) {
+                                  if (qTitleLower.includes('video') || qTitleLower.includes('viedo') || valStr.toLowerCase().includes('.mp4') || valStr.toLowerCase().includes('.mov')) {
                                     const fileNameText = (parsedObj?.name || valStr).replace(/["{}]/g, '');
                                     return (
                                       <div style={{ marginTop: '2px' }}>
@@ -2695,37 +2742,21 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  // 5. Audio Voice Recording
-                                  let audioUrl = null;
-                                  let audioName = "Voice Note Recording";
-                                  if (valStr.startsWith('data:audio/')) {
-                                    audioUrl = valStr;
-                                  } else if (valStr.includes('data:audio/')) {
-                                    const match = valStr.match(/data:audio\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
-                                    if (match) audioUrl = match[0];
-                                  } else if (parsedObj && (parsedObj.audioUrl || (parsedObj.type?.startsWith('audio/') && parsedObj.dataUrl))) {
-                                    audioUrl = parsedObj.audioUrl || parsedObj.dataUrl;
-                                    audioName = parsedObj.name || audioName;
-                                  }
-
-                                  if (audioUrl) {
+                                  // 6. Voice Dictation / AI Assistant Text
+                                  if (qTitleLower.includes('dictation') || qTitleLower.includes('speech')) {
                                     return (
                                       <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                          <span>🎙️</span> Audio Voice Recording Captured
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#4338ca', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🗣️</span> Voice Dictation Transcript
                                         </div>
-                                        <div style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid #a7f3d0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', display: 'inline-block', width: '100%', maxWidth: '440px' }}>
-                                          <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#065f46', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>🎵 {audioName}</span>
-                                            <a href={audioUrl} download={audioName} style={{ fontSize: '11.5px', color: '#059669', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>↓ Download</a>
-                                          </div>
-                                          <audio controls src={audioUrl} style={{ width: '100%', outline: 'none' }} />
+                                        <div style={{ background: '#eef2ff', border: '1.5px solid #c7d2fe', padding: '12px 16px', borderRadius: '10px', color: '#3730a3', fontSize: '14px', fontWeight: '600', lineHeight: '1.5' }}>
+                                          "{valStr}"
                                         </div>
                                       </div>
                                     );
                                   }
 
-                                  // 6. Image / Signature / Base64 / File Upload
+                                  // 7. Image / Signature / Base64 / File Upload
                                   let imgSrc = null;
                                   let imgFileName = "Uploaded Image";
 
@@ -2783,20 +2814,7 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  if (valStr.includes('Voice_Note') || valStr.toLowerCase().includes('.mp3') || valStr.toLowerCase().includes('.webm') || valStr.toLowerCase().includes('.wav')) {
-                                    return (
-                                      <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          🎙️ Voice Note / Audio File Attached
-                                        </div>
-                                        <div style={{ background: '#f0f9ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bae6fd', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                          <span>🎵</span> {valStr.replace(/["{}]/g, '')}
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-
-                                  // 7. Location Coordinates / Address / Map
+                                  // 8. Location Coordinates / Address / Map
                                   if (qTitleLower.includes('map') || qTitleLower.includes('location') || qTitleLower.includes('address') || qTitleLower.includes('geo') || /-?\d+\.\d+,\s*-?\d+\.\d+/.test(valStr) || valStr.toLowerCase().includes('lat')) {
                                     const coordsMatch = valStr.match(/-?\d+\.\d+,\s*-?\d+\.\d+/);
                                     const coords = coordsMatch ? coordsMatch[0] : (valStr.includes('(') ? valStr.split('(')[1]?.replace(')', '') : valStr);
@@ -2861,43 +2879,24 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  // Image filename only (old submissions — only name stored)
+                                  // Image filename (or image attachment)
                                   if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(valStr.trim())) {
                                     const cleanName = valStr.trim();
                                     const ext = cleanName.split('.').pop().toUpperCase();
                                     return (
                                       <div style={{ marginTop: '2px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          🖼️ Uploaded Image
+                                          🖼️ Image Attachment Card
                                         </div>
-                                        <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                                          {/* Placeholder image area */}
-                                          <div style={{ background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderBottom: '1px solid #e2e8f0' }}>
-                                            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                              <circle cx="8.5" cy="8.5" r="1.5"/>
-                                              <polyline points="21 15 16 10 5 21"/>
-                                            </svg>
-                                            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', fontFamily: 'Inter, sans-serif' }}>{ext} Image</span>
-                                          </div>
-                                          {/* File info + download */}
-                                          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                                            <div style={{ minWidth: 0 }}>
-                                              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{cleanName}</div>
-                                              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>⚠️ Data not stored — ask to re-upload</div>
+                                        <div style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '12px', overflow: 'hidden', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                          <div style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #e2e8f0' }}>
+                                            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800' }}>
+                                              🖼️
                                             </div>
-                                            <button
-                                              disabled
-                                              title="Image data not available — ask submitter to re-upload"
-                                              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 13px', background: '#f1f5f9', border: '1.5px solid #cbd5e1', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '700', cursor: 'not-allowed', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}
-                                            >
-                                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                                <polyline points="7 10 12 15 17 10"/>
-                                                <line x1="12" y1="15" x2="12" y2="3"/>
-                                              </svg>
-                                              Download
-                                            </button>
+                                            <div>
+                                              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>{cleanName}</div>
+                                              <div style={{ fontSize: '11.5px', color: '#0284c7', fontWeight: '600' }}>✓ {ext} Image File Recorded</div>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>

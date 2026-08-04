@@ -125,6 +125,25 @@ export async function deleteForm(id) {
   }
 }
 
+// Helper to produce lightweight submission copy for browser localStorage cache (prevents Chrome Out of Memory)
+function sanitizeForLocalCache(sub) {
+  if (!sub) return sub;
+  try {
+    const clone = JSON.parse(JSON.stringify(sub));
+    if (Array.isArray(clone.answers)) {
+      clone.answers = clone.answers.map(ans => {
+        if (ans && typeof ans.a === 'string' && ans.a.length > 50000 && ans.a.startsWith('data:')) {
+          return { ...ans, a: ans.a.substring(0, 100) + '... [stored on server]' };
+        }
+        return ans;
+      });
+    }
+    return clone;
+  } catch (e) {
+    return sub;
+  }
+}
+
 /**
  * Get all form submissions.
  */
@@ -140,38 +159,13 @@ export async function getResponses() {
       const dbSubs = await res.json();
       if (Array.isArray(dbSubs)) {
         backendOnline = true;
-        const mergedMap = new Map();
-        // Add backend responses
-        dbSubs.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
-        
-        // Check if there are un-synced local items
-        let hasNewLocal = false;
-        localSubs.forEach(s => {
-          if (s && s.id && !mergedMap.has(s.id)) {
-            mergedMap.set(s.id, s);
-            hasNewLocal = true;
-            fetch(`${API_URL}/responses/${encodeURIComponent(s.id)}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(s)
-            }).catch(() => {});
-          }
-        });
-
-        const mergedList = Array.from(mergedMap.values());
-        mergedList.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
-
-        // Only update localStorage if we merged un-synced local items
-        if (hasNewLocal) {
-          try {
-            localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList));
-          } catch (e) {
-            try {
-              localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList.slice(0, 20)));
-            } catch (e2) {}
-          }
-        }
-        return mergedList;
+        dbSubs.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+        // Store lightweight cache in localStorage to keep browser fast and prevent OOM
+        try {
+          const lightList = dbSubs.slice(0, 15).map(sanitizeForLocalCache);
+          localStorage.setItem('global_formSubmissions', JSON.stringify(lightList));
+        } catch (e) {}
+        return dbSubs;
       }
     }
   } catch (e) {
@@ -188,7 +182,7 @@ export async function getResponses() {
 export async function saveResponse(response) {
   if (!response) return;
 
-  // 1. Sync to backend API FIRST so submission is saved on disk server
+  // 1. Sync to backend API FIRST so full submission is saved permanently on disk server
   try {
     await fetch(`${API_URL}/responses/${encodeURIComponent(response.id)}`, {
       method: 'PUT',
@@ -201,25 +195,26 @@ export async function saveResponse(response) {
     console.warn('Backend API offline. Saving response to local cache only.');
   }
 
-  // 2. Add/Update in local cache safely (with quota overflow fallback)
+  // 2. Add/Update lightweight copy in local cache (prevents browser memory leak)
   let localSubs = [];
   try {
     localSubs = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]');
   } catch { localSubs = []; }
 
+  const lightResp = sanitizeForLocalCache(response);
   const idx = localSubs.findIndex(s => s.id === response.id);
   if (idx > -1) {
-    localSubs[idx] = response;
+    localSubs[idx] = lightResp;
   } else {
-    localSubs.unshift(response);
+    localSubs.unshift(lightResp);
   }
 
   try {
-    localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs));
+    localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs.slice(0, 15)));
   } catch (quotaError) {
-    console.warn('LocalStorage quota limit reached. Retaining recent submissions in cache.');
+    console.warn('LocalStorage quota limit reached. Pruning cache.');
     try {
-      localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs.slice(0, 20)));
+      localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs.slice(0, 5)));
     } catch (e) {}
   }
 }

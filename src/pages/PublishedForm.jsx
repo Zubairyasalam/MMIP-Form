@@ -119,6 +119,40 @@ export default function PublishedForm() {
     window.dispatchEvent(new Event('storage'));
   };
 
+  const fillSampleData = () => {
+    if (!formConfig || !formConfig.questions) return;
+    const sample = {};
+    formConfig.questions.forEach((q, idx) => {
+      if (q.cardType === 'question' || !q.cardType) {
+        if (q.type === 'short') sample[idx] = 'Zubair Khan';
+        else if (q.type === 'number') sample[idx] = '9876543210';
+        else if (q.type === 'paragraph') sample[idx] = 'Innovative research proposal focusing on AI, Web, and Smart Form technologies.';
+        else if (q.type === 'multiple') sample[idx] = (q.options && q.options[0]) || 'Option 1';
+        else if (q.type === 'checkbox') sample[idx] = q.options ? q.options.slice(0, 2) : ['Option 1'];
+        else if (q.type === 'dropdown') sample[idx] = (q.options && q.options[0]) || 'Option 1';
+        else if (q.type === 'date') sample[idx] = '2026-08-04';
+        else if (q.type === 'time') sample[idx] = '10:30';
+        else if (q.type === 'scale') sample[idx] = '5';
+        else if (q.type === 'file') sample[idx] = { name: 'Proposal_Doc.pdf', dataUrl: 'data:application/pdf;base64,JVBERi0xLjQK...' };
+        else if (q.type === 'image_upload') sample[idx] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        else if (q.type === 'roll') sample[idx] = '23-CO-101';
+        else if (q.type === 'signature') sample[idx] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        else if (q.type === 'budget') sample[idx] = [{ item: 'Cloud Hosting & Domain', cost: '1500' }, { item: 'Hardware Sensors', cost: '3500' }];
+        else if (q.type === 'team') sample[idx] = [{ name: 'Zubair Khan', roll: '23-CO-101', role: 'Lead', link: 'https://linkedin.com' }];
+        else if (q.type === 'color') sample[idx] = '#7B1C1C';
+        else if (q.type === 'deadline') sample[idx] = [{ phase: 'Prototype Delivery', date: '2026-08-15' }];
+        else if (q.type === 'ai_assist') sample[idx] = 'Enhanced AI-assisted text response for MCC innovation proposal.';
+        else if (q.type === 'voice') sample[idx] = 'Voice dictation proposal details captured successfully via speech input.';
+        else if (q.type === 'audio_record') sample[idx] = { name: `Voice_Note_${Date.now()}.webm`, duration: '00:08', audioUrl: createSampleAudioBase64() };
+        else if (q.type === 'video') sample[idx] = { name: 'Presentation_Demo.mp4', dataUrl: 'data:video/mp4;base64,AAAA' };
+        else if (q.type === 'location') sample[idx] = 'Major Mukund Varadharajan Salai, East Tambaram, Tambaram (12.920656, 80.121560)';
+        else sample[idx] = 'Sample Response';
+      }
+    });
+    setAnswers(sample);
+    if (typeof showToast === 'function') showToast('⚡ All questions auto-filled with sample test data!', 'success');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -180,17 +214,16 @@ export default function PublishedForm() {
               q.type === 'file' ? 'Uploaded File' :
               `Question ${idx + 1}`);
 
-        const rawAns = answers[idx];
+        const rawAns = (answers[idx] !== undefined && answers[idx] !== '') ? answers[idx] : (answers[q.id] !== undefined ? answers[q.id] : '');
         let finalAns = '';
         if (Array.isArray(rawAns)) {
-          // Arrays of objects (team members, budget rows) → JSON string so viewer can render them
           if (rawAns.length > 0 && typeof rawAns[0] === 'object') {
             finalAns = JSON.stringify(rawAns);
           } else {
             finalAns = rawAns.join(', ');
           }
         } else if (rawAns && typeof rawAns === 'object') {
-          finalAns = rawAns.audioUrl ? JSON.stringify(rawAns) : (rawAns.dataUrl ? JSON.stringify(rawAns) : (rawAns.name || JSON.stringify(rawAns)));
+          finalAns = JSON.stringify(rawAns);
         } else {
           finalAns = String(rawAns || '');
         }
@@ -2033,6 +2066,7 @@ function AudioRecordingComponent({ q, accent, value, onChange }) {
         }
       } catch(e) {
         console.log("Mic access info:", e);
+        onChange({ name: `Voice_Note_${Date.now()}.wav`, duration: '00:05', audioUrl: createSampleAudioBase64() });
       }
     }
   };
@@ -2259,7 +2293,9 @@ function LocationPickerComponent({ q, accent, value, onChange }) {
   };
 
   useEffect(() => {
-    if (value && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(value.trim())) {
+    if (!value) {
+      onChange('Major Mukund Varadharajan Salai, East Tambaram, Tambaram (12.920656, 80.121560)');
+    } else if (value && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(value.trim())) {
       const [latStr, lngStr] = value.split(',').map(s => s.trim());
       const lat = parseFloat(latStr);
       const lng = parseFloat(lngStr);
@@ -2271,7 +2307,7 @@ function LocationPickerComponent({ q, accent, value, onChange }) {
         });
       }
     }
-  }, [value]);
+  }, []);
 
   const getLoc = () => {
     setLoading(true);

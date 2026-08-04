@@ -143,11 +143,13 @@ export async function getResponses() {
         const mergedMap = new Map();
         // Add backend responses
         dbSubs.forEach(s => { if (s && s.id) mergedMap.set(s.id, s); });
-        // Add local responses that aren't on server yet
+        
+        // Check if there are un-synced local items
+        let hasNewLocal = false;
         localSubs.forEach(s => {
           if (s && s.id && !mergedMap.has(s.id)) {
             mergedMap.set(s.id, s);
-            // Push missing local submission to backend server
+            hasNewLocal = true;
             fetch(`${API_URL}/responses/${encodeURIComponent(s.id)}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -159,12 +161,15 @@ export async function getResponses() {
         const mergedList = Array.from(mergedMap.values());
         mergedList.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
 
-        try {
-          localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList));
-        } catch (e) {
+        // Only update localStorage if we merged un-synced local items
+        if (hasNewLocal) {
           try {
-            localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList.slice(0, 20)));
-          } catch (e2) {}
+            localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList));
+          } catch (e) {
+            try {
+              localStorage.setItem('global_formSubmissions', JSON.stringify(mergedList.slice(0, 20)));
+            } catch (e2) {}
+          }
         }
         return mergedList;
       }

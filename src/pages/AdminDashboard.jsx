@@ -657,9 +657,15 @@ export default function AdminDashboard() {
       });
     };
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'global_formSubmissions' || e.key === 'global_customForms' || !e.key) {
+        refreshSubmissions();
+      }
+    };
+
     refreshSubmissions();
-    const subInterval = setInterval(refreshSubmissions, 3000);
-    window.addEventListener('storage', refreshSubmissions);
+    const subInterval = setInterval(refreshSubmissions, 30000);
+    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('submissionUpdated', refreshSubmissions);
     window.addEventListener('focus', refreshSubmissions);
 
@@ -706,6 +712,7 @@ export default function AdminDashboard() {
       ];
       localStorage.setItem('systemLogs', JSON.stringify(logList));
     }
+    setAuditLogs(logList);
 
     const savedLoginActivity = JSON.parse(localStorage.getItem('loginActivity') || '[]');
     setLoginActivity(savedLoginActivity);

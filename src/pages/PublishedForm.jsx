@@ -228,7 +228,11 @@ export default function PublishedForm() {
       answers: mappedAnswers
     };
 
-    saveResponse(newSubmission);
+    await saveResponse(newSubmission);
+    try {
+      window.dispatchEvent(new Event('submissionUpdated'));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {}
     setSubmitted(true);
   };
 

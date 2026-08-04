@@ -617,43 +617,51 @@ export default function AdminDashboard() {
     });
 
     // 4. Load Submissions
-    getResponses().then(async (dbSubs) => {
-      const legacySubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-      const updatedDbSubs = [...dbSubs];
+    const refreshSubmissions = () => {
+      getResponses().then(async (dbSubs) => {
+        const legacySubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+        const updatedDbSubs = [...dbSubs];
 
-      if (legacySubs.length > 0) {
-        for (const sub of legacySubs) {
-          if (!updatedDbSubs.some(s => s.id === sub.id)) {
-            await saveResponse(sub);
-            updatedDbSubs.push(sub);
+        if (legacySubs.length > 0) {
+          for (const sub of legacySubs) {
+            if (!updatedDbSubs.some(s => s.id === sub.id)) {
+              await saveResponse(sub);
+              updatedDbSubs.push(sub);
+            }
           }
+          localStorage.removeItem('formSubmissions');
         }
-        localStorage.removeItem('formSubmissions');
-      }
 
-      const defaultSubs = [
-        { id: 'MMIP-05', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
-        { id: 'MMIP-04', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
-        { id: 'MMIP-03', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
-        { id: 'MMIP-02', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
-        { id: 'MMIP-01', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
-      ];
+        const defaultSubs = [
+          { id: 'MMIP-05', name: 'Arun Kumar', form: 'Innovation Grant Application', date: '2026-07-08 15:42', status: 'Pending Review', email: 'arun.k@mcc.edu.in', answers: [{ q: 'Project Title', a: 'AI Agricultural Drone' }, { q: 'Amount', a: '₹4,50,000' }] },
+          { id: 'MMIP-04', name: 'Priya Sharma', form: 'Student Course Feedback', date: '2026-07-08 15:28', status: 'Completed', email: 'priya.s@mcc.edu.in', answers: [{ q: 'Course', a: 'Data Structures' }, { q: 'Rating', a: '5/5' }] },
+          { id: 'MMIP-03', name: 'Devadas K.', form: 'Faculty Research Proposal', date: '2026-07-08 14:15', status: 'Pending Review', email: 'devadas.k@mcc.edu.in', answers: [{ q: 'Title', a: 'Quantum Cells solar' }] },
+          { id: 'MMIP-02', name: 'Mercy George', form: 'Innovation Grant Application', date: '2026-07-08 12:30', status: 'Approved', email: 'mercy.g@mcc.edu.in', answers: [{ q: 'Project', a: 'Biodegradable seaweed plastic' }] },
+          { id: 'MMIP-01', name: 'Sanjay Dutt', form: 'Student Course Feedback', date: '2026-07-08 10:45', status: 'Completed', email: 'sanjay.d@mcc.edu.in', answers: [{ q: 'Course', a: 'Chemistry II' }] }
+        ];
 
-      const mergedSubs = [...updatedDbSubs];
-      defaultSubs.forEach(df => {
-        if (!mergedSubs.some(m => m.id === df.id)) {
-          mergedSubs.push(df);
-        }
+        const mergedSubs = [...updatedDbSubs];
+        defaultSubs.forEach(df => {
+          if (!mergedSubs.some(m => m.id === df.id)) {
+            mergedSubs.push(df);
+          }
+        });
+
+        mergedSubs.sort((a, b) => b.id.localeCompare(a.id));
+
+        setSubmissions(mergedSubs);
+        setStats(prev => ({
+          ...prev,
+          totalSubmissions: mergedSubs.length
+        }));
       });
+    };
 
-      mergedSubs.sort((a, b) => b.id.localeCompare(a.id));
-
-      setSubmissions(mergedSubs);
-      setStats(prev => ({
-        ...prev,
-        totalSubmissions: mergedSubs.length
-      }));
-    });
+    refreshSubmissions();
+    const subInterval = setInterval(refreshSubmissions, 3000);
+    window.addEventListener('storage', refreshSubmissions);
+    window.addEventListener('submissionUpdated', refreshSubmissions);
+    window.addEventListener('focus', refreshSubmissions);
 
     // 5. Load Announcements
     const savedAnnouncements = localStorage.getItem('appAnnouncements');
@@ -727,6 +735,13 @@ export default function AdminDashboard() {
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings));
     }
+
+    return () => {
+      clearInterval(subInterval);
+      window.removeEventListener('storage', refreshSubmissions);
+      window.removeEventListener('submissionUpdated', refreshSubmissions);
+      window.removeEventListener('focus', refreshSubmissions);
+    };
   }, []);
 
   // Helper to log actions

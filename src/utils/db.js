@@ -66,21 +66,7 @@ export async function saveForm(form) {
     return;
   }
 
-  // 1. Immediately persist to local cache (upsert)
-  let localForms = [];
-  try {
-    localForms = JSON.parse(localStorage.getItem('global_customForms') || '[]');
-  } catch { localForms = []; }
-
-  const idx = localForms.findIndex(f => f.id === form.id);
-  if (idx > -1) {
-    localForms[idx] = form;           // update in-place
-  } else {
-    localForms.unshift(form);          // prepend new form
-  }
-  localStorage.setItem('global_customForms', JSON.stringify(localForms));
-
-  // 2. Sync to backend (upsert via PUT — server creates if not found)
+  // 1. Sync to backend API first
   try {
     const res = await fetch(`${API_URL}/forms/${encodeURIComponent(form.id)}`, {
       method: 'PUT',
@@ -89,17 +75,28 @@ export async function saveForm(form) {
     });
     if (res.ok) {
       backendOnline = true;
-      // Refresh local cache from server response to ensure consistency
-      const saved = await res.json().catch(() => null);
-      if (saved && saved.form) {
-        const idx2 = localForms.findIndex(f => f.id === form.id);
-        if (idx2 > -1) localForms[idx2] = saved.form;
-        localStorage.setItem('global_customForms', JSON.stringify(localForms));
-      }
     }
   } catch (e) {
     backendOnline = false;
-    console.warn('Backend API offline. Form saved to local cache only.');
+    console.warn('Backend API offline. Saving form to local cache only.');
+  }
+
+  // 2. Persist to local cache safely with quota protection
+  let localForms = [];
+  try {
+    localForms = JSON.parse(localStorage.getItem('global_customForms') || '[]');
+  } catch { localForms = []; }
+
+  const idx = localForms.findIndex(f => f.id === form.id);
+  if (idx > -1) {
+    localForms[idx] = form;
+  } else {
+    localForms.unshift(form);
+  }
+  try {
+    localStorage.setItem('global_customForms', JSON.stringify(localForms));
+  } catch (e) {
+    console.warn('LocalStorage quota limit reached while saving form cache.');
   }
 }
 
@@ -114,7 +111,9 @@ export async function deleteForm(id) {
   try {
     localForms = JSON.parse(localStorage.getItem('global_customForms') || '[]');
   } catch { localForms = []; }
-  localStorage.setItem('global_customForms', JSON.stringify(localForms.filter(f => f.id !== id)));
+  try {
+    localStorage.setItem('global_customForms', JSON.stringify(localForms.filter(f => f.id !== id)));
+  } catch (e) {}
 
   // 2. Remove from backend
   try {
@@ -136,7 +135,14 @@ export async function getResponses() {
       const data = await res.json();
       if (Array.isArray(data)) {
         backendOnline = true;
-        localStorage.setItem('global_formSubmissions', JSON.stringify(data));
+        try {
+          localStorage.setItem('global_formSubmissions', JSON.stringify(data));
+        } catch (e) {
+          // If local storage is full, store latest 20 items in cache
+          try {
+            localStorage.setItem('global_formSubmissions', JSON.stringify(data.slice(0, 20)));
+          } catch (e2) {}
+        }
         return data;
       }
     }
@@ -157,7 +163,20 @@ export async function getResponses() {
 export async function saveResponse(response) {
   if (!response) return;
 
-  // 1. Add/Update in local cache (avoid duplicates by id)
+  // 1. Sync to backend API FIRST so submission is saved on disk server
+  try {
+    await fetch(`${API_URL}/responses/${encodeURIComponent(response.id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(response)
+    });
+    backendOnline = true;
+  } catch (e) {
+    backendOnline = false;
+    console.warn('Backend API offline. Saving response to local cache only.');
+  }
+
+  // 2. Add/Update in local cache safely (with quota overflow fallback)
   let localSubs = [];
   try {
     localSubs = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]');
@@ -169,19 +188,14 @@ export async function saveResponse(response) {
   } else {
     localSubs.unshift(response);
   }
-  localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs));
 
-  // 2. Sync to backend (PUT for upsert)
   try {
-    await fetch(`${API_URL}/responses/${encodeURIComponent(response.id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(response)
-    });
-    backendOnline = true;
-  } catch (e) {
-    backendOnline = false;
-    console.warn('Backend API offline. Response saved to local cache only.');
+    localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs));
+  } catch (quotaError) {
+    console.warn('LocalStorage quota limit reached. Retaining recent submissions in cache.');
+    try {
+      localStorage.setItem('global_formSubmissions', JSON.stringify(localSubs.slice(0, 20)));
+    } catch (e) {}
   }
 }
 

@@ -2619,6 +2619,8 @@ export default function AdminDashboard() {
                                   }
 
                                   // 4. Image or Signature
+                                  const qTitleLower = (ans.q || '').toLowerCase();
+
                                   // 4. Video Upload / Video Recording
                                   let videoUrl = null;
                                   let videoName = "Video Recording";
@@ -2644,8 +2646,26 @@ export default function AdminDashboard() {
                                             <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>{videoName}</span>
                                             <a href={videoUrl} download={videoName} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #4f46e5, #4338ca)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
                                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                              Download
+                                              Download Video
                                             </a>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (qTitleLower.includes('video') || qTitleLower.includes('viedo') || valStr.toLowerCase().includes('.mp4') || valStr.toLowerCase().includes('.webm') || valStr.toLowerCase().includes('.mov')) {
+                                    const fileNameText = (parsedObj?.name || valStr).replace(/["{}]/g, '');
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f46e5', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>🎥</span> Video File Uploaded
+                                        </div>
+                                        <div style={{ background: '#f5f3ff', border: '1.5px solid #ddd6fe', borderRadius: '10px', padding: '12px 16px', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                                          <span style={{ fontSize: '20px' }}>🎬</span>
+                                          <div>
+                                            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#4c1d95' }}>{fileNameText || 'Video File Recorded'}</div>
+                                            <div style={{ fontSize: '11.5px', color: '#6d28d9', fontWeight: '600' }}>✓ Video Media File Attached</div>
                                           </div>
                                         </div>
                                       </div>
@@ -2753,25 +2773,40 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  // 6. Location Coordinates / Address
-                                  if (/^-?\d+\.\d+,\s*-?\d+\.\d+/.test(valStr) || valStr.toLowerCase().includes('lat') || valStr.toLowerCase().includes('location')) {
+                                  // 7. Location Coordinates / Address / Map
+                                  if (qTitleLower.includes('map') || qTitleLower.includes('location') || qTitleLower.includes('address') || qTitleLower.includes('geo') || /-?\d+\.\d+,\s*-?\d+\.\d+/.test(valStr) || valStr.toLowerCase().includes('lat')) {
                                     const coordsMatch = valStr.match(/-?\d+\.\d+,\s*-?\d+\.\d+/);
-                                    const coords = coordsMatch ? coordsMatch[0] : valStr;
+                                    const coords = coordsMatch ? coordsMatch[0] : (valStr.includes('(') ? valStr.split('(')[1]?.replace(')', '') : valStr);
+                                    const mapQuery = coords || valStr;
                                     return (
-                                      <div style={{ marginTop: '2px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#0284c7', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          📍 Geo-Location Captured
+                                      <div style={{ marginTop: '2px', width: '100%' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#0284c7', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span>📍</span> Geo-Location & Interactive Map
                                         </div>
-                                        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                                          <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0369a1' }}>📍 {coords}</span>
-                                          <a
-                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ padding: '6px 14px', background: '#0284c7', color: 'white', borderRadius: '6px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                          >
-                                            🗺️ Open Google Maps
-                                          </a>
+                                        <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0369a1' }}>📍 Location: {valStr}</span>
+                                            {mapQuery && (
+                                              <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ padding: '6px 14px', background: '#0284c7', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                              >
+                                                🗺️ Open Google Maps ↗
+                                              </a>
+                                            )}
+                                          </div>
+                                          {mapQuery && (
+                                            <iframe
+                                              width="100%"
+                                              height="180"
+                                              frameBorder="0"
+                                              scrolling="no"
+                                              src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`}
+                                              style={{ borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                            />
+                                          )}
                                         </div>
                                       </div>
                                     );

@@ -2158,6 +2158,12 @@ function VideoUploadComponent({ q, accent, value, onChange }) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLoading(true);
+      onChange({
+        name: file.name,
+        dataUrl: '',
+        type: file.type || 'video/mp4',
+        size: file.size
+      });
       const reader = new FileReader();
       reader.onload = (ev) => {
         setLoading(false);

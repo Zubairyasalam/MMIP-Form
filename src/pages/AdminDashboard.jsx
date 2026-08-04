@@ -2667,30 +2667,60 @@ export default function AdminDashboard() {
                                     );
                                   }
 
-                                  // 6. Image or File Upload
-                                  if (parsedObj && parsedObj.dataUrl && parsedObj.name) {
-                                    const isImg = parsedObj.type && parsedObj.type.startsWith('image/');
+                                  // 6. Image / Signature / Base64 / File Upload
+                                  let imgSrc = null;
+                                  let imgFileName = "Uploaded Image";
+
+                                  if (parsedObj) {
+                                    const candidate = parsedObj.dataUrl || parsedObj.url || parsedObj.image || parsedObj.src;
+                                    if (typeof candidate === 'string' && (candidate.startsWith('data:image/') || candidate.includes('data:image/') || /^https?:\/\//i.test(candidate))) {
+                                      imgSrc = candidate;
+                                      imgFileName = parsedObj.name || imgFileName;
+                                    }
+                                  }
+
+                                  if (!imgSrc) {
+                                    if (valStr.startsWith('data:image/')) {
+                                      imgSrc = valStr;
+                                    } else if (valStr.includes('data:image/')) {
+                                      const match = valStr.match(/data:image\/[^"'\s;]+(?:;base64,[^"'\s]+)?/);
+                                      if (match) imgSrc = match[0];
+                                    } else if (/^https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(valStr)) {
+                                      imgSrc = valStr;
+                                    }
+                                  }
+
+                                  if (imgSrc) {
                                     return (
                                       <div style={{ marginTop: '2px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                                          {isImg ? '🖼️ Uploaded Image' : '📄 Uploaded File'}
+                                          🖼️ Uploaded Image / Digital Signature
                                         </div>
-                                        {isImg ? (
-                                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', overflow: 'hidden', display: 'inline-block', maxWidth: '380px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                                            <img src={parsedObj.dataUrl} alt={parsedObj.name} style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
-                                            <div style={{ padding: '10px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
-                                              <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{parsedObj.name}</span>
-                                              <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                Download
-                                              </a>
-                                            </div>
+                                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #cbd5e1', overflow: 'hidden', display: 'inline-block', maxWidth: '420px', width: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                                          <div style={{ padding: '10px', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <img src={imgSrc} alt={imgFileName} style={{ maxHeight: '260px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
                                           </div>
-                                        ) : (
-                                          <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '8px', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', textDecoration: 'none' }}>
-                                            <span>📄</span> {parsedObj.name} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>↓ Download</span>
-                                          </a>
-                                        )}
+                                          <div style={{ padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: '#fafafa' }}>
+                                            <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{imgFileName}</span>
+                                            <a href={imgSrc} download={imgFileName !== 'Uploaded Image' ? imgFileName : 'image.png'} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', flexShrink: 0 }}>
+                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                              Download Image
+                                            </a>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  if (parsedObj && parsedObj.dataUrl && parsedObj.name) {
+                                    return (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                          📄 Uploaded File
+                                        </div>
+                                        <a href={parsedObj.dataUrl} download={parsedObj.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '8px', color: '#0369a1', fontSize: '13.5px', fontWeight: '700', textDecoration: 'none' }}>
+                                          <span>📄</span> {parsedObj.name} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>↓ Download</span>
+                                        </a>
                                       </div>
                                     );
                                   }

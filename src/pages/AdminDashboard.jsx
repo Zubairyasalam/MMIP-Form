@@ -585,7 +585,8 @@ export default function AdminDashboard() {
 
     // 3. Load Forms
     getForms().then(dbForms => {
-      const mappedCustom = dbForms.map(cf => ({
+      const safeForms = Array.isArray(dbForms) ? dbForms : [];
+      const mappedCustom = safeForms.map(cf => ({
         id: cf.id,
         title: cf.name || cf.title || 'Untitled Form',
         name: cf.name || cf.title || 'Untitled Form',
@@ -614,22 +615,27 @@ export default function AdminDashboard() {
         ...prev,
         totalForms: combinedForms.length
       }));
-    });
+    }).catch(err => console.error("Error loading forms:", err));
 
     // 4. Load Submissions
     const refreshSubmissions = () => {
       getResponses().then(async (dbSubs) => {
-        const legacySubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-        const updatedDbSubs = [...dbSubs];
+        const safeDbSubs = Array.isArray(dbSubs) ? dbSubs : [];
+        let legacySubs = [];
+        try {
+          legacySubs = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+        } catch { legacySubs = []; }
 
-        if (legacySubs.length > 0) {
+        const updatedDbSubs = [...safeDbSubs];
+
+        if (Array.isArray(legacySubs) && legacySubs.length > 0) {
           for (const sub of legacySubs) {
-            if (!updatedDbSubs.some(s => s.id === sub.id)) {
+            if (sub && sub.id && !updatedDbSubs.some(s => s && s.id === sub.id)) {
               await saveResponse(sub);
               updatedDbSubs.push(sub);
             }
           }
-          localStorage.removeItem('formSubmissions');
+          try { localStorage.removeItem('formSubmissions'); } catch (e) {}
         }
 
         const defaultSubs = [
@@ -642,19 +648,19 @@ export default function AdminDashboard() {
 
         const mergedSubs = [...updatedDbSubs];
         defaultSubs.forEach(df => {
-          if (!mergedSubs.some(m => m.id === df.id)) {
+          if (!mergedSubs.some(m => m && m.id === df.id)) {
             mergedSubs.push(df);
           }
         });
 
-        mergedSubs.sort((a, b) => b.id.localeCompare(a.id));
+        mergedSubs.sort((a, b) => ((b && b.id) ? String(b.id) : '').localeCompare((a && a.id) ? String(a.id) : ''));
 
         setSubmissions(mergedSubs);
         setStats(prev => ({
           ...prev,
           totalSubmissions: mergedSubs.length
         }));
-      });
+      }).catch(err => console.error("Error loading responses:", err));
     };
 
     const handleStorageChange = (e) => {
@@ -673,8 +679,9 @@ export default function AdminDashboard() {
     const savedAnnouncements = localStorage.getItem('appAnnouncements');
     let announcementList = [];
     if (savedAnnouncements) {
-      announcementList = JSON.parse(savedAnnouncements);
-    } else {
+      try { announcementList = JSON.parse(savedAnnouncements); } catch { announcementList = []; }
+    }
+    if (!announcementList || announcementList.length === 0) {
       announcementList = [
         { id: 1, title: 'Innovation Grants 2026 Extended', content: 'The final submission window for innovation research grants is extended until July 25th, 2026. Submit through the Portal.', target: 'All', date: '2026-07-08' },
         { id: 2, title: 'Annual Course Assessment Feedbacks', content: 'Faculty members are requested to publish their respective course feedback forms for current semester students.', target: 'Faculty', date: '2026-07-05' }
@@ -687,8 +694,9 @@ export default function AdminDashboard() {
     const savedNotifications = localStorage.getItem('appNotifications');
     let notificationList = [];
     if (savedNotifications) {
-      notificationList = JSON.parse(savedNotifications);
-    } else {
+      try { notificationList = JSON.parse(savedNotifications); } catch { notificationList = []; }
+    }
+    if (!notificationList || notificationList.length === 0) {
       notificationList = [
         { id: 1, text: 'New student registration: Arun Kumar', time: '10 mins ago', type: 'Registration' },
         { id: 2, text: 'Submission flagged: MMIP-05 has incomplete fields', time: '1 hour ago', type: 'System' },
@@ -702,45 +710,53 @@ export default function AdminDashboard() {
     const savedLogs = localStorage.getItem('systemLogs');
     let logList = [];
     if (savedLogs) {
-      logList = JSON.parse(savedLogs);
-    } else {
+      try { logList = JSON.parse(savedLogs); } catch { logList = []; }
+    }
+    if (!logList || logList.length === 0) {
       logList = [
         { time: '2026-07-09 15:42:15', type: 'System', text: 'Admin session initiated.' },
         { time: '2026-07-09 14:15:22', type: 'Form', text: 'Form Submission received for Innovation Grant Application.' },
         { time: '2026-07-09 10:45:00', type: 'Admin', text: 'Admin account Dr. Jane Cooper verified.' },
         { time: '2026-07-09 09:30:10', type: 'Setting', text: 'System settings synced with cloud storage.' }
       ];
-      localStorage.setItem('systemLogs', JSON.stringify(logList));
     }
-    setAuditLogs(logList);
 
-    const savedLoginActivity = JSON.parse(localStorage.getItem('loginActivity') || '[]');
+    let savedLoginActivity = [];
+    try {
+      savedLoginActivity = JSON.parse(localStorage.getItem('loginActivity') || '[]');
+    } catch { savedLoginActivity = []; }
     setLoginActivity(savedLoginActivity);
-    const loginLogs = savedLoginActivity.map(act => ({
-      time: act.login_time,
+    const loginLogs = (Array.isArray(savedLoginActivity) ? savedLoginActivity : []).map(act => ({
+      time: act.login_time || new Date().toISOString(),
       type: 'Auth',
-      text: `${act.name} (${act.email}) signed in successfully.`
+      text: `${act.name || 'User'} (${act.email || 'N/A'}) signed in successfully.`
     }));
 
-    const combinedLogs = [...logList, ...loginLogs].sort((a, b) => new Date(b.time) - new Date(a.time));
+    const combinedLogs = [...logList, ...loginLogs].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
     setLogs(combinedLogs);
 
-    // Compute Stats (using cache or defaults initially, updated dynamically by async loaders)
-    const cachedFormsCount = JSON.parse(localStorage.getItem('global_customForms') || '[]').length + 5;
-    const cachedSubsCount = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]').length + 5;
+    let cachedFormsCount = 5;
+    let cachedSubsCount = 5;
+    try {
+      cachedFormsCount = JSON.parse(localStorage.getItem('global_customForms') || '[]').length + 5;
+    } catch { cachedFormsCount = 5; }
+    try {
+      cachedSubsCount = JSON.parse(localStorage.getItem('global_formSubmissions') || '[]').length + 5;
+    } catch { cachedSubsCount = 5; }
 
+    const safeUserList = Array.isArray(userList) ? userList : [];
     setStats({
       totalSubmissions: cachedSubsCount,
       totalForms: cachedFormsCount,
-      activeAdminsCount: userList.filter(u => (u.status === 'Active' || u.account_status === 'Active') && u.role === 'admin').length,
-      totalUsersCount: userList.length,
+      activeAdminsCount: safeUserList.filter(u => (u && (u.status === 'Active' || u.account_status === 'Active') && u.role === 'admin')).length,
+      totalUsersCount: safeUserList.length,
       activeAnnouncements: announcementList.length
     });
 
     // Load Settings
     const savedSettings = localStorage.getItem('globalSettings');
     if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+      try { setSettings(JSON.parse(savedSettings)); } catch (e) {}
     }
 
     return () => {

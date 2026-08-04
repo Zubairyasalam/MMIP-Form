@@ -1493,6 +1493,11 @@ function AiAssistantInput({ q, accent, value, onChange }) {
   const debounceRef = useRef(null);
 
   const CORRECTIONS = {
+    'clcik': 'click', 'clik': 'click', 'correxton': 'correction', 'coorecton': 'correction',
+    'coorection': 'correction', 'givev': 'given', 'likr': 'like', 'mens': 'means',
+    'wheren': 'where', 'wat': 'what', 'wats': 'what is', 'wht': 'what', 'whr': 'where',
+    'zubairya': 'Zubairya',
+
     'u': 'you', 'r': 'are', 'ur': 'your', 'cn': 'can', 'dn': 'done',
     'abt': 'about', 'plz': 'please', 'pls': 'please', 'thks': 'thanks',
     'thnk': 'thank', 'hw': 'how', 'wht': 'what', 'whr': 'where',
@@ -1570,10 +1575,39 @@ function AiAssistantInput({ q, accent, value, onChange }) {
       }
 
       let text = value.trim();
+
+      // 1. Phrasing & Conversational Grammar fixes
+      text = text.replace(/\bthis is me\s+([a-z0-9_-]+)/gi, (m, name) => {
+        return `This is ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+      });
+      text = text.replace(/\bits me\s+([a-z0-9_-]+)/gi, (m, name) => {
+        return `It's ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+      });
+      text = text.replace(/\bmy name is\s+([a-z0-9_-]+)/gi, (m, name) => {
+        return `My name is ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+      });
+      text = text.replace(/\bi am\s+([a-z0-9_-]+)/gi, (m, name) => {
+        return `I am ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+      });
+
+      // 2. Comprehensive Word Corrections & Slang / Typo Mapping
       const ALL_CORRECTIONS = {
+        'clcik': 'click', 'clik': 'click', 'correxton': 'correction', 'coorecton': 'correction',
+        'coorection': 'correction', 'givev': 'given', 'likr': 'like', 'mens': 'means',
+        'wheren': 'where', 'wat': 'what', 'wats': 'what is', 'wht': 'what', 'whr': 'where',
+        'wen': 'when', 'wy': 'why', 'shos': 'shows', 'shew': 'show', 'shoud': 'should',
+        'mising': 'missing', 'trext': 'text', 'unfoed': 'unfilled', 'herer': 'here',
+
         'u': 'you', 'r': 'are', 'ur': 'your', 'cn': 'can', 'dn': 'done',
         'abt': 'about', 'plz': 'please', 'pls': 'please', 'thks': 'thanks',
-        'thnk': 'thank', 'hw': 'how', 'wht': 'what', 'whr': 'where',
+        'thnk': 'thank', 'hw': 'how', 'gonna': 'going to', 'wanna': 'want to',
+        'gotta': 'got to', 'kinda': 'kind of',
+
+        'im': "I'm", 'ive': "I've", 'id': "I'd", 'ill': "I'll",
+        'dont': "don't", 'cant': "can't", 'wont': "won't", 'isnt': "isn't",
+        'arent': "aren't", 'didnt': "didn't", 'hasnt': "hasn't", 'havent': "haven't",
+        'couldnt': "couldn't", 'wouldnt': "wouldn't", 'shouldnt': "shouldn't",
+
         'teh': 'the', 'hte': 'the', 'thsi': 'this', 'taht': 'that',
         'fo': 'of', 'ot': 'to', 'heo': 'hello', 'helllo': 'hello',
         'recived': 'received', 'recieve': 'receive', 'beleive': 'believe',
@@ -1597,14 +1631,12 @@ function AiAssistantInput({ q, accent, value, onChange }) {
         'projct': 'project', 'proejct': 'project', 'inovation': 'innovation',
         'innovaton': 'innovation', 'submision': 'submission', 'submitt': 'submit',
         'evalaution': 'evaluation', 'evalution': 'evaluation', 'approvel': 'approval',
-        'coorection': 'correction', 'coorect': 'correct', 'improvment': 'improvement',
-        'imprive': 'improve', 'yhst': 'that', 'thst': 'that', 'menas': 'means',
+        'imprive': 'improve', 'improvment': 'improvement', 'yhst': 'that', 'thst': 'that',
         'feild': 'field', 'realy': 'really', 'tether': 'together', 'submiting': 'submitting',
         'atendence': 'attendance', 'atendance': 'attendance', 'sysem': 'system',
         'sysstem': 'system', 'informamtion': 'information', 'infomation': 'information',
-        'clcik': 'click', 'clik': 'click', 'whst': 'what', 'wats': 'what is',
-        'wat': 'what', 'herer': 'here', 'unfoed': 'unfilled', 'trext': 'text', 'shoud': 'should',
-        'mising': 'missing', 'shos': 'shows', 'shew': 'show'
+
+        'zubairya': 'Zubairya', 'mcc': 'MCC'
       };
 
       Object.entries(ALL_CORRECTIONS).forEach(([bad, good]) => {
@@ -1617,11 +1649,19 @@ function AiAssistantInput({ q, accent, value, onChange }) {
         });
       });
 
+      // 3. Capitalize names & proper nouns following common prepositions or titles
+      text = text.replace(/\b(is|am|by|from|dearest|hi|hello|dear|mr|mrs|ms|dr|prof)\s+([a-z])/gi, (match, p1, p2) => {
+        return `${p1} ${p2.toUpperCase()}`;
+      });
+
+      // 4. Pronoun and Contraction Cleanup
       text = text.replace(/\bi\b/g, 'I');
       text = text.replace(/\bi'm\b/gi, "I'm");
       text = text.replace(/\bi've\b/gi, "I've");
       text = text.replace(/\bi'll\b/gi, "I'll");
       text = text.replace(/\bi'd\b/gi, "I'd");
+
+      // 5. Spacing, Punctuation, Casing Formatting
       text = text.replace(/\s+/g, ' ');
       text = text.replace(/\s+([.,!?:;])/g, '$1');
       text = text.replace(/([.,!?:;])([a-zA-Z])/g, '$1 $2');

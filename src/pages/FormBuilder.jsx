@@ -918,8 +918,6 @@ function AiAssistantEditor({ q, accent, aiTexts, setAiTexts }) {
       setGenerating(false);
 
       if (!textVal || !textVal.trim()) {
-        const defaultResp = "MCC Student Research Portal: A unified, secure digital platform designed to automate student project submissions, department reviews, and visual presentation approvals. The software supports automated PDF report parsing, integrated budget ledger tools, and direct feedback channels between incubation leads and student project leads.";
-        setAiTexts(prev => ({ ...prev, [q.id]: defaultResp }));
         return;
       }
 

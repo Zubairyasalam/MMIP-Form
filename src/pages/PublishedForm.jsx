@@ -1566,7 +1566,6 @@ function AiAssistantInput({ q, accent, value, onChange }) {
     setTimeout(() => {
       setGenerating(false);
       if (!value || !value.trim()) {
-        onChange("MCC Student Research Portal: A unified, secure digital platform designed to automate student project submissions, department reviews, and visual presentation approvals.");
         return;
       }
 
@@ -1771,13 +1770,12 @@ function VoiceDictationComponent({ q, accent, value, onChange }) {
           onChange(cleanVal ? cleanVal + " " + currentTranscript : currentTranscript);
         };
         recognition.onerror = () => {
-          onChange(cleanVal ? cleanVal + " Spoken: MCC student project proposal" : "Spoken: MCC student project proposal");
+          setIsRecording(false);
         };
         recognition.onend = () => setIsRecording(false);
         recognition.start();
       } else {
-        onChange(cleanVal ? cleanVal + " Spoken: MCC student project proposal" : "Spoken: MCC student project proposal");
-        setTimeout(() => setIsRecording(false), 1000);
+        setTimeout(() => setIsRecording(false), 500);
       }
     }
   };

@@ -28,3 +28,7 @@ dist-ssr
 
 # Temporary Tunnel Logs
 tunnel_out_mmip.txt
+
+# Local duplicate/backup folder
+duplicate/
+

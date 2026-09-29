@@ -187,36 +187,75 @@
   box-shadow: 0 4px 12px rgba(123, 28, 28, 0.05);
 }
 
+/* Enhanced Submit Button */
 .pf-submit-btn {
   width: 100%;
-  padding: 14px 28px;
-  background: #7B1C1C;
+  padding: 15px 28px;
+  background: linear-gradient(135deg, #7B1C1C 0%, #a02323 50%, #7B1C1C 100%);
+  background-size: 200% auto;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: 10px;
+  font-size: 15.5px;
   font-weight: 700;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(123, 28, 28, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(123, 28, 28, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
 }
 
-.pf-submit-btn:hover {
-  background: #5a1313;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(123, 28, 28, 0.35);
+.pf-submit-btn:hover:not(:disabled) {
+  background-position: right center;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(123, 28, 28, 0.4);
 }
 
-/* Success Card */
+.pf-submit-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+  box-shadow: 0 4px 12px rgba(123, 28, 28, 0.3);
+}
+
+.pf-submit-btn:disabled {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.pf-submit-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: pf-spin 0.75s linear infinite;
+  display: inline-block;
+}
+
+@keyframes pf-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success Card & Confetti Animation */
+.pf-success-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  overflow: hidden;
+}
+
 .pf-success-card {
   text-align: center;
-  padding: 40px 24px;
-  animation: scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 48px 32px;
+  animation: pf-pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -225,40 +264,157 @@
   margin: 0 auto;
   box-sizing: border-box;
   width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(123, 28, 28, 0.04);
+  position: relative;
+  z-index: 2;
 }
 
-.pf-success-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 32px;
-  font-weight: 800;
+@keyframes pf-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Success Icon & Pulsing Rings */
+.pf-success-icon-wrap {
+  position: relative;
+  margin: 0 auto 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
-  flex-shrink: 0;
 }
 
-.pf-success-card h2 {
-  font-size: 22px;
-  font-weight: 800;
-  color: #111;
-  margin-bottom: 8px;
+.pf-success-pulse-ring {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(123, 28, 28, 0.12);
+  animation: pf-pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
-.pf-success-card p {
-  font-size: 14.5px;
-  color: #666;
-  margin-bottom: 24px;
+.pf-success-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 10px 30px rgba(123, 28, 28, 0.35);
+  animation: pf-icon-bounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both;
+}
+
+@keyframes pf-pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pf-icon-bounce {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Animated SVG Checkmark */
+.pf-checkmark-svg {
+  width: 40px;
+  height: 40px;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: pf-check-draw 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.35s forwards;
+}
+
+@keyframes pf-check-draw {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Confetti Sparkles */
+.pf-confetti-container {
+  position: absolute;
+  inset: -60px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pf-confetti-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: pf-particle-burst 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes pf-particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+  }
+}
+
+.pf-submission-badge {
+  font-size: 13.5px;
+  color: #334155;
+  margin-bottom: 28px;
+  text-align: center;
+  background: #f8fafc;
+  padding: 10px 22px;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.pf-submission-badge:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .pf-btn-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 24px;
+  padding: 11px 24px;
   border: 1.5px solid #7B1C1C;
   color: #7B1C1C;
   background: white;
@@ -266,12 +422,15 @@
   font-size: 13.5px;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
 .pf-btn-link:hover {
   background: #7B1C1C;
   color: white;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(123, 28, 28, 0.25);
 }
 
 @media (max-width: 768px) {

@@ -2225,6 +2225,29 @@
   transform: translateY(-1px);
 }
 
+.folder-delete-btn {
+  padding: 10px 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.folder-delete-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
 /* Dark Mode Overrides */
 .admin-layout.dark-mode .folder-archive-card {
   background: #1e293b;
@@ -2264,4 +2287,28 @@
 
 .admin-layout.dark-mode .paper-stack-back {
   background: #334155;
+}
+
+.admin-layout.dark-mode .folder-delete-btn {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+.admin-layout.dark-mode .folder-delete-btn:hover {
+  background: #7f1d1d;
+  color: #fecaca;
+  border-color: #991b1b;
+}
+
+.admin-layout.dark-mode .folder-excel-btn {
+  background: #022c22;
+  color: #6ee7b7;
+  border-color: #064e3b;
+}
+
+.admin-layout.dark-mode .folder-excel-btn:hover {
+  background: #064e3b;
+  color: #a7f3d0;
+  border-color: #047857;
 }

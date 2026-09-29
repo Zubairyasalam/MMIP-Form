@@ -7,5 +7,6 @@ export default defineConfig({
   server: {
     host: true, // Expose on local network so phones can access via IP
     port: 5173,
+    strictPort: true,
   }
 })

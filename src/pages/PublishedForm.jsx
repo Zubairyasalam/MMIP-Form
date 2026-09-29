@@ -14,6 +14,7 @@ export default function PublishedForm() {
   const [otherTexts, setOtherTexts] = useState({});
   const [dropdownOtherSelected, setDropdownOtherSelected] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
   const [toast, setToast] = useState(null); // { message, type }
@@ -261,12 +262,16 @@ export default function PublishedForm() {
       answers: mappedAnswers
     };
 
-    await saveResponse(newSubmission);
-    try {
-      window.dispatchEvent(new Event('submissionUpdated'));
-      window.dispatchEvent(new Event('storage'));
-    } catch (e) {}
-    setSubmitted(true);
+    setSubmitting(true);
+    setTimeout(async () => {
+      await saveResponse(newSubmission);
+      try {
+        window.dispatchEvent(new Event('submissionUpdated'));
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {}
+      setSubmitting(false);
+      setSubmitted(true);
+    }, 450);
   };
 
   if (formConfig === undefined) {
@@ -413,10 +418,14 @@ export default function PublishedForm() {
                 }} />
               )}
 
-              <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }} dangerouslySetInnerHTML={{ __html: formConfig.name }} />
+              <div className="pf-title-row" style={{ borderBottom: `3px solid ${theme.accent}` }}>
+                {stripHtml(formConfig.name)}
+              </div>
 
               {formConfig.desc && (
-                <div style={{ padding: '0 24px', fontSize: '13.5px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: formConfig.desc }} />
+                <div style={{ padding: '0 24px', fontSize: '13.5px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
+                  {stripHtml(formConfig.desc)}
+                </div>
               )}
 
               <div className="pf-grid">
@@ -1342,27 +1351,87 @@ export default function PublishedForm() {
               })()}
               </div>
 
-              <button type="submit" className="pf-submit-btn" style={{ background: theme.accent }}>
-                Submit Responses
+              <button
+                type="submit"
+                className="pf-submit-btn"
+                disabled={submitting}
+                style={{ background: theme.accent }}
+              >
+                {submitting ? (
+                  <>
+                    <span className="pf-submit-spinner" />
+                    <span>Submitting Responses...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Responses</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </>
+                )}
               </button>
             </form>
           ) : (
-            <div className="pf-success-card">
-              <div className="pf-success-icon" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}dd)`, color: '#ffffff', border: 'none', boxShadow: `0 8px 24px ${theme.accent}44` }}>✓</div>
-              <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', textAlign: 'center', width: '100%', fontFamily: 'Inter, sans-serif' }}>Submission Recorded!</h2>
-              <p style={{ fontSize: '14.5px', color: '#64748b', marginBottom: '20px', textAlign: 'center', lineHeight: '1.6', maxWidth: '460px', margin: '0 auto 20px', fontFamily: 'Inter, sans-serif' }}>
-                Thank you for submitting your response. Your submission has been saved successfully.
-              </p>
-              <div style={{ fontSize: '13.5px', color: '#334155', marginBottom: '28px', textAlign: 'center', background: '#f8fafc', padding: '8px 20px', borderRadius: '24px', display: 'inline-block', border: '1px solid #e2e8f0', fontWeight: '500', fontFamily: 'Inter, sans-serif' }}>
-                Submission ID: <strong style={{ color: theme.accent, fontWeight: '700' }}>{submissionId}</strong>
+            <div className="pf-success-wrapper">
+              {/* Confetti Particles */}
+              <div className="pf-confetti-container">
+                {[
+                  { dx: '-90px', dy: '-80px', bg: '#7B1C1C', delay: '0.1s' },
+                  { dx: '100px', dy: '-90px', bg: '#2563eb', delay: '0.15s' },
+                  { dx: '-120px', dy: '40px', bg: '#f59e0b', delay: '0.2s' },
+                  { dx: '110px', dy: '50px', bg: '#10b981', delay: '0.12s' },
+                  { dx: '-60px', dy: '-120px', bg: '#ec4899', delay: '0.25s' },
+                  { dx: '70px', dy: '-110px', bg: '#8b5cf6', delay: '0.18s' },
+                  { dx: '-140px', dy: '-20px', bg: '#06b6d4', delay: '0.22s' },
+                  { dx: '130px', dy: '-30px', bg: '#7B1C1C', delay: '0.28s' }
+                ].map((p, i) => (
+                  <span
+                    key={i}
+                    className="pf-confetti-particle"
+                    style={{
+                      left: '50%',
+                      top: '40%',
+                      background: p.bg,
+                      animationDelay: p.delay,
+                      '--dx': p.dx,
+                      '--dy': p.dy
+                    }}
+                  />
+                ))}
               </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
-                <button className="pf-btn-link" onClick={() => { setSubmitted(false); setAnswers({}); }} style={{ fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-                  Submit Another Response
-                </button>
-                <Link to="/" className="pf-btn-link" style={{ background: theme.accent, color: 'white', borderColor: theme.accent, fontFamily: 'Inter, sans-serif' }}>
-                  Back to Home
-                </Link>
+
+              <div className="pf-success-card">
+                <div className="pf-success-icon-wrap">
+                  <div className="pf-success-pulse-ring" style={{ background: `${theme.accent}18` }} />
+                  <div className="pf-success-icon" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.accent}dd)` }}>
+                    <svg className="pf-checkmark-svg" viewBox="0 0 52 52" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 27l10 10L38 15" />
+                    </svg>
+                  </div>
+                </div>
+
+                <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', textAlign: 'center', width: '100%', fontFamily: 'Inter, sans-serif' }}>
+                  Submission Recorded!
+                </h2>
+                <p style={{ fontSize: '14.5px', color: '#64748b', marginBottom: '20px', textAlign: 'center', lineHeight: '1.6', maxWidth: '460px', margin: '0 auto 20px', fontFamily: 'Inter, sans-serif' }}>
+                  Thank you for submitting your response. Your submission has been saved successfully.
+                </p>
+
+                <div className="pf-submission-badge">
+                  <span>Submission ID:</span>
+                  <strong style={{ color: theme.accent, fontWeight: '700' }}>{submissionId}</strong>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+                  <button className="pf-btn-link" onClick={() => { setSubmitted(false); setAnswers({}); }} style={{ fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                    Submit Another Response
+                  </button>
+                  <Link to="/" className="pf-btn-link" style={{ background: theme.accent, color: 'white', borderColor: theme.accent, fontFamily: 'Inter, sans-serif' }}>
+                    Back to Home
+                  </Link>
+                </div>
               </div>
             </div>
           )}

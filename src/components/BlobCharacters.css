@@ -1,0 +1,288 @@
+/* Blob Characters styling matching exact video recording */
+
+.blob-stage {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
+}
+
+.blob-group {
+  position: relative;
+  width: 320px;
+  height: 220px;
+  transform: scale(1.18);
+  transform-origin: bottom center;
+}
+
+/* Base Blob styling */
+.blob {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), background 0.3s;
+}
+
+.blob-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.25s ease-out;
+}
+
+/* 1. Purple Tall Blob (Back Left) */
+.blob-purple {
+  left: 20px;
+  width: 95px;
+  height: 165px;
+  background: #6c38ea;
+  border-radius: 28px 28px 0 0;
+  z-index: 1;
+}
+
+.blob-purple .blob-face {
+  position: absolute;
+  top: 32px;
+}
+
+/* 2. Black Pill Blob (Middle) */
+.blob-black {
+  left: 102px;
+  width: 68px;
+  height: 125px;
+  background: #18181b;
+  border-radius: 22px 22px 0 0;
+  z-index: 2;
+}
+
+.blob-black .blob-face {
+  position: absolute;
+  top: 38px;
+}
+
+/* 3. Yellow Blob (Right) */
+.blob-yellow {
+  right: 15px;
+  width: 90px;
+  height: 135px;
+  background: #facc15;
+  border-radius: 45px 45px 0 0;
+  z-index: 1;
+}
+
+.blob-yellow .blob-face {
+  position: absolute;
+  top: 36px;
+}
+
+/* 4. Orange Semi-Circle Blob (Front Center-Left) */
+.blob-orange {
+  left: 0px;
+  width: 185px;
+  height: 98px;
+  background: #f95716;
+  border-radius: 95px 95px 0 0;
+  z-index: 3;
+}
+
+.blob-orange .blob-face {
+  position: absolute;
+  top: 24px;
+}
+
+/* ============================================================
+   EXPRESSIONS
+   ============================================================ */
+
+/* 1. HAPPY (Mode: Email / Idle) */
+.eyes-happy {
+  display: flex;
+  gap: 18px;
+}
+
+.arch-eye {
+  width: 11px;
+  height: 6px;
+  border: 2.5px solid #18181b;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+}
+
+.eyes-dots {
+  display: flex;
+  gap: 18px;
+}
+
+.eyes-dots .dot {
+  width: 8px;
+  height: 8px;
+  background: #18181b;
+  border-radius: 50%;
+}
+
+.white-eyes .dot, .white-eyes .arch-eye {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.mouth-smile {
+  width: 10px;
+  height: 5px;
+  border: 2px solid #18181b;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+
+.white-mouth {
+  border-color: #ffffff;
+}
+
+/* 2. SAD / LOOK AWAY (Mode: Password Hidden) */
+.eyes-sad {
+  display: flex;
+  gap: 18px;
+}
+
+.sad-arch {
+  width: 11px;
+  height: 6px;
+  border: 2.5px solid #18181b;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+
+.eyes-lines {
+  display: flex;
+  gap: 16px;
+}
+
+.eyes-lines .line {
+  width: 10px;
+  height: 2.5px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.mouth-frown {
+  width: 10px;
+  height: 5px;
+  border: 2px solid #18181b;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+}
+
+/* 3. SHOCKED / ANNOYED (Mode: Password Revealed) */
+.eyes-shocked {
+  display: flex;
+  gap: 14px;
+}
+
+.angry-brow {
+  width: 12px;
+  height: 3px;
+  background: #18181b;
+  border-radius: 2px;
+}
+
+.left-brow {
+  transform: rotate(20deg);
+}
+
+.right-brow {
+  transform: rotate(-20deg);
+}
+
+.white-eyes .angry-brow {
+  background: #ffffff;
+}
+
+.mouth-open-shock {
+  width: 8px;
+  height: 8px;
+  background: #18181b;
+  border-radius: 50%;
+}
+
+/* 4. LAUGHING AT ERROR (Mode: Error) */
+.mouth-laugh {
+  width: 12px;
+  height: 8px;
+  background: #18181b;
+  border-radius: 0 0 10px 10px;
+}
+
+.white-laugh {
+  background: #ffffff;
+}
+
+/* Transforms per mode */
+.mode-password .blob-purple {
+  transform: translateY(10px) rotate(-8deg);
+}
+
+.mode-password .blob-black {
+  transform: translateY(12px) rotate(-5deg);
+}
+
+.mode-password .blob-yellow {
+  transform: translateY(8px) rotate(10deg);
+}
+
+.mode-password .blob-orange {
+  transform: translateY(6px) rotate(-4deg);
+}
+
+.mode-revealed .blob-purple {
+  transform: translateY(2px) scale(1.02);
+}
+
+.mode-revealed .blob-black {
+  transform: translateY(3px) scale(1.02);
+}
+
+.mode-revealed .blob-yellow {
+  transform: translateY(2px) scale(1.02);
+}
+
+.mode-revealed .blob-orange {
+  transform: translateY(1px) scale(1.02);
+}
+
+/* LAUGHING GIGGLE ANIMATION ON ERROR */
+.mode-error .blob-purple {
+  animation: laughGiggle 0.35s infinite alternate ease-in-out;
+}
+
+.mode-error .blob-black {
+  animation: laughGiggle 0.35s infinite alternate ease-in-out 0.08s;
+}
+
+.mode-error .blob-yellow {
+  animation: laughGiggle 0.35s infinite alternate ease-in-out 0.15s;
+}
+
+.mode-error .blob-orange {
+  animation: laughGiggle 0.35s infinite alternate ease-in-out 0.04s;
+}
+
+@keyframes laughGiggle {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-3deg) scale(1.04);
+  }
+  100% {
+    transform: translateY(-4px) rotate(3deg) scale(0.98);
+  }
+}

@@ -1,0 +1,75 @@
+/* Mascot Avatar Interactive Styling & Animation */
+
+.mascot-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.mascot-avatar {
+  width: 120px;
+  height: 105px;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mascot-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Eyes smooth movement */
+.mascot-eyes {
+  transition: transform 0.15s ease-out;
+}
+
+/* Paw animation states */
+.left-paw, .right-paw {
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+  transform-origin: center center;
+}
+
+/* Default / Idle Paws at bottom */
+.left-paw {
+  transform: translateY(0) rotate(0deg);
+}
+
+.right-paw {
+  transform: translateY(0) rotate(0deg);
+}
+
+/* Password focused -> Hands cover eyes */
+.mascot-avatar.covering .left-paw {
+  transform: translate(12px, -52px) rotate(22deg);
+}
+
+.mascot-avatar.covering .right-paw {
+  transform: translate(-12px, -52px) rotate(-22deg);
+}
+
+/* Show password toggled -> Hands peek (lower slightly) */
+.mascot-avatar.covering.peeking .left-paw {
+  transform: translate(12px, -36px) rotate(15deg);
+}
+
+.mascot-avatar.covering.peeking .right-paw {
+  transform: translate(-12px, -36px) rotate(-15deg);
+}
+
+/* Submitting / Loading animation */
+.mascot-avatar.submitting {
+  animation: mascotBounce 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes mascotBounce {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-6px) scale(1.03);
+  }
+}

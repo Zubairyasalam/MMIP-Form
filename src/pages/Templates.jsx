@@ -411,8 +411,8 @@ export default function Templates() {
                   </div>
 
                   <div className="template-card-body">
-                    <div className="template-card-name">{tmpl.name}</div>
-                    <div className="template-card-desc">{tmpl.desc}</div>
+                    <div className="template-card-name">{tmpl.name ? tmpl.name.replace(/<[^>]*>?/gm, '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').trim() : ''}</div>
+                    <div className="template-card-desc">{tmpl.desc ? tmpl.desc.replace(/<[^>]*>?/gm, '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').trim() : ''}</div>
                     <div className="template-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span className="template-tag" style={{ color: cardAccent, background: `${cardAccent}22` }}>{tmpl.tag}</span>

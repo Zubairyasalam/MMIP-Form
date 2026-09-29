@@ -185,7 +185,7 @@ export default function MyForms() {
                       </div>
                       <div className="template-card-info" style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
                         <h3 style={{ fontSize: '18px' }}>{formName}</h3>
-                        <p style={{ flexGrow: 1 }}>{tmpl.desc || 'Custom form created by you.'}</p>
+                        <p style={{ flexGrow: 1 }}>{stripHtml(tmpl.desc) || 'Custom form created by you.'}</p>
 
                         <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
                           <button

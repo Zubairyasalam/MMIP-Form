@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BlobCharacters from '../components/BlobCharacters';
 import './Auth.css';
 
 const hashPassword = (password) => {
@@ -68,6 +69,7 @@ export default function Auth({ portalType }) {
   // Extra controls
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -404,131 +406,92 @@ export default function Auth({ portalType }) {
     <div className="auth-page">
       <div className="auth-container">
 
-        {/* Left Branding Panel */}
+        {/* Left Panel: Light Grey with Blob Characters */}
         <div className="auth-brand-panel">
-          <img src={localStorage.getItem('customLogoWhite') || "/mcc-mrf-logo-white.png?v=2"} alt="MCC-MRF" className="auth-logo" style={{ height: '100px', objectFit: 'contain', marginBottom: '24px' }} />
-          <div className="auth-welcome-text">
-            <h2>{isAdminOrSuperAdmin ? (portalType === 'superadmin' ? 'Super Admin Portal' : 'Admin Portal') : 'Madras Christian College'}</h2>
-            <h3 style={{ opacity: 0.9, fontWeight: '600', fontSize: '18px', marginTop: '6px' }}>
-              {isAdminOrSuperAdmin ? 'MMIP Management Platform' : 'MRF Innovation Park'}
-            </h3>
-            <p style={{ marginTop: '16px', lineHeight: '1.6' }}>
-              {isAdminOrSuperAdmin
-                ? 'Access the MCC-MRF Innovation Park Admin Portal to manage form templates, view response sheets, and configure platform settings.'
-                : 'Create your account to browse form templates, build customized forms, and manage survey responses through the MMIP platform.'}
-            </p>
+          <div className="auth-logo-badge">
+            <img
+              src={localStorage.getItem('customLogo') || "/mcc-mrf-logo-original-transparent.png?v=2"}
+              alt="MCC - MRF Innovation Park"
+              className="auth-logo"
+            />
+            <div className="auth-brand-info">
+              <h4>Madras Christian College</h4>
+              <p>MRF Innovation Park</p>
+            </div>
           </div>
-          <div className="auth-footer-text">
-            © 2026 Madras Christian College. All rights reserved.
-          </div>
+
+          {/* Interactive Blob Characters at bottom of left panel */}
+          <BlobCharacters
+            isPasswordFocused={isPasswordFocused}
+            emailLength={email.length}
+            isShowPassword={showPassword}
+            hasError={!!errorMsg}
+          />
         </div>
 
-        {/* Right Authentication Form Panel */}
+        {/* Right Panel: Clean Form */}
         <div className="auth-form-panel">
           <div className="auth-card-body">
 
-            {/* Clean Switch Header */}
-            {authMode === 'forgot' ? (
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <h2 style={{ color: '#0f172a', fontSize: '20px', fontWeight: '800' }}>
-                  🔑 Reset Password
-                </h2>
-                <p style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px' }}>
-                  {forgotStep === 1 ? 'Enter your registered email address to verify your account.' : 'Verify the code and enter your new password.'}
-                </p>
-              </div>
-            ) : (!portalType || (portalType !== 'admin' && portalType !== 'superadmin')) ? (
-              <div className="auth-tabs" style={{ display: 'flex', borderBottom: '2.5px solid #f1f5f9', marginBottom: '24px', gap: '16px' }}>
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${authMode === 'signin' ? 'active' : ''}`}
-                  onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}
-                  style={{ flex: 1, paddingBottom: '12px', fontSize: '16px', fontWeight: '700', border: 'none', background: 'none', cursor: 'pointer', color: authMode === 'signin' ? '#7B1C1C' : '#94a3b8', borderBottom: authMode === 'signin' ? '2.5px solid #7B1C1C' : 'none', marginBottom: '-2.5px' }}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  className={`auth-tab-btn ${authMode === 'signup' ? 'active' : ''}`}
-                  onClick={() => { setAuthMode('signup'); setErrorMsg(''); }}
-                  style={{ flex: 1, paddingBottom: '12px', fontSize: '16px', fontWeight: '700', border: 'none', background: 'none', cursor: 'pointer', color: authMode === 'signup' ? '#7B1C1C' : '#94a3b8', borderBottom: authMode === 'signup' ? '2.5px solid #7B1C1C' : 'none', marginBottom: '-2.5px' }}
-                >
-                  Sign Up
-                </button>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <h2 style={{ color: '#0f172a', fontSize: '20px', fontWeight: '800' }}>
-                  {portalType === 'superadmin' ? '🛡️ Super Admin Portal Sign In' : '⚙️ Admin Portal Sign In'}
-                </h2>
-                <p style={{ color: '#64748b', fontSize: '13.5px', marginTop: '6px' }}>
-                  Please enter your institutional credentials to log in.
-                </p>
-              </div>
-            )}
+            {/* Title & Subtitle */}
+            <h2 className="auth-header-title">
+              {authMode === 'signup' ? 'Create an account' : 'Welcome back'}
+            </h2>
+            <p className="auth-header-subtitle">
+              Please enter your details.
+            </p>
 
+            {/* Error / Success Banners */}
             {errorMsg && <div className="auth-error-banner">⚠️ {errorMsg}</div>}
-            {successMsg && (
-              <div style={{ background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0', padding: '12px 16px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '500', marginBottom: '20px', textAlign: 'center' }}>
-                ✅ {successMsg}
-              </div>
-            )}
+            {successMsg && <div className="auth-success-banner">✅ {successMsg}</div>}
 
+            {/* Simulated Email */}
             {showSimulatedEmail && (
-              <div style={{
-                background: '#eff6ff',
-                border: '1.5px solid #bfdbfe',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '20px',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                textAlign: 'left'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div className="auth-sim-email">
+                <div className="auth-sim-email-header">
+                  <span className="auth-sim-email-tag">
                     📩 Simulated Email Notification
                   </span>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowSimulatedEmail(false)}
-                    style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}
+                    className="auth-sim-close"
                   >
                     ✕
                   </button>
                 </div>
-                <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: '1.4' }}>
+                <div>
                   <strong>To:</strong> {resetEmail}<br />
                   <strong>Subject:</strong> Password Reset Code<br />
-                  Your 6-digit verification code is: <strong style={{ fontSize: '16px', color: '#b91c1c', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', marginLeft: '4px' }}>{generatedCode}</strong>
+                  Your 6-digit verification code is:{' '}
+                  <span className="auth-sim-code">{generatedCode}</span>
                 </div>
               </div>
             )}
 
+            {/* Forgot Password Flow */}
             {authMode === 'forgot' ? (
               forgotStep === 1 ? (
                 <form onSubmit={handleForgotSendCode} className="auth-inputs-wrap">
                   <div className="auth-input-group">
-                    <label>Email Address</label>
+                    <label>Email</label>
                     <input
                       type="email"
                       required
-                      placeholder="e.g. admin@mcc.edu.in"
+                      placeholder="admin@mcc.edu.in"
                       value={resetEmail}
                       onChange={e => setResetEmail(e.target.value)}
                       disabled={loading}
                       autoFocus
                     />
                   </div>
-                  <button type="submit" className="auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', outline: 'none' }}>
+                  <button type="submit" className="auth-submit-btn" disabled={loading}>
                     <span>{loading ? 'Sending Code...' : 'Send Verification Code'}</span>
                   </button>
-                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <span 
-                      style={{ fontSize: '13px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
-                      onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}
-                    >
+                  <div className="auth-footer-prompt">
+                    <button type="button" onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}>
                       Back to Sign In
-                    </span>
+                    </button>
                   </div>
                 </form>
               ) : (
@@ -538,7 +501,7 @@ export default function Auth({ portalType }) {
                     <input
                       type="text"
                       required
-                      placeholder="Enter verification code"
+                      placeholder="Enter code"
                       value={enteredCode}
                       onChange={e => setEnteredCode(e.target.value)}
                       disabled={loading}
@@ -554,6 +517,8 @@ export default function Auth({ portalType }) {
                       placeholder="••••••••"
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
                       disabled={loading}
                     />
                   </div>
@@ -565,23 +530,23 @@ export default function Auth({ portalType }) {
                       placeholder="••••••••"
                       value={confirmNewPassword}
                       onChange={e => setConfirmNewPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
                       disabled={loading}
                     />
                   </div>
-                  <button type="submit" className="auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', outline: 'none' }}>
+                  <button type="submit" className="auth-submit-btn" disabled={loading}>
                     <span>{loading ? 'Resetting Password...' : 'Reset Password'}</span>
                   </button>
-                  <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <span 
-                      style={{ fontSize: '13px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
-                      onClick={() => { setForgotStep(1); setErrorMsg(''); }}
-                    >
+                  <div className="auth-footer-prompt">
+                    <button type="button" onClick={() => { setForgotStep(1); setErrorMsg(''); }}>
                       Back to Step 1
-                    </span>
+                    </button>
                   </div>
                 </form>
               )
             ) : (
+              /* Sign In / Sign Up Forms */
               <form onSubmit={handleSubmit} className="auth-inputs-wrap">
                 {authMode === 'signup' && (
                   <div className="auth-input-group">
@@ -589,7 +554,7 @@ export default function Auth({ portalType }) {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Name"
+                      placeholder="e.g. John Doe"
                       value={fullName}
                       onChange={e => setFullName(e.target.value)}
                       disabled={loading}
@@ -599,11 +564,11 @@ export default function Auth({ portalType }) {
                 )}
 
                 <div className="auth-input-group">
-                  <label>Email Address</label>
+                  <label>Email</label>
                   <input
                     type={authMode === 'signup' ? 'email' : 'text'}
                     required
-                    placeholder="e.g. user@gmail.com"
+                    placeholder="admin@mcc.edu.in"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     disabled={loading}
@@ -611,36 +576,45 @@ export default function Auth({ portalType }) {
                 </div>
 
                 <div className="auth-input-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="auth-pw-label-row">
                     <label>Password</label>
                     {authMode === 'signin' && (
-                      <span
-                        style={{ fontSize: '11px', color: '#7B1C1C', cursor: 'pointer', fontWeight: '600' }}
+                      <button
+                        type="button"
+                        className="auth-forgot-link"
                         onClick={() => { setAuthMode('forgot'); setForgotStep(1); setErrorMsg(''); }}
                       >
-                        Forgot Password?
-                      </span>
+                        Forgot password?
+                      </button>
                     )}
                   </div>
-                  <div style={{ position: 'relative' }}>
+                  <div className="auth-pw-wrap">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
                       placeholder="••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
                       disabled={loading}
-                      style={{ paddingRight: '45px' }}
                     />
                     <button
                       type="button"
+                      className="auth-pw-toggle"
                       onClick={() => setShowPassword(!showPassword)}
-                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', outline: 'none' }}
+                      aria-label="Toggle password visibility"
                     >
                       {showPassword ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                          <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
                       ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
                       )}
                     </button>
                   </div>
@@ -655,75 +629,63 @@ export default function Auth({ portalType }) {
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
                       disabled={loading}
                     />
                   </div>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                  <input
-                    type="checkbox"
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onChange={e => setRememberMe(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#7B1C1C', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="rememberMe" style={{ fontSize: '13px', color: '#475569', cursor: 'pointer', userSelect: 'none' }}>
-                    Remember me on this device
-                  </label>
+                <div className="auth-options-row">
+                  <div className="auth-remember-item">
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                    />
+                    <label htmlFor="rememberMe">
+                      Remember for 30 days
+                    </label>
+                  </div>
                 </div>
 
-                <button type="submit" className="btn-primary auth-submit-btn" disabled={loading} style={{ background: '#7B1C1C', border: 'none', color: 'white', fontWeight: 'bold', padding: '12px', borderRadius: '10px', marginTop: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                  <span>{loading ? 'Processing...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                <button type="submit" className="auth-submit-btn" disabled={loading}>
+                  <span>{loading ? 'Processing...' : authMode === 'signin' ? 'Log in' : 'Create account'}</span>
                 </button>
+
               </form>
             )}
 
-
-
-            {portalType === 'admin' && (
-              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '13.5px' }}>
-                  <span
-                    onClick={() => navigate('/auth')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    User Portal
-                  </span>
-                  <span style={{ color: '#cbd5e1' }}>|</span>
-                  <span
-                    onClick={() => navigate('/super-admin/login')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Super Admin Portal
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {portalType === 'superadmin' && (
-              <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', fontSize: '13.5px' }}>
-                  <span
-                    onClick={() => navigate('/auth')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    User Portal
-                  </span>
-                  <span style={{ color: '#cbd5e1' }}>|</span>
-                  <span
-                    onClick={() => navigate('/admin/login')}
-                    style={{ color: '#7B1C1C', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Admin Portal
-                  </span>
-                </div>
+            {/* Footer Prompt */}
+            {!isAdminOrSuperAdmin && authMode !== 'forgot' && (
+              <div className="auth-footer-prompt">
+                {authMode === 'signin' ? (
+                  <>
+                    Don't have an account?{' '}
+                    <button type="button" onClick={() => { setAuthMode('signup'); setErrorMsg(''); }}>
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button type="button" onClick={() => { setAuthMode('signin'); setErrorMsg(''); }}>
+                      Log in
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
           </div>
         </div>
 
+      </div>
+
+      {/* Sub-caption below card */}
+      <div className="auth-bottom-caption">
+        Type your password. Watch them look away.
       </div>
     </div>
   );

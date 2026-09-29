@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminFormManagement from './AdminFormManagement';
 import './AdminDashboard.css';
-import { getForms, getResponses, saveResponse, deleteResponse } from '../utils/db';
+import { getForms, getResponses, saveResponse, deleteResponse, deleteForm } from '../utils/db';
 import { TEMPLATE_THEMES } from '../data/templates';
 
 const hashPassword = (password) => {
@@ -1042,9 +1042,46 @@ export default function AdminDashboard() {
       deleteResponse(id).then(() => {
         const updated = submissions.filter(s => s.id !== id);
         setSubmissions(updated);
+        
+        // Also remove it from the modal if it's open
+        if (activeTemplateModal) {
+          setActiveTemplateModal(prev => prev ? {
+            ...prev,
+            formSubs: prev.formSubs.filter(s => s.id !== id)
+          } : null);
+        }
+
         logAction('Form', `Deleted form submission: ${id} by ${name}.`);
         showToastMessage(`Deleted submission ${id} by ${name}.`);
       });
+    });
+  };
+
+  const handleDeleteFolder = (title, formSubs = [], matchingForm = {}) => {
+    const subCount = formSubs.length;
+    triggerConfirm(`Are you sure you want to delete the folder "${title}" and all its ${subCount} submission(s)? This action cannot be undone.`, async () => {
+      try {
+        const deletePromises = [];
+        if (matchingForm && matchingForm.id) {
+          deletePromises.push(deleteForm(matchingForm.id));
+        }
+        formSubs.forEach(sub => {
+          if (sub.id) deletePromises.push(deleteResponse(sub.id));
+        });
+
+        await Promise.all(deletePromises);
+
+        const updated = submissions.filter(s => (s.form || s.formName || 'General Form') !== title);
+        setSubmissions(updated);
+        if (matchingForm && matchingForm.id) {
+          setForms(prev => prev.filter(f => f.id !== matchingForm.id));
+        }
+        logAction('Form', `Deleted folder and submissions for: ${title}.`);
+        showToastMessage(`Folder "${title}" deleted successfully.`);
+      } catch (err) {
+        console.error("Error deleting folder:", err);
+        showToastMessage(`⚠️ Error deleting folder. Please try again.`);
+      }
     });
   };
 
@@ -1059,6 +1096,15 @@ export default function AdminDashboard() {
     saveResponse(updatedSub).then(() => {
       const updated = submissions.map(s => s.id === editingSub.id ? updatedSub : s);
       setSubmissions(updated);
+      
+      // Also update it in the modal if it's open
+      if (activeTemplateModal) {
+        setActiveTemplateModal(prev => prev ? {
+          ...prev,
+          formSubs: prev.formSubs.map(s => s.id === editingSub.id ? updatedSub : s)
+        } : null);
+      }
+
       logAction('Form', `Updated details & status for submission ${editingSub.id}.`);
       showToastMessage(`Updated submission ${editingSub.id}.`);
       setEditingSub(null);
@@ -2069,6 +2115,17 @@ export default function AdminDashboard() {
                                   title="Export all submissions as CSV"
                                 >
                                   📊 Excel
+                                </button>
+                                <button
+                                  type="button"
+                                  className="folder-delete-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteFolder(title, formSubs, matchingForm);
+                                  }}
+                                  title="Delete folder and all its submissions"
+                                >
+                                  🗑️
                                 </button>
                               </div>
                             </div>

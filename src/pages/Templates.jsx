@@ -582,13 +582,13 @@ export default function Templates() {
                 <input
                   type="text"
                   readOnly
-                  value={`${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`}
+                  value={`${getOrigin()}${window.location.pathname}#/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`}
                   style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12.5px', color: '#0f172a', fontWeight: '600', outline: 'none', fontFamily: 'Inter, sans-serif', width: '0' }}
                 />
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <button
                     onClick={() => {
-                      const link = `${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
+                      const link = `${getOrigin()}${window.location.pathname}#/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
                       navigator.clipboard.writeText(link);
                       alert('Link copied to clipboard!');
                     }}
@@ -598,7 +598,7 @@ export default function Templates() {
                   </button>
                   <button
                     onClick={() => {
-                      const link = `${getOrigin()}/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
+                      const link = `${getOrigin()}${window.location.pathname}#/form/${selectedTmplQr.id || toSlug(selectedTmplQr.name)}`;
                       handleShareLink(selectedTmplQr.name, link);
                     }}
                     style={{ background: (TEMPLATE_THEMES[selectedTmplQr.bg] || TEMPLATE_THEMES['maroon-bg']).accent, color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}

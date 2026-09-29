@@ -2250,8 +2250,9 @@ export default function FormBuilder() {
 
   const handleDownloadQR = async (title) => {
     const slug = savedFormId || state.id || toSlug(stripHtml(title)) || 'form';
+    const formUrl = `${getOrigin()}${window.location.pathname}#/form/${slug}`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-      `${getOrigin()}/form/${slug}`
+      formUrl
     )}&color=000000`;
     try {
       const response = await fetch(qrUrl);
@@ -2301,7 +2302,7 @@ export default function FormBuilder() {
           text: `Scan this QR code to access the ${title} form`,
         });
       } else {
-        const formUrl = `${getOrigin()}/form/${slug}`;
+        const formUrl = `${getOrigin()}${window.location.pathname}#/form/${slug}`;
         if (navigator.share) {
           await navigator.share({
             title: title,
@@ -2316,7 +2317,7 @@ export default function FormBuilder() {
     } catch (e) {
       console.error(e);
       const slug = savedFormId || state.id || toSlug(stripHtml(title)) || 'form';
-      const formUrl = `${getOrigin()}/form/${slug}`;
+      const formUrl = `${getOrigin()}${window.location.pathname}#/form/${slug}`;
       if (navigator.share) {
         await navigator.share({
           title: title,
@@ -3446,7 +3447,7 @@ export default function FormBuilder() {
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Shareable Form Link</div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                 <a
-                  href={`${window.location.origin}/#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
+                  href={`${window.location.origin}${window.location.pathname}#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{
@@ -3461,7 +3462,7 @@ export default function FormBuilder() {
                     width: '0'
                   }}
                 >
-                  {`${window.location.origin}/#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
+                  {`${window.location.origin}${window.location.pathname}#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
                 </a>
                 <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <button
@@ -3508,7 +3509,7 @@ export default function FormBuilder() {
               }}>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-                    `${getOrigin()}/#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`
+                    `${getOrigin()}${window.location.pathname}#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`
                   )}&color=000000`}
                   alt="Form QR Code"
                   style={{ width: '120px', height: '120px', display: 'block' }}
@@ -3545,7 +3546,7 @@ export default function FormBuilder() {
                 <button
                   onClick={() => {
                     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-                      `${getOrigin()}/#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`
+                      `${getOrigin()}${window.location.pathname}#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`
                     )}&color=000000`;
                     handleShareQR(formTitle, qrUrl);
                   }}
@@ -3587,7 +3588,7 @@ export default function FormBuilder() {
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href={`/#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
+                href={`${window.location.origin}${window.location.pathname}#/form/${savedFormId || state.id || toSlug(stripHtml(formTitle)) || 'form'}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{
